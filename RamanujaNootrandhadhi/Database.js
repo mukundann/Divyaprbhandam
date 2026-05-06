@@ -1,6 +1,6 @@
-const pasurams = [
+const pasuramData= [
   {
-    id: 1,
+id: 1,
     tamil: "பூ மன்னு மாது பொருந்திய மார்பன் புகழ் மலிந்த\nபா மன்னு மாறன் அடி பணிந்து உய்ந்தவன் பல் கலையோர்\nதாம் மன்ன வந்த இராமாநுசன் சரணாரவிந்தம்\nநாம் மன்னி வாழ நெஞ்சே சொல்லுவோம் அவன் நாமங்களே.",
     notes: "An invitation to the mind to chant the names of Ramanuja, who surrendered to Nammazhwar."
   },
@@ -122,4 +122,4 @@ const pasurams = [
   }
 ];
 
-export default pasurams;
+
