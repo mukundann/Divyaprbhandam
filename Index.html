@@ -36,7 +36,7 @@
     </div>
 
     <div class="input-group">
-        <label>Number (Chapter.Sub.Pasuram)</label>
+        <label id="numLabel">Number (Ch.Sub.Pasuram)</label>
         <input type="text" id="number" value="1.1.1" inputmode="decimal">
     </div>
 
@@ -52,112 +52,93 @@
 </div>
 
 <script>
-    /**
-     * CONFIGURATION SECTION
-     * Edit this object to define the limits for each Prabandham.
-     * Format: 'Prefix': { 'Chapter.Sub': MaxPasurams }
-     * 'default': standard pasuram count if not explicitly listed.
-     */
-    const PRABANDHAM_CONFIG = {
-        'TVM': {
-            'maxChapters': 10,
-            'maxSubs': 10,
-            'defaultPasurams': 11,
-            'exceptions': {
-                '2.7': 13 // Thiruvaimozhi 2.7 has 13 pasurams
-            }
-        },
-        'PT': {
-            'maxChapters': 11,
-            'maxSubs': 10,
-            'defaultPasurams': 10,
-            'exceptions': {}
-        },
-        'PMT': {
-            'maxChapters': 1,
-            'maxSubs': 10,
-            'defaultPasurams': 10,
-            'exceptions': {}
-        },
-        'NAT': {
-            'maxChapters': 1,
-            'maxSubs': 14,
-            'defaultPasurams': 10,
-            'exceptions': {}
-        }
+    const CONFIG = {
+        'TVM': { hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, ex: {'2.7': 13} },
+        'PT':  { hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, ex: {} },
+        'PMT': { hasSub: false, maxCh: 10, defPas: 10, ex: {} },
+        'NAT': { hasSub: false, maxCh: 14, defPas: 10, ex: {} }
     };
 
-    function getLimit(prefix, ch, sub) {
-        const config = PRABANDHAM_CONFIG[prefix];
-        if (!config) return 11;
-        const key = `${ch}.${sub}`;
-        return config.exceptions[key] || config.defaultPasurams;
+    function getLimit(pre, ch, sub) {
+        const c = CONFIG[pre];
+        const key = c.hasSub ? `${ch}.${sub}` : `${ch}`;
+        return c.ex[key] || c.defPas;
     }
 
     function playAudio() {
-        const prefix = document.getElementById('prefix').value;
-        const number = document.getElementById('number').value.trim();
+        const pre = document.getElementById('prefix').value;
+        const num = document.getElementById('number').value.trim();
         const player = document.getElementById('audioPlayer');
         const status = document.getElementById('status');
 
-        const finalUrl = `https://www.uveda.org/media/recitation/${prefix}.${number}.mp3`;
-        status.innerText = "Playing: " + prefix + " " + number;
+        const url = `https://www.uveda.org/media/recitation/${pre}.${num}.mp3`;
+        status.innerText = "Playing: " + pre + " " + num;
         
-        player.src = finalUrl;
+        player.src = url;
         player.load();
         player.play().catch(() => {
-            status.innerText = "Error: File not found for " + number;
+            status.innerText = "File not found: " + num;
         });
     }
 
-    function navigate(direction) {
+    function navigate(dir) {
         const input = document.getElementById('number');
-        const prefix = document.getElementById('prefix').value;
-        const config = PRABANDHAM_CONFIG[prefix];
-        let [ch, sub, pas] = input.value.split('.').map(Number);
+        const pre = document.getElementById('prefix').value;
+        const c = CONFIG[pre];
+        let parts = input.value.split('.').map(Number);
         
-        pas += direction;
+        let ch, sub, pas;
+        if (c.hasSub) {
+            [ch, sub, pas] = parts;
+        } else {
+            [ch, pas] = parts;
+            sub = 0; 
+        }
+        
+        pas += dir;
 
-        // Next Logic
-        if (direction === 1) {
-            if (pas > getLimit(prefix, ch, sub)) {
+        if (dir === 1) { // Next
+            if (pas > getLimit(pre, ch, sub)) {
                 pas = 1;
-                sub++;
-            }
-            if (sub > config.maxSubs) {
-                sub = 1;
-                ch++;
-            }
-            if (ch > config.maxChapters) {
-                ch = config.maxChapters; // Stay at end
-                sub = config.maxSubs;
-                pas = getLimit(prefix, ch, sub);
-            }
-        } 
-        // Prev Logic
-        else {
-            if (pas < 1) {
-                sub--;
-                if (sub < 1) {
-                    if (ch > 1) {
-                        ch--;
-                        sub = config.maxSubs;
-                        pas = getLimit(prefix, ch, sub);
-                    } else {
-                        ch = 1; sub = 1; pas = 1;
-                    }
+                if (c.hasSub) {
+                    sub++;
+                    if (sub > c.maxSub) { sub = 1; ch++; }
                 } else {
-                    pas = getLimit(prefix, ch, sub);
+                    ch++;
+                }
+            }
+            if (ch > c.maxCh) ch = c.maxCh;
+        } else { // Prev
+            if (pas < 1) {
+                if (c.hasSub) {
+                    sub--;
+                    if (sub < 1) {
+                        if (ch > 1) { ch--; sub = c.maxSub; pas = getLimit(pre, ch, sub); }
+                        else { ch = 1; sub = 1; pas = 1; }
+                    } else { pas = getLimit(pre, ch, sub); }
+                } else {
+                    if (ch > 1) { ch--; pas = getLimit(pre, ch, 0); }
+                    else { ch = 1; pas = 1; }
                 }
             }
         }
 
-        input.value = `${ch}.${sub}.${pas}`;
+        input.value = c.hasSub ? `${ch}.${sub}.${pas}` : `${ch}.${pas}`;
         playAudio();
     }
 
     function resetToStart() {
-        document.getElementById('number').value = "1.1.1";
+        const pre = document.getElementById('prefix').value;
+        const label = document.getElementById('numLabel');
+        const input = document.getElementById('number');
+        
+        if (CONFIG[pre].hasSub) {
+            label.innerText = "Number (Ch.Sub.Pasuram)";
+            input.value = "1.1.1";
+        } else {
+            label.innerText = "Number (Chapter.Pasuram)";
+            input.value = "1.1";
+        }
     }
 </script>
 
