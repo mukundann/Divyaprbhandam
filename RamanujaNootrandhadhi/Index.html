@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ramanuja Nootrandhadhi Highlighter</title>
+    <style>
+        :root { --temple-red: #8b0000; --parchment: #fdf6e3; --text: #2c1810; }
+        body { font-family: 'Segoe UI', serif; background-color: var(--parchment); color: var(--text); padding: 15px; margin: 0; }
+        .container { max-width: 600px; margin: 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 8px solid var(--temple-red); }
+        h1 { text-align: center; color: var(--temple-red); font-size: 1.5rem; }
+        .search-area { display: flex; gap: 10px; margin: 25px 0; }
+        input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+        button { padding: 12px 20px; background: var(--temple-red); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        #output { display: none; animation: fadeIn 0.4s ease; }
+        .tamil-verse { background: #fffcf0; padding: 20px; border-left: 5px solid #e0c068; font-size: 1.2rem; line-height: 1.8; margin-bottom: 20px; white-space: pre-line; }
+        .notes-area { background: #f4f4f4; padding: 15px; border-radius: 6px; font-style: italic; color: #444; }
+        .label { font-size: 0.8rem; font-weight: bold; color: var(--temple-red); text-transform: uppercase; margin-bottom: 5px; display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>இராமானுச நூற்றந்தாதி</h1>
+    
+    <div class="search-area">
+        <input type="number" id="pInput" placeholder="Enter number (1-108)" min="1" max="108">
+        <button onclick="loadPasuram()">Search</button>
+    </div>
+
+    <div id="output">
+        <span class="label">Pasuram Number</span>
+        <h2 id="pNum" style="margin: 0 0 15px 0;"></h2>
+        
+        <span class="label">Tamil Text</span>
+        <div class="tamil-verse" id="pTamil"></div>
+        
+        <span class="label">My Personal Notes</span>
+        <div class="notes-area" id="pNotes"></div>
+    </div>
+</div>
+
+<script src="database.js"></script>
+<script>
+    function loadPasuram() {
+        const num = document.getElementById('pInput').value;
+        const entry = pasuramData[num];
+        const out = document.getElementById('output');
+
+        if (entry) {
+            out.style.display = 'block';
+            document.getElementById('pNum').innerText = "#" + num;
+            document.getElementById('pTamil').innerText = entry.tamil;
+            document.getElementById('pNotes').innerText = entry.notes || "No notes added yet for this pasuram.";
+        } else {
+            alert("Please enter a valid number between 1 and 108");
+        }
+    }
+</script>
+
+</body>
+</html>
