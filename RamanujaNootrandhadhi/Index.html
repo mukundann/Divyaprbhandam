@@ -8,30 +8,35 @@
         :root { --temple-red: #8b0000; --parchment: #fdf6e3; --text: #2c1810; }
         body { font-family: 'Segoe UI', serif; background-color: var(--parchment); color: var(--text); padding: 15px; margin: 0; }
         .container { max-width: 600px; margin: 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 8px solid var(--temple-red); }
-        h1 { text-align: center; color: var(--temple-red); font-size: 1.5rem; }
-        .search-area { display: flex; gap: 10px; margin: 25px 0; }
-        input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
-        button { padding: 12px 20px; background: var(--temple-red); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        #output { display: none; animation: fadeIn 0.4s ease; }
-        .tamil-verse { background: #fffcf0; padding: 20px; border-left: 5px solid #e0c068; font-size: 1.2rem; line-height: 1.8; margin-bottom: 20px; white-space: pre-line; }
-        .notes-area { background: #f4f4f4; padding: 15px; border-radius: 6px; font-style: italic; color: #444; }
+        h1 { text-align: center; color: var(--temple-red); font-size: 1.5rem; margin-bottom: 5px; }
+        
+        /* Navigation Menu Styles */
+        .nav-menu { display: flex; justify-content: space-between; align-items: center; margin: 20px 0; gap: 10px; }
+        .nav-btn { padding: 10px 15px; background: var(--temple-red); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; flex: 1; transition: opacity 0.2s; }
+        .nav-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .search-input { flex: 2; padding: 10px; border: 1px solid #ccc; border-radius: 6px; text-align: center; font-size: 16px; }
+
+        #output { border-top: 2px dashed #eee; padding-top: 20px; }
+        .tamil-verse { background: #fffcf0; padding: 20px; border-left: 5px solid #e0c068; font-size: 1.2rem; line-height: 1.8; margin-bottom: 20px; white-space: pre-line; min-height: 100px; }
+        .notes-area { background: #f4f4f4; padding: 15px; border-radius: 6px; font-style: italic; color: #444; min-height: 50px; }
         .label { font-size: 0.8rem; font-weight: bold; color: var(--temple-red); text-transform: uppercase; margin-bottom: 5px; display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>இராமானுச நூற்றந்தாதி</h1>
+    <p style="text-align:center; font-size: 0.9rem; margin-top:0;">Daily Anubhavam</p>
     
-    <div class="search-area">
-        <input type="number" id="pInput" placeholder="Enter number (1-108)" min="1" max="108">
-        <button onclick="loadPasuram()">Search</button>
+    <div class="nav-menu">
+        <button class="nav-btn" id="prevBtn" onclick="changePasuram(-1)">← Prev</button>
+        <input type="number" id="pInput" class="search-input" placeholder="#" min="1" max="108" onchange="loadFromInput()">
+        <button class="nav-btn" id="nextBtn" onclick="changePasuram(1)">Next →</button>
     </div>
 
     <div id="output">
         <span class="label">Pasuram Number</span>
-        <h2 id="pNum" style="margin: 0 0 15px 0;"></h2>
+        <h2 id="pNum" style="margin: 0 0 15px 0;">#1</h2>
         
         <span class="label">Tamil Text</span>
         <div class="tamil-verse" id="pTamil"></div>
@@ -43,18 +48,39 @@
 
 <script src="database.js"></script>
 <script>
-    function loadPasuram() {
-        const num = document.getElementById('pInput').value;
-        const entry = pasuramData[num];
-        const out = document.getElementById('output');
+    let currentId = 1;
 
+    // Load the first pasuram on startup
+    window.onload = () => {
+        displayPasuram(currentId);
+    };
+
+    function displayPasuram(id) {
+        const entry = pasuramData[id];
         if (entry) {
-            out.style.display = 'block';
-            document.getElementById('pNum').innerText = "#" + num;
+            currentId = parseInt(id);
+            document.getElementById('pNum').innerText = "#" + id;
             document.getElementById('pTamil').innerText = entry.tamil;
-            document.getElementById('pNotes').innerText = entry.notes || "No notes added yet for this pasuram.";
-        } else {
-            alert("Please enter a valid number between 1 and 108");
+            document.getElementById('pNotes').innerText = entry.notes || "No notes added yet.";
+            document.getElementById('pInput').value = id;
+            
+            // Update button states
+            document.getElementById('prevBtn').disabled = (currentId <= 1);
+            document.getElementById('nextBtn').disabled = (currentId >= 108);
+        }
+    }
+
+    function changePasuram(step) {
+        const nextId = currentId + step;
+        if (nextId >= 1 && nextId <= 108) {
+            displayPasuram(nextId);
+        }
+    }
+
+    function loadFromInput() {
+        const val = document.getElementById('pInput').value;
+        if (val >= 1 && val <= 108) {
+            displayPasuram(val);
         }
     }
 </script>
