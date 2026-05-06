@@ -122,4 +122,4 @@ id: 1,
   }
 ];
 
-
+export const pasuramData;
