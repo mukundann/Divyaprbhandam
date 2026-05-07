@@ -558,15 +558,7 @@ const pasuramData = [
   ];
 
  if (typeof pasuramNotes !== 'undefined') {
-    Object.keys(pasuramData).forEach(id => {
-        if (pasuramNotes[id]) {
-            pasuramData[id].notes = pasuramNotes[id];
-        }
-    });
-
-
-
-   Object.keys(pasuramData).forEach(id => {
+ Object.keys(pasuramData).forEach(id => {
         // If a note exists in notes.js, overwrite the original
         if (pasuramNotes[id]) {
             pasuramData[id].notes = pasuramNotes[id];
@@ -575,5 +567,10 @@ const pasuramData = [
             // to ensure no "stale" data is shown.
             pasuramData[id].notes = ""; 
         }
+    });
+
+
+
+   
  }
 
