@@ -1,3 +1,27 @@
+
+
+// database.js
+const pasuramData = [
+    { "id": "1", "tamil": "...", "notes": "ignore" },
+    // ...
+];
+
+/**
+ * Sync notes by matching ID fields between the two existing arrays.
+ */
+if (typeof pasuramNotes !== 'undefined') {
+    // 1. Wipe original notes
+    pasuramData.forEach(p => { p.notes = ""; });
+
+    // 2. Direct match and update using the existing array reference
+    pasuramNotes.forEach(n => {
+        if (pasuramData.find(p => p.id === n.id)) {
+            pasuramData.find(p => p.id === n.id).notes = n.note;
+        }
+    });
+}
+
+
 const pasuramData = [
 
   {
