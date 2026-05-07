@@ -574,18 +574,28 @@ if (Array.isArray(pasuramData)) {
     console.log("Re-indexing complete. First ID is now:", pasuramData[0].id);
     console.log("Total count:", pasuramData.length);
 }
+
+
 /**
- * Sync notes by matching ID fields between the two existing arrays.
+ * THE MAPPING ENGINE
+ * Connects pasuramNotes (Array) to pasuramData (Array) via ID
  */
-if (typeof pasuramNotes !== 'undefined') {
-    // 1. Wipe original notes
+if (typeof pasuramNotes !== 'undefined' && Array.isArray(pasuramNotes)) {
+    
+    // 1. Clear any placeholder notes from database.js
     pasuramData.forEach(p => { p.notes = ""; });
 
-    // 2. Direct match and update using the existing array reference
-    pasuramNotes.forEach(n => {
-        if (pasuramData.find(p => p.id === n.id)) {
-            pasuramData.find(p => p.id === n.id).notes = n.note;
+    // 2. Perform the Map
+    // We loop through the database and "pull" the note from the notes array
+    pasuramData.forEach(p => {
+        // Find the note object where the 'id' matches the pasuram's 'id'
+        const foundNote = pasuramNotes.find(n => String(n.id) === String(p.id));
+        
+        if (foundNote) {
+            p.notes = foundNote.note;
         }
     });
+
+    console.log("Mapping successful: Notes synced via ID strings.");
 }
 
