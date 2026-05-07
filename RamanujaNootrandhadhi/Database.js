@@ -568,7 +568,7 @@ if (Array.isArray(pasuramData)) {
     pasuramData.forEach((item, index) => {
         // Sets the id to match the position (Index 0 becomes ID 1)
         // We convert to String to ensure consistent matching with notes.js
-        item.id = String(index + 1);
+        item.id = String(index );
     });
 
     console.log("Re-indexing complete. First ID is now:", pasuramData[0].id);
