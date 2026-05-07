@@ -1,25 +1,7 @@
 
 
-// database.js
-const pasuramData = [
-    { "id": "1", "tamil": "...", "notes": "ignore" },
-    // ...
-];
 
-/**
- * Sync notes by matching ID fields between the two existing arrays.
- */
-if (typeof pasuramNotes !== 'undefined') {
-    // 1. Wipe original notes
-    pasuramData.forEach(p => { p.notes = ""; });
 
-    // 2. Direct match and update using the existing array reference
-    pasuramNotes.forEach(n => {
-        if (pasuramData.find(p => p.id === n.id)) {
-            pasuramData.find(p => p.id === n.id).notes = n.note;
-        }
-    });
-}
 
 
 const pasuramData = [
@@ -582,52 +564,18 @@ const pasuramData = [
   ];
 
 
-
-if (typeof pasuramNotes !== 'undefined') {
-    // 1. Wipe old notes
-    Object.keys(pasuramData).forEach(key => {
-        pasuramData[key].notes = ""; 
-    });
-
-    // 2. Loop through array to match by ID field
-    pasuramNotes.forEach(item => {
-        if (pasuramData[item.id]) {
-            pasuramData[item.id].notes = item.note;
-        }
-    });
-}
-h
-
-
-// database.js
-const pasuramData = [
-    { "id": "1", "tamil": "பூமன்னு மாது...", "notes": "ignore" },
-    { "id": "2", "tamil": "கள் ஆர் பொழில்...", "notes": "ignore" },
-    // ...
-];
-
 /**
- * ARRAY-BASED MATCHING:
- * Since pasuramData is an array, we find the matching ID 
- * in the pasuramNotes array and update the values.
+ * Sync notes by matching ID fields between the two existing arrays.
  */
-if (typeof pasuramNotes !== 'undefined' && Array.isArray(pasuramNotes)) {
-    
-    // 1. First, clear all existing notes in the array
-    pasuramData.forEach(item => {
-        item.notes = "";
-    });
+if (typeof pasuramNotes !== 'undefined') {
+    // 1. Wipe original notes
+    pasuramData.forEach(p => { p.notes = ""; });
 
-    // 2. Map notes from notes.js array to database.js array by matching IDs
-    pasuramNotes.forEach(noteItem => {
-        // Find the corresponding object in the pasuramData array
-        const targetPasuram = pasuramData.find(p => String(p.id) === String(noteItem.id));
-        
-        if (targetPasuram) {
-            targetPasuram.notes = noteItem.note;
+    // 2. Direct match and update using the existing array reference
+    pasuramNotes.forEach(n => {
+        if (pasuramData.find(p => p.id === n.id)) {
+            pasuramData.find(p => p.id === n.id).notes = n.note;
         }
     });
-    
-    console.log("Array sync complete. Total items:", pasuramData.length);
 }
 
