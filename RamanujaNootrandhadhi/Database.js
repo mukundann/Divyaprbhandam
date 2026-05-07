@@ -556,22 +556,9 @@ const pasuramData = [
     "tamil": "அங்கயல்பாய்வயல்தென்னரங்கன் *அணியாகமன்னும் பங்கயமாமலர்ப்பாவையைப்போற்றுதும் *பத்தியெல்லாம் தங்கியதென்னத்தழைத்துநெஞ்சே! நம்தலைமிசையே பொங்கியகீர்த்தி *இராமாநுசன் அடிப் பூமன்னவே.",
   }
   ];
-/*
- if (typeof pasuramNotes !== 'undefined') {
- Object.keys(pasuramData).forEach(id => {
-        // If a note exists in notes.js, overwrite the original
-        if (pasuramNotes[id]) {
-            pasuramData[id].notes = pasuramNotes[id];
-        } else {
-            // Optional: If no note exists in notes.js, clear the original JSON note
-            // to ensure no "stale" data is shown.
-            pasuramData[id].notes = ""; 
-        }
-    });
 
 
 
-   */
 if (typeof pasuramNotes !== 'undefined') {
     // 1. Wipe old notes
     Object.keys(pasuramData).forEach(key => {
@@ -587,5 +574,5 @@ if (typeof pasuramNotes !== 'undefined') {
 }
 
    
- }
+ 
 
