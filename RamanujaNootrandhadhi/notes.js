@@ -1,5 +1,5 @@
 // notes.js - Complete 108 Notes for Ramanuja Nootrandhadhi
-const pasuramNotes = {
+const pasuramNotes = [
   {
     "id": 4,
     "note": "Introductory verse. Amudanar praises Ramanuja for surrendering to Nammalwar (Maaran), the composer of Tiruvaimozhi."
@@ -432,4 +432,4 @@ const pasuramNotes = {
     "id": 111,
     "note": "Let us praise naachiyar and the Lord of Srirangam, while the glorious feet of Ramanuja reside forever upon our heads."
   }
-};
+];
