@@ -572,7 +572,3 @@ if (typeof pasuramNotes !== 'undefined') {
         }
     });
 }
-
-   
- 
-
