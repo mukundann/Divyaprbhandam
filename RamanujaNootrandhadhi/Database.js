@@ -554,10 +554,14 @@ const pasuramData = [
   {
     "id": 108,
     "tamil": "அங்கயல்பாய்வயல்தென்னரங்கன் *அணியாகமன்னும் பங்கயமாமலர்ப்பாவையைப்போற்றுதும் *பத்தியெல்லாம் தங்கியதென்னத்தழைத்துநெஞ்சே! நம்தலைமிசையே பொங்கியகீர்த்தி *இராமாநுசன் அடிப் பூமன்னவே.",
-    "if (typeof pasuramNotes !== 'undefined') {
+  }
+  ];
+
+ if (typeof pasuramNotes !== 'undefined') {
     Object.keys(pasuramData).forEach(id => {
         if (pasuramNotes[id]) {
             pasuramData[id].notes = pasuramNotes[id];
         }
     });
-];
+ }
+
