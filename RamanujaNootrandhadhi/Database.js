@@ -563,5 +563,17 @@ const pasuramData = [
             pasuramData[id].notes = pasuramNotes[id];
         }
     });
+
+
+
+   Object.keys(pasuramData).forEach(id => {
+        // If a note exists in notes.js, overwrite the original
+        if (pasuramNotes[id]) {
+            pasuramData[id].notes = pasuramNotes[id];
+        } else {
+            // Optional: If no note exists in notes.js, clear the original JSON note
+            // to ensure no "stale" data is shown.
+            pasuramData[id].notes = ""; 
+        }
  }
 
