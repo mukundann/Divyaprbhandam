@@ -49,7 +49,7 @@
     <script src="notes.js"></script>
 <script src="Database.js"></script>
 <script>
-    let currentId = 1;
+    let currentId = 0;
 
     // Load the first pasuram on startup
     window.onload = () => {
@@ -66,14 +66,14 @@
             document.getElementById('pInput').value = id;
             
             // Update button states
-            document.getElementById('prevBtn').disabled = (currentId <= 1);
-            document.getElementById('nextBtn').disabled = (currentId >= 108);
+            document.getElementById('prevBtn').disabled = (currentId <= 0);
+            document.getElementById('nextBtn').disabled = (currentId >= 112);
         }
     }
 
     function changePasuram(step) {
         const nextId = currentId + step;
-        if (nextId >= 1 && nextId <= 108) {
+        if (nextId >= 1 && nextId <= 112) {
             displayPasuram(nextId);
         }
     }
