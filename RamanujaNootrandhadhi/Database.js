@@ -5,7 +5,7 @@
 
 
 const pasuramData = [
-  {},
+
 
   {
     "id": 1,
