@@ -572,3 +572,38 @@ if (typeof pasuramNotes !== 'undefined') {
         }
     });
 }
+h
+
+
+// database.js
+const pasuramData = [
+    { "id": "1", "tamil": "பூமன்னு மாது...", "notes": "ignore" },
+    { "id": "2", "tamil": "கள் ஆர் பொழில்...", "notes": "ignore" },
+    // ...
+];
+
+/**
+ * ARRAY-BASED MATCHING:
+ * Since pasuramData is an array, we find the matching ID 
+ * in the pasuramNotes array and update the values.
+ */
+if (typeof pasuramNotes !== 'undefined' && Array.isArray(pasuramNotes)) {
+    
+    // 1. First, clear all existing notes in the array
+    pasuramData.forEach(item => {
+        item.notes = "";
+    });
+
+    // 2. Map notes from notes.js array to database.js array by matching IDs
+    pasuramNotes.forEach(noteItem => {
+        // Find the corresponding object in the pasuramData array
+        const targetPasuram = pasuramData.find(p => String(p.id) === String(noteItem.id));
+        
+        if (targetPasuram) {
+            targetPasuram.notes = noteItem.note;
+        }
+    });
+    
+    console.log("Array sync complete. Total items:", pasuramData.length);
+}
+
