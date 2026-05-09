@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Divya Prabhandam Anusandhanam</title>
-    <!-- IMPORT THE CONFIG FILE HERE -->
+    <title>Prabandham Learner</title>
     <script src="marker.js"></script>
-    
     <style>
         :root { --primary: #0070ba; --secondary: #f4f7f9; --dark: #2d3436; }
         body { font-family: -apple-system, sans-serif; background: var(--secondary); display: flex; justify-content: center; padding: 20px; margin: 0; }
@@ -31,8 +29,8 @@
     <h2>Prabandham Learner</h2>
 
     <div class="section">
-        <label>1. Selection</label>
-        <select id="prefix">
+        <label>Selection</label>
+        <select id="prefix" onchange="syncInputFormat()">
             <option value="TVM">Thiruvaimozhi (TVM)</option>
             <option value="PT">Periya Thirumozhi (PT)</option>
             <option value="PMT">Perumal Thirumozhi (PMT)</option>
@@ -42,7 +40,7 @@
     </div>
 
     <div class="section">
-        <label>2. Learning Mode</label>
+        <label>Learning Mode</label>
         <div class="mode-grid">
             <button class="mode-btn active" id="btn-line" onclick="setMode('line')">Line</button>
             <button class="mode-btn" id="btn-couplet" onclick="setMode('couplet')">Couplet</button>
@@ -72,6 +70,7 @@
     let currentLineIndex = 0;
     let repeatsDone = 0;
     let currentMode = 'line';
+    let monitorInterval = null;
     const player = document.getElementById('audioPlayer');
 
     function setMode(mode) {
@@ -84,20 +83,29 @@
     function resetProgress() {
         currentLineIndex = 0;
         repeatsDone = 0;
+        if(monitorInterval) clearInterval(monitorInterval);
+    }
+
+    function syncInputFormat() {
+        const pre = document.getElementById('prefix').value;
+        const config = window.PASURAM_STRUCTURE[pre];
+        document.getElementById('number').value = config.hasSub ? "1.1.1" : "1.1";
+        resetProgress();
     }
 
     function startLearning() {
         const pre = document.getElementById('prefix').value;
         const num = document.getElementById('number').value.trim();
         const key = `${pre}.${num}`;
-        
-        // Accessing the data from the external marker.js
-        const database = window.MARKER_DATABASE;
+        const db = window.MARKER_DATABASE;
         
         player.src = `https://www.uveda.org/media/recitation/${pre}.${num}.mp3`;
         
-        if (!database || !database[key]) {
-            document.getElementById('subStatus').innerText = "Markers not found in marker.js";
+        if (currentMode === 'full' || !db || !db[key]) {
+            // Full play mode or missing markers
+            document.getElementById('lineIndicator').innerText = "Full Pasuram";
+            document.getElementById('subStatus').innerText = "Playing continuously";
+            if(monitorInterval) clearInterval(monitorInterval);
             player.play();
         } else {
             resetProgress();
@@ -111,28 +119,26 @@
         const markers = window.MARKER_DATABASE[`${pre}.${num}`];
         const limit = parseInt(document.getElementById('repeatLimit').value);
 
-        let start = markers[currentLineIndex];
-        let end;
+        if (!markers) return;
 
-        if (currentMode === 'line') {
-            end = markers[currentLineIndex + 1];
-            document.getElementById('lineIndicator').innerText = `Line ${currentLineIndex + 1}`;
-        } else if (currentMode === 'couplet') {
-            end = markers[Math.min(currentLineIndex + 2, markers.length - 1)];
-            document.getElementById('lineIndicator').innerText = `Lines ${currentLineIndex + 1}-${currentLineIndex + 2}`;
-        } else {
-            start = markers[0];
-            end = markers[markers.length - 1];
-            document.getElementById('lineIndicator').innerText = `Full Pasuram`;
-        }
+        let start = markers[currentLineIndex];
+        let end = (currentMode === 'line') 
+                  ? markers[currentLineIndex + 1] 
+                  : markers[Math.min(currentLineIndex + 2, markers.length - 1)];
+
+        document.getElementById('lineIndicator').innerText = (currentMode === 'line') 
+            ? `Line ${currentLineIndex + 1}` 
+            : `Lines ${currentLineIndex + 1}-${currentLineIndex + 2}`;
 
         player.currentTime = start;
         player.play();
 
-        const monitor = setInterval(() => {
+        if(monitorInterval) clearInterval(monitorInterval);
+        
+        monitorInterval = setInterval(() => {
             if (player.currentTime >= end) {
                 player.pause();
-                clearInterval(monitor);
+                clearInterval(monitorInterval);
                 repeatsDone++;
                 if (repeatsDone < limit) {
                     document.getElementById('subStatus').innerText = `Repeat ${repeatsDone + 1}/${limit}`;
@@ -147,17 +153,17 @@
 
     function advance(markers) {
         const step = (currentMode === 'couplet') ? 2 : 1;
-        if (currentMode === 'full') return;
-
         currentLineIndex += step;
         if (currentLineIndex < markers.length - 1) {
+            document.getElementById('subStatus').innerText = "Next segment...";
             playSegment();
         } else {
-            document.getElementById('subStatus').innerText = "Complete!";
+            document.getElementById('subStatus').innerText = "Pasuram Complete!";
         }
     }
 
     function changeLine(dir) {
+        if(currentMode === 'full') return;
         currentLineIndex = Math.max(0, currentLineIndex + dir);
         repeatsDone = 0;
         playSegment();
