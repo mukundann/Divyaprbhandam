@@ -11,17 +11,13 @@
         .input-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.8rem; margin-bottom: 4px; color: #4b4f56; font-weight: 600; }
         select, input { width: 100%; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-        
         .learning-controls { background: #f9fafb; border: 1px solid #e4e6eb; padding: 15px; border-radius: 12px; margin: 15px 0; }
         .flex-row { display: flex; gap: 10px; align-items: center; }
-        
         .nav-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 15px; }
         button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-play { background-color: #0070ba; color: white; grid-column: span 3; margin-bottom: 5px; }
         .btn-nav { background-color: #e4e6eb; color: #050505; font-size: 0.75rem; }
-        
         .active-mode { background-color: #0070ba !important; color: white !important; }
-        
         audio { width: 100%; margin-top: 15px; }
         .status { margin-top: 10px; font-size: 0.75rem; font-weight: bold; color: #0070ba; text-align: center; min-height: 1.5em; border-top: 1px solid #eee; padding-top: 10px; }
     </style>
@@ -117,6 +113,7 @@
     }
 
     function startLearning() {
+        console.log("Starting Learning - Resetting Counters");
         currentRepeatCount = 0;
         currentLineIndex = 0;
         playAudio();
@@ -143,6 +140,7 @@
             return;
         }
 
+        // Calculation assuming markers are internal cut points
         let start = (currentLineIndex === 0) ? 0 : markers[currentLineIndex - 1];
         let end = (learningMode === 'line') ? markers[currentLineIndex] : markers[currentLineIndex + 1];
 
@@ -150,15 +148,17 @@
         player.play();
 
         if (end === undefined) {
-            status.innerText = `Final Section | Playing to end...`;
+            status.innerText = `Final Section | Repeat ${currentRepeatCount + 1}/${limit}`;
+            console.log("Playing to end of file...");
         } else {
-            status.innerText = `Section ${Math.floor(currentLineIndex + 1)} | Repeat ${currentRepeatCount + 1}/${limit}`;
+            const displayIdx = Math.floor(currentLineIndex / (learningMode === 'couplet' ? 2 : 1) + 1);
+            status.innerText = `Section ${displayIdx} | Repeat ${currentRepeatCount + 1}/${limit}`;
             
             monitorInterval = setInterval(() => {
                 if (player.currentTime >= end) {
                     player.pause();
                     stopMonitor();
-                    handleSegmentEnd(markers, limit); // This was the missing function
+                    handleSegmentEnd(markers, limit);
                 }
             }, 30);
         }
@@ -167,8 +167,10 @@
     function handleSegmentEnd(markers, limit) {
         currentRepeatCount++;
         if (currentRepeatCount < limit) {
+            console.log("Repeating current segment...");
             playAudio(); 
         } else {
+            console.log("Repeat limit reached. Advancing line...");
             currentRepeatCount = 0;
             advanceLine(markers);
         }
@@ -178,13 +180,14 @@
         const step = (learningMode === 'couplet') ? 2 : 1;
         currentLineIndex += step;
 
-        if (currentLineIndex <= markers.length) {
+        // If we haven't exhausted the markers + the final segment
+        if (markers && currentLineIndex <= markers.length) {
             playAudio();
         } else {
             const autoNext = document.getElementById('autoNext').value === "true";
             if (autoNext) {
-                document.getElementById('status').innerText = "Next pasuram...";
-                setTimeout(() => navigate(1), 1000);
+                document.getElementById('status').innerText = "Pasuram Done. Advancing...";
+                setTimeout(() => navigate(1), 1200);
             } else {
                 document.getElementById('status').innerText = "Pasuram Complete.";
                 currentLineIndex = 0;
@@ -229,7 +232,8 @@
         }
 
         input.value = c.hasSub ? `${ch}.${sub}.${pas}` : `${ch}.${pas}`;
-        startLearning();
+        // CRITICAL: Call startLearning to reset counters for the new pasuram
+        startLearning(); 
     }
 
     function resetToStart() {
@@ -242,12 +246,14 @@
     }
 
     player.onended = function() {
+        console.log("Audio ended naturally.");
         const limit = parseInt(document.getElementById('repeatLimit').value) || 1;
         const pre = document.getElementById('prefix').value;
         const num = document.getElementById('number').value.trim();
         const markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[`${pre}.${num}`] : null;
 
-        if (learningMode === 'full' || !markers || currentLineIndex >= markers.length) {
+        // If in full mode or we reached the last segment of markers
+        if (learningMode === 'full' || !markers || currentLineIndex >= markers.length - 1) {
             handleSegmentEnd(markers, limit);
         }
     };
