@@ -71,13 +71,14 @@
         <button class="btn-nav" onclick="stopAudio()">Stop</button> 
         <button class="btn-nav" onclick="navigate(1)">Next</button>
     </div>
-<div id="recorder-ui" style="margin-top: 15px; border: 1px dashed #0070ba; padding: 10px; border-radius: 8px; background: #e7f3ff;">
-    <label style="color: #0070ba;">Marker Recorder (Press 'M' or Click Log)</label>
-    <div id="recorded-markers" style="font-family: monospace; font-size: 0.8rem; margin: 5px 0; color: #333;">[ ]</div>
-    <button class="btn-nav" style="width: 100%;" onclick="logMarker()">Log Current Time</button>
-    <button class="btn-nav" style="width: 100%; margin-top:5px; background:#fff;" onclick="clearMarkers()">Clear</button>
-</div>
+
     <audio id="audioPlayer" controls></audio>
+<div id="session-log-container" style="margin-top: 20px; border: 2px solid #0070ba; padding: 15px; border-radius: 12px; background: #fff;">
+    <h3 style="margin-top: 0; color: #0070ba; font-size: 1rem;">Session Results (marker.js format)</h3>
+    <textarea id="final-session-output" style="width: 100%; height: 200px; font-family: monospace; font-size: 0.75rem; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px;" readonly></textarea>
+    <button class="btn-nav" style="width: 100%; margin-top: 10px;" onclick="copySessionLog()">Copy All to Clipboard</button>
+</div>
+    
     <div id="status" class="status">Ready</div>
 </div>
 
@@ -245,36 +246,81 @@
 
     let fileHandle;
 
-async function getFileHandle() {
-    // This opens a window asking you to pick your marker.js file
-    [fileHandle] = await window.showOpenFilePicker();
-    alert("Linked to marker.js successfully!");
+let currentSessionData = {}; // Stores all markers for this session
+let activePasuramMarkers = []; // Stores markers for the CURRENT playing file
+
+function logMarker() {
+    const currentTime = parseFloat(player.currentTime.toFixed(2));
+    if (currentTime > 0) {
+        activePasuramMarkers.push(currentTime);
+        
+        // Update the small "live" display so you see it working
+        const pre = document.getElementById('prefix').value;
+        const num = document.getElementById('number').value.trim();
+        document.getElementById('recorded-markers').innerText = `Logging ${pre}.${num}: [${activePasuramMarkers.join(', ')}]`;
+    }
 }
 
-async function saveMarkersToFile() {
-    if (!fileHandle) {
-        alert("Please link the file first!");
-        return;
-    }
-    
-    // 1. Get current markers from UI
-    const newEntry = document.getElementById('recorded-markers').innerText;
-    
-    // 2. Read the existing file
-    const file = await fileHandle.getFile();
-    let content = await file.text();
-    
-    // 3. Simple logic to insert the new line before the closing bracket
-    if (content.includes('};')) {
-        content = content.replace('};', `    ${newEntry},\n};`);
-    }
+// This function "seals" the current markers and adds them to the big list
+function commitCurrentPasuram() {
+    if (activePasuramMarkers.length === 0) return;
 
-    // 4. Write back to the file
-    const writable = await fileHandle.createWritable();
-    await writable.write(content);
-    await writable.close();
-    alert("Saved to marker.js!");
+    const pre = document.getElementById('prefix').value;
+    const num = document.getElementById('number').value.trim();
+    const key = `${pre}.${num}`;
+
+    // Add to our session object
+    currentSessionData[key] = [...activePasuramMarkers];
+    
+    // Refresh the big text box
+    updateFinalOutput();
+    
+    // Clear for next pasuram
+    activePasuramMarkers = [];
+    console.log(`Committed markers for ${key}`);
 }
+
+function updateFinalOutput() {
+    const outputArea = document.getElementById('final-session-output');
+    let formattedText = "";
+    
+    for (const [key, markers] of Object.entries(currentSessionData)) {
+        formattedText += `    '${key}': [${markers.join(', ')}],\n`;
+    }
+    
+    outputArea.value = formattedText;
+}
+
+function copySessionLog() {
+    const outputArea = document.getElementById('final-session-output');
+    outputArea.select();
+    document.execCommand('copy');
+    alert("Markers copied! You can now paste them into marker.js");
+}
+
+// KEY FIX: Trigger "Commit" when the pasuram ends or changes
+player.onplay = function() {
+    // If we just navigated to a new file, the markers array should be empty.
+    // If it's NOT empty, it means we didn't commit the previous one.
+    // However, usually, we commit on 'onended'.
+};
+
+// Update your existing onended logic to include the commit
+const originalOnEnded = player.onended;
+player.onended = function() {
+    // 1. Save what we just recorded
+    commitCurrentPasuram();
+    
+    // 2. Run your existing navigation logic (Auto-advance)
+    if (typeof originalOnEnded === 'function') {
+        originalOnEnded();
+    }
+};
+
+// Support keyboard 'M' for logging
+window.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'm') logMarker();
+});
 
     function resetToStart() {
         const pre = document.getElementById('prefix').value;
