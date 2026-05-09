@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Divya Prabandham Sandhai</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; flex-direction: column; }
         .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
         h2 { text-align: center; color: #1c1e21; margin-top: 0; font-size: 1.3rem; }
         .input-group { margin-bottom: 12px; }
@@ -20,6 +20,11 @@
         .active-mode { background-color: #0070ba !important; color: white !important; }
         audio { width: 100%; margin-top: 15px; }
         .status { margin-top: 10px; font-size: 0.75rem; font-weight: bold; color: #0070ba; text-align: center; min-height: 1.5em; border-top: 1px solid #eee; padding-top: 10px; }
+        
+        /* Marker Studio Styles */
+        #session-log-container { width: 100%; max-width: 420px; margin-top: 20px; border: 2px solid #0070ba; padding: 15px; border-radius: 12px; background: #fff; }
+        textarea { width: 100%; height: 150px; font-family: monospace; font-size: 0.75rem; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px; resize: vertical; box-sizing: border-box; }
+        .recorder-hint { font-size: 0.7rem; color: #606770; text-align: center; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -38,7 +43,7 @@
     </div>
 
     <div class="input-group">
-        <label id="numLabel">Current Pasuram (Ch.Sub.Pas)</label>
+        <label id="numLabel">Current Pasuram</label>
         <input type="text" id="number" value="1.1.1" inputmode="decimal">
     </div>
 
@@ -73,13 +78,14 @@
     </div>
 
     <audio id="audioPlayer" controls></audio>
-<div id="session-log-container" style="margin-top: 20px; border: 2px solid #0070ba; padding: 15px; border-radius: 12px; background: #fff;">
-    <h3 style="margin-top: 0; color: #0070ba; font-size: 1rem;">Session Results (marker.js format)</h3>
-    <textarea id="final-session-output" style="width: 100%; height: 200px; font-family: monospace; font-size: 0.75rem; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px;" readonly></textarea>
-    <button class="btn-nav" style="width: 100%; margin-top: 10px;" onclick="copySessionLog()">Copy All to Clipboard</button>
-</div>
-    
     <div id="status" class="status">Ready</div>
+    <div id="recorded-markers" class="recorder-hint">Press 'M' to log marker</div>
+</div>
+
+<div id="session-log-container">
+    <h3 style="margin: 0 0 10px 0; color: #0070ba; font-size: 0.9rem;">Session Log (Paste into marker.js)</h3>
+    <textarea id="final-session-output" readonly placeholder="Your recorded markers will appear here after each pasuram ends..."></textarea>
+    <button class="btn-play" style="width: 100%; margin-top: 10px; font-size: 0.8rem;" onclick="copySessionLog()">COPY ALL MARKERS</button>
 </div>
 
 <script src="marker.js"></script>
@@ -97,6 +103,10 @@
     let learningMode = 'line'; 
     let monitorInterval = null;
     const player = document.getElementById('audioPlayer');
+
+    // --- SESSION RECORDER VARIABLES ---
+    let currentSessionData = {}; 
+    let activePasuramMarkers = []; 
 
     function setMode(mode) {
         learningMode = mode;
@@ -119,9 +129,9 @@
     }
 
     function startLearning() {
-        console.log("Starting Learning - Resetting Counters");
         currentRepeatCount = 0;
         currentLineIndex = 0;
+        activePasuramMarkers = []; // Clear current buffer for new start
         playAudio();
     }
 
@@ -135,8 +145,9 @@
         const key = `${pre}.${num}`;
         const markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[key] : null;
 
-        if (!player.src.includes(`${pre}.${num}.mp3`)) {
-            player.src = `https://www.uveda.org/media/recitation/${pre}.${num}.mp3`;
+        const targetSrc = `https://www.uveda.org/media/recitation/${pre}.${num}.mp3`;
+        if (player.src !== targetSrc) {
+            player.src = targetSrc;
             player.load();
         }
         
@@ -146,7 +157,6 @@
             return;
         }
 
-        // Calculation assuming markers are internal cut points
         let start = (currentLineIndex === 0) ? 0 : markers[currentLineIndex - 1];
         let end = (learningMode === 'line') ? markers[currentLineIndex] : markers[currentLineIndex + 1];
 
@@ -155,7 +165,6 @@
 
         if (end === undefined) {
             status.innerText = `Final Section | Repeat ${currentRepeatCount + 1}/${limit}`;
-            console.log("Playing to end of file...");
         } else {
             const displayIdx = Math.floor(currentLineIndex / (learningMode === 'couplet' ? 2 : 1) + 1);
             status.innerText = `Section ${displayIdx} | Repeat ${currentRepeatCount + 1}/${limit}`;
@@ -173,10 +182,8 @@
     function handleSegmentEnd(markers, limit) {
         currentRepeatCount++;
         if (currentRepeatCount < limit) {
-            console.log("Repeating current segment...");
             playAudio(); 
         } else {
-            console.log("Repeat limit reached. Advancing line...");
             currentRepeatCount = 0;
             advanceLine(markers);
         }
@@ -186,14 +193,13 @@
         const step = (learningMode === 'couplet') ? 2 : 1;
         currentLineIndex += step;
 
-        // If we haven't exhausted the markers + the final segment
         if (markers && currentLineIndex <= markers.length) {
             playAudio();
         } else {
             const autoNext = document.getElementById('autoNext').value === "true";
             if (autoNext) {
                 document.getElementById('status').innerText = "Pasuram Done. Advancing...";
-                setTimeout(() => navigate(1), 1200);
+                setTimeout(() => navigate(1), 1000);
             } else {
                 document.getElementById('status').innerText = "Pasuram Complete.";
                 currentLineIndex = 0;
@@ -221,7 +227,6 @@
                 if (c.hasSub) { sub++; if (sub > c.maxSub) { sub = 1; ch++; } } 
                 else { ch++; }
             }
-            if (ch > c.maxCh) ch = c.maxCh;
         } else {
             if (pas < 1) {
                 if (c.hasSub) {
@@ -238,89 +243,8 @@
         }
 
         input.value = c.hasSub ? `${ch}.${sub}.${pas}` : `${ch}.${pas}`;
-        // CRITICAL: Call startLearning to reset counters for the new pasuram
-        startLearning(); 
+        startLearning();
     }
-
-
-
-    let fileHandle;
-
-let currentSessionData = {}; // Stores all markers for this session
-let activePasuramMarkers = []; // Stores markers for the CURRENT playing file
-
-function logMarker() {
-    const currentTime = parseFloat(player.currentTime.toFixed(2));
-    if (currentTime > 0) {
-        activePasuramMarkers.push(currentTime);
-        
-        // Update the small "live" display so you see it working
-        const pre = document.getElementById('prefix').value;
-        const num = document.getElementById('number').value.trim();
-        document.getElementById('recorded-markers').innerText = `Logging ${pre}.${num}: [${activePasuramMarkers.join(', ')}]`;
-    }
-}
-
-// This function "seals" the current markers and adds them to the big list
-function commitCurrentPasuram() {
-    if (activePasuramMarkers.length === 0) return;
-
-    const pre = document.getElementById('prefix').value;
-    const num = document.getElementById('number').value.trim();
-    const key = `${pre}.${num}`;
-
-    // Add to our session object
-    currentSessionData[key] = [...activePasuramMarkers];
-    
-    // Refresh the big text box
-    updateFinalOutput();
-    
-    // Clear for next pasuram
-    activePasuramMarkers = [];
-    console.log(`Committed markers for ${key}`);
-}
-
-function updateFinalOutput() {
-    const outputArea = document.getElementById('final-session-output');
-    let formattedText = "";
-    
-    for (const [key, markers] of Object.entries(currentSessionData)) {
-        formattedText += `    '${key}': [${markers.join(', ')}],\n`;
-    }
-    
-    outputArea.value = formattedText;
-}
-
-function copySessionLog() {
-    const outputArea = document.getElementById('final-session-output');
-    outputArea.select();
-    document.execCommand('copy');
-    alert("Markers copied! You can now paste them into marker.js");
-}
-
-// KEY FIX: Trigger "Commit" when the pasuram ends or changes
-player.onplay = function() {
-    // If we just navigated to a new file, the markers array should be empty.
-    // If it's NOT empty, it means we didn't commit the previous one.
-    // However, usually, we commit on 'onended'.
-};
-
-// Update your existing onended logic to include the commit
-const originalOnEnded = player.onended;
-player.onended = function() {
-    // 1. Save what we just recorded
-    commitCurrentPasuram();
-    
-    // 2. Run your existing navigation logic (Auto-advance)
-    if (typeof originalOnEnded === 'function') {
-        originalOnEnded();
-    }
-};
-
-// Support keyboard 'M' for logging
-window.addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() === 'm') logMarker();
-});
 
     function resetToStart() {
         const pre = document.getElementById('prefix').value;
@@ -331,14 +255,60 @@ window.addEventListener('keydown', (e) => {
         else { label.innerText = "Current Pasuram (Ch.Pas)"; input.value = "1.1"; }
     }
 
+    // --- STUDIO RECORDER LOGIC ---
+    function logMarker() {
+        const currentTime = parseFloat(player.currentTime.toFixed(2));
+        const pre = document.getElementById('prefix').value;
+        const num = document.getElementById('number').value.trim();
+        if (currentTime > 0) {
+            activePasuramMarkers.push(currentTime);
+            document.getElementById('recorded-markers').innerText = `Logged ${activePasuramMarkers.length} markers for ${pre}.${num}`;
+            console.log(`Marker logged: ${currentTime}s`);
+        }
+    }
+
+    function commitCurrentPasuram() {
+        const pre = document.getElementById('prefix').value;
+        const num = document.getElementById('number').value.trim();
+        const key = `${pre}.${num}`;
+        if (activePasuramMarkers.length > 0) {
+            currentSessionData[key] = [...activePasuramMarkers];
+            updateFinalOutput();
+            activePasuramMarkers = []; 
+            console.log(`Committed ${key} to session log.`);
+        }
+    }
+
+    function updateFinalOutput() {
+        const outputArea = document.getElementById('final-session-output');
+        let formattedText = "";
+        for (const [key, markers] of Object.entries(currentSessionData)) {
+            formattedText += `    '${key}': [${markers.join(', ')}],\n`;
+        }
+        outputArea.value = formattedText;
+    }
+
+    function copySessionLog() {
+        const outputArea = document.getElementById('final-session-output');
+        outputArea.select();
+        document.execCommand('copy');
+        document.getElementById('status').innerText = "Copied to Clipboard!";
+    }
+
+    // Keyboard 'M' listener
+    window.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'm') {
+            logMarker();
+        }
+    });
+
     player.onended = function() {
-        console.log("Audio ended naturally.");
+        commitCurrentPasuram(); // Auto-save what was just logged
         const limit = parseInt(document.getElementById('repeatLimit').value) || 1;
         const pre = document.getElementById('prefix').value;
         const num = document.getElementById('number').value.trim();
         const markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[`${pre}.${num}`] : null;
 
-        // If in full mode or we reached the last segment of markers
         if (learningMode === 'full' || !markers || currentLineIndex >= markers.length - 1) {
             handleSegmentEnd(markers, limit);
         }
