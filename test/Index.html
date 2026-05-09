@@ -144,9 +144,7 @@
         }
 
         let start = (currentLineIndex === 0) ? 0 : markers[currentLineIndex - 1];
-        let end = (learningMode === 'line') 
-                  ? markers[currentLineIndex] 
-                  : markers[currentLineIndex + 1];
+        let end = (learningMode === 'line') ? markers[currentLineIndex] : markers[currentLineIndex + 1];
 
         player.currentTime = start;
         player.play();
@@ -154,14 +152,13 @@
         if (end === undefined) {
             status.innerText = `Final Section | Playing to end...`;
         } else {
-            const displayIdx = Math.floor(currentLineIndex / (learningMode === 'couplet' ? 2 : 1) + 1);
-            status.innerText = `Section ${displayIdx} | Repeat ${currentRepeatCount + 1}/${limit}`;
+            status.innerText = `Section ${Math.floor(currentLineIndex + 1)} | Repeat ${currentRepeatCount + 1}/${limit}`;
             
             monitorInterval = setInterval(() => {
                 if (player.currentTime >= end) {
                     player.pause();
                     stopMonitor();
-                    handleSegmentEnd(markers, limit);
+                    handleSegmentEnd(markers, limit); // This was the missing function
                 }
             }, 30);
         }
@@ -186,7 +183,7 @@
         } else {
             const autoNext = document.getElementById('autoNext').value === "true";
             if (autoNext) {
-                document.getElementById('status').innerText = "Moving to next pasuram...";
+                document.getElementById('status').innerText = "Next pasuram...";
                 setTimeout(() => navigate(1), 1000);
             } else {
                 document.getElementById('status').innerText = "Pasuram Complete.";
