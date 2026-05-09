@@ -124,70 +124,73 @@
         playAudio();
     }
 
-    function playAudio() {
-        stopMonitor();
-        const pre = document.getElementById('prefix').value;
-        const num = document.getElementById('number').value.trim();
-        const status = document.getElementById('status');
-        const limit = parseInt(document.getElementById('repeatLimit').value) || 1;
-        
-        const key = `${pre}.${num}`;
-        const markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[key] : null;
+   function playAudio() {
+    stopMonitor();
+    const pre = document.getElementById('prefix').value;
+    const num = document.getElementById('number').value.trim();
+    const status = document.getElementById('status');
+    const limit = parseInt(document.getElementById('repeatLimit').value) || 1;
+    
+    const key = `${pre}.${num}`;
+    const markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[key] : null;
 
-        // Construct URL
+    if (!player.src.includes(`${pre}.${num}.mp3`)) {
         player.src = `https://www.uveda.org/media/recitation/${pre}.${num}.mp3`;
-        
-        // Mode logic
-        if (learningMode === 'full' || !markers) {
-            status.innerText = markers ? `Playing ${num} (Full Mode)` : `Playing ${num} (No Markers Found)`;
-            player.play();
-            return;
-        }
-
-        // Marker-based segment logic
-        let start = markers[currentLineIndex];
-        let end = (learningMode === 'line') 
-                  ? markers[currentLineIndex + 1] 
-                  : markers[Math.min(currentLineIndex + 2, markers.length - 1)];
-
-        status.innerText = `Line ${currentLineIndex + 1} | Repeat ${currentRepeatCount + 1}/${limit}`;
-        
-        player.currentTime = start;
+    }
+    
+    if (learningMode === 'full' || !markers) {
+        status.innerText = `Full Pasuram | Repeat ${currentRepeatCount + 1}/${limit}`;
         player.play();
+        return;
+    }
 
-        // High-precision interval for markers
+    // --- NEW MARKER LOGIC ---
+    // Start: If index is 0, start at 0. Otherwise, start at the previous marker.
+    let start = (currentLineIndex === 0) ? 0 : markers[currentLineIndex - 1];
+    
+    // End: The marker at the current index. 
+    // If we've passed the last marker, 'end' becomes undefined (play to end of file).
+    let end = (learningMode === 'line') 
+              ? markers[currentLineIndex] 
+              : markers[currentLineIndex + 1];
+
+    player.currentTime = start;
+    player.play();
+
+    if (end === undefined) {
+        status.innerText = `Final Section | Playing to end...`;
+    } else {
+        status.innerText = `Section ${currentLineIndex + 1} | Repeat ${currentRepeatCount + 1}/${limit}`;
+        
         monitorInterval = setInterval(() => {
             if (player.currentTime >= end) {
                 player.pause();
                 stopMonitor();
-                
-                currentRepeatCount++;
-                if (currentRepeatCount < limit) {
-                    playAudio(); // Repeat the same segment
-                } else {
-                    currentRepeatCount = 0;
-                    advanceLine(markers);
-                }
+                handleSegmentEnd(markers, limit);
             }
         }, 30);
     }
+}
 
-    function advanceLine(markers) {
-        const step = (learningMode === 'couplet') ? 2 : 1;
-        currentLineIndex += step;
+  function advanceLine(markers) {
+    // If in couplet mode, we jump 2 markers at a time
+    const step = (learningMode === 'couplet') ? 2 : 1;
+    currentLineIndex += step;
 
-        if (currentLineIndex < markers.length - 1) {
-            playAudio();
+    // Check if we still have segments left to play
+    // Since markers are "end points," if index >= markers.length, we've finished the file.
+    if (currentLineIndex <= markers.length) {
+        playAudio();
+    } else {
+        const autoNext = document.getElementById('autoNext').value === "true";
+        if (autoNext) {
+            document.getElementById('status').innerText = "Moving to next pasuram...";
+            setTimeout(() => navigate(1), 1000);
         } else {
-            const autoNext = document.getElementById('autoNext').value === "true";
-            if (autoNext) {
-                document.getElementById('status').innerText = "Pasuram Done. Moving to next...";
-                setTimeout(() => navigate(1), 1000);
-            } else {
-                document.getElementById('status').innerText = "Pasuram Complete.";
-            }
+            document.getElementById('status').innerText = "Pasuram Complete.";
         }
     }
+}
 
     function navigate(dir) {
         stopMonitor();
