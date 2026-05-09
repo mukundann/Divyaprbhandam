@@ -11,6 +11,8 @@ window.PASURAM_STRUCTURE = {
 
 window.MARKER_DATABASE = {
     // Periya Thirumozhi (PT)
+        'PT.1.1.1': [6.57, 14.9, 22.25],
+
     'PT.1.1.6': [6,12,20],
 
       'PT.5.1.1': [3.61, 10.99, 17.75],
