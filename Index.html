@@ -172,6 +172,28 @@
     function togglePause() {
         player.paused ? player.play() : player.pause();
     }
+
+monitorInterval = setInterval(() => {
+    // This logs every 50ms so you can see the "race" toward the end
+    console.log(`Time: ${player.currentTime.toFixed(3)} | Target: ${end.toFixed(3)}`);
+
+    if (player.currentTime >= end) {
+        console.log("%c>>> TARGET HIT", "background: #222; color: #bada55; font-weight: bold;");
+        player.pause();
+        clearInterval(monitorInterval);
+        
+        // Log the repetition logic
+        console.log(`Repeat Count: ${repeatsDone + 1} of ${limit}`);
+        
+        if (repeatsDone < limit) {
+            playSegment();
+        } else {
+            console.log("Segment finished. Advancing...");
+            advance(markers);
+        }
+    }
+}, 50);
+    
 </script>
 
 </body>
