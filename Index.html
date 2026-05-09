@@ -3,198 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Divya Prabandham Sandhai</title>
+    <title>Divya Prabhandam Anusandhanam</title>
+    <!-- IMPORT THE CONFIG FILE HERE -->
+    <script src="marker.js"></script>
+    
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
-        h2 { text-align: center; color: #1c1e21; margin-top: 0; font-size: 1.3rem; }
-        .input-group { margin-bottom: 12px; }
-        label { display: block; font-size: 0.8rem; margin-bottom: 4px; color: #4b4f56; font-weight: 600; }
-        select, input { width: 100%; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-        
-        .learning-controls { background: #f9fafb; border: 1px solid #e4e6eb; padding: 15px; border-radius: 12px; margin: 15px 0; }
-        .flex-row { display: flex; gap: 10px; align-items: center; }
-        
-        .nav-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 15px; }
-        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-play { background-color: #0070ba; color: white; grid-column: span 3; }
-        .btn-nav { background-color: #e4e6eb; color: #050505; }
-        
-        audio { width: 100%; margin-top: 15px; }
-        .status { margin-top: 10px; font-size: 0.7rem; color: #90949c; text-align: center; }
+        :root { --primary: #0070ba; --secondary: #f4f7f9; --dark: #2d3436; }
+        body { font-family: -apple-system, sans-serif; background: var(--secondary); display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .card { background: white; width: 100%; max-width: 440px; padding: 25px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        .section { background: #f8f9fa; padding: 15px; border-radius: 16px; margin-bottom: 20px; border: 1px solid #edf2f7; }
+        label { display: block; font-size: 0.75rem; font-weight: 700; color: #7f8c8d; margin-bottom: 8px; text-transform: uppercase; }
+        select, input { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 16px; box-sizing: border-box; }
+        .mode-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .mode-btn { background: #edf2f7; border: none; padding: 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+        .mode-btn.active { background: var(--primary); color: white; }
+        .main-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 14px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-bottom: 12px; }
+        .nav-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .nav-btn { padding: 12px; border: none; border-radius: 10px; background: var(--dark); color: white; font-weight: 600; cursor: pointer; }
+        .status-area { text-align: center; margin-top: 20px; }
+        #lineIndicator { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
+        audio { width: 100%; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Divya Prabandham Anusandhanam</h2>
-    
-    <div class="input-group">
-        <label>Select Prabandham</label>
-        <select id="prefix" onchange="resetToStart()">
+    <h2>Prabandham Learner</h2>
+
+    <div class="section">
+        <label>1. Selection</label>
+        <select id="prefix">
             <option value="TVM">Thiruvaimozhi (TVM)</option>
             <option value="PT">Periya Thirumozhi (PT)</option>
             <option value="PMT">Perumal Thirumozhi (PMT)</option>
-            <option value="NAT">Naachiyar Thirumozhi (NAT)</option>
+            <option value="NAT">Naachiyar (NAT)</option>
         </select>
+        <input type="text" id="number" value="1.1.6" style="margin-top:10px;">
     </div>
 
-    <div class="input-group">
-        <label id="numLabel">Current Pasuram (Ch.Sub.Pas)</label>
-        <input type="text" id="number" value="1.1.1" inputmode="decimal">
-    </div>
-
-    <div class="learning-controls">
-        <label>Learning Settings</label>
-        <div class="flex-row">
-            <div style="flex: 1;">
-                <label style="font-weight: normal; font-size: 0.7rem;">Repeat Pasuram</label>
-                <input type="number" id="repeatLimit" value="1" min="1">
-            </div>
-            <div style="flex: 2;">
-                <label style="font-weight: normal; font-size: 0.7rem;">Auto-Advance</label>
-                <select id="autoNext">
-                    <option value="true">Yes, move to next</option>
-                    <option value="false">No, stop here</option>
-                </select>
-            </div>
+    <div class="section">
+        <label>2. Learning Mode</label>
+        <div class="mode-grid">
+            <button class="mode-btn active" id="btn-line" onclick="setMode('line')">Line</button>
+            <button class="mode-btn" id="btn-couplet" onclick="setMode('couplet')">Couplet</button>
+            <button class="mode-btn" id="btn-full" onclick="setMode('full')">Full</button>
         </div>
+        <label>Repeats per segment</label>
+        <input type="number" id="repeatLimit" value="3">
     </div>
 
-    <div class="nav-controls">
-        <button class="btn-play" onclick="startLearning()">Start / Play</button>
-        <button class="btn-nav" onclick="navigate(-1)">Prev</button>
-        <button class="btn-nav" onclick="stopAudio()">Stop</button> 
-        <button class="btn-nav" onclick="navigate(1)">Next</button>
+    <button class="main-btn" onclick="startLearning()">START RECITATION</button>
+
+    <div class="nav-grid">
+        <button class="nav-btn" onclick="changeLine(-1)">Prev</button>
+        <button class="nav-btn" onclick="togglePause()">Pause</button>
+        <button class="nav-btn" onclick="changeLine(1)">Next</button>
+    </div>
+
+    <div class="status-area">
+        <div id="lineIndicator">Line 1</div>
+        <div id="subStatus">Ready</div>
     </div>
 
     <audio id="audioPlayer" controls></audio>
-    <div id="status" class="status">Ready to learn</div>
 </div>
 
 <script>
-    const CONFIG = {
-        'TVM': { hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, ex: {'2.7': 13} },
-        'PT':  { hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, ex: {} },
-        'PMT': { hasSub: false, maxCh: 10, defPas: 10, ex: {} },
-        'NAT': { hasSub: false, maxCh: 14, defPas: 10, ex: {} }
-    };
-
-    let currentRepeatCount = 0;
+    let currentLineIndex = 0;
+    let repeatsDone = 0;
+    let currentMode = 'line';
     const player = document.getElementById('audioPlayer');
 
-    function getLimit(pre, ch, sub) {
-        const c = CONFIG[pre];
-        const key = c.hasSub ? `${ch}.${sub}` : `${ch}`;
-        return c.ex[key] || c.defPas;
+    function setMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + mode).classList.add('active');
+        resetProgress();
+    }
+
+    function resetProgress() {
+        currentLineIndex = 0;
+        repeatsDone = 0;
     }
 
     function startLearning() {
-        currentRepeatCount = 0;
-        playAudio();
-    }
-
-    function stopAudio() {
-        player.pause();
-        document.getElementById('status').innerText = "Stopped";
-    }
-
-    function playAudio() {
         const pre = document.getElementById('prefix').value;
         const num = document.getElementById('number').value.trim();
-        const status = document.getElementById('status');
-        const limit = document.getElementById('repeatLimit').value;
-
-        const url = `https://www.uveda.org/media/recitation/${pre}.${num}.mp3`;
-        status.innerText = `Playing ${num} (Repeat ${currentRepeatCount + 1} of ${limit})`;
+        const key = `${pre}.${num}`;
         
-        player.src = url;
-        player.load();
-        player.play().catch(() => {
-            status.innerText = "File not found: " + num;
-        });
+        // Accessing the data from the external marker.js
+        const database = window.MARKER_DATABASE;
+        
+        player.src = `https://www.uveda.org/media/recitation/${pre}.${num}.mp3`;
+        
+        if (!database || !database[key]) {
+            document.getElementById('subStatus').innerText = "Markers not found in marker.js";
+            player.play();
+        } else {
+            resetProgress();
+            playSegment();
+        }
     }
 
-    // Handle "End of Track" Logic
-    player.onended = function() {
+    function playSegment() {
+        const pre = document.getElementById('prefix').value;
+        const num = document.getElementById('number').value.trim();
+        const markers = window.MARKER_DATABASE[`${pre}.${num}`];
         const limit = parseInt(document.getElementById('repeatLimit').value);
-        const autoNext = document.getElementById('autoNext').value === "true";
-        
-        currentRepeatCount++;
 
-        if (currentRepeatCount < limit) {
-            // Repeat the same one
-            playAudio();
+        let start = markers[currentLineIndex];
+        let end;
+
+        if (currentMode === 'line') {
+            end = markers[currentLineIndex + 1];
+            document.getElementById('lineIndicator').innerText = `Line ${currentLineIndex + 1}`;
+        } else if (currentMode === 'couplet') {
+            end = markers[Math.min(currentLineIndex + 2, markers.length - 1)];
+            document.getElementById('lineIndicator').innerText = `Lines ${currentLineIndex + 1}-${currentLineIndex + 2}`;
         } else {
-            // Finished repeats for this pasuram
-            if (autoNext) {
-                currentRepeatCount = 0;
-                navigate(1);
-            } else {
-                document.getElementById('status').innerText = "Finished repeats.";
-            }
+            start = markers[0];
+            end = markers[markers.length - 1];
+            document.getElementById('lineIndicator').innerText = `Full Pasuram`;
         }
-    };
 
-    function navigate(dir) {
-        const input = document.getElementById('number');
-        const pre = document.getElementById('prefix').value;
-        const c = CONFIG[pre];
-        let parts = input.value.split('.').map(Number);
-        
-        let ch, sub, pas;
-        if (c.hasSub) {
-            [ch, sub, pas] = parts;
-        } else {
-            [ch, pas] = parts;
-            sub = 0; 
-        }
-        
-        pas += dir;
+        player.currentTime = start;
+        player.play();
 
-        if (dir === 1) { // Next
-            if (pas > getLimit(pre, ch, sub)) {
-                pas = 1;
-                if (c.hasSub) {
-                    sub++;
-                    if (sub > c.maxSub) { sub = 1; ch++; }
+        const monitor = setInterval(() => {
+            if (player.currentTime >= end) {
+                player.pause();
+                clearInterval(monitor);
+                repeatsDone++;
+                if (repeatsDone < limit) {
+                    document.getElementById('subStatus').innerText = `Repeat ${repeatsDone + 1}/${limit}`;
+                    playSegment();
                 } else {
-                    ch++;
+                    repeatsDone = 0;
+                    advance(markers);
                 }
             }
-            if (ch > c.maxCh) ch = c.maxCh;
-        } else { // Prev
-            if (pas < 1) {
-                if (c.hasSub) {
-                    sub--;
-                    if (sub < 1) {
-                        if (ch > 1) { ch--; sub = c.maxSub; pas = getLimit(pre, ch, sub); }
-                        else { ch = 1; sub = 1; pas = 1; }
-                    } else { pas = getLimit(pre, ch, sub); }
-                } else {
-                    if (ch > 1) { ch--; pas = getLimit(pre, ch, 0); }
-                    else { ch = 1; pas = 1; }
-                }
-            }
-        }
-
-        input.value = c.hasSub ? `${ch}.${sub}.${pas}` : `${ch}.${pas}`;
-        playAudio();
+        }, 50);
     }
 
-    function resetToStart() {
-        const pre = document.getElementById('prefix').value;
-        const label = document.getElementById('numLabel');
-        const input = document.getElementById('number');
-        currentRepeatCount = 0;
-        
-        if (CONFIG[pre].hasSub) {
-            label.innerText = "Current Pasuram (Ch.Sub.Pas)";
-            input.value = "1.1.1";
+    function advance(markers) {
+        const step = (currentMode === 'couplet') ? 2 : 1;
+        if (currentMode === 'full') return;
+
+        currentLineIndex += step;
+        if (currentLineIndex < markers.length - 1) {
+            playSegment();
         } else {
-            label.innerText = "Current Pasuram (Ch.Pas)";
-            input.value = "1.1";
+            document.getElementById('subStatus').innerText = "Complete!";
         }
+    }
+
+    function changeLine(dir) {
+        currentLineIndex = Math.max(0, currentLineIndex + dir);
+        repeatsDone = 0;
+        playSegment();
+    }
+
+    function togglePause() {
+        player.paused ? player.play() : player.pause();
     }
 </script>
 
