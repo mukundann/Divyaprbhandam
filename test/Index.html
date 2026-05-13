@@ -97,10 +97,30 @@ const CONFIG = {
             hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, label: "Current Pasuram",
             getAudioSrc: (num) => `https://www.uveda.org/media/recitation/PT.${num}.mp3` 
         },
-        'PMT': { 
-            hasSub: false, maxCh: 10, defPas: 10, label: "Current Pasuram",
-            getAudioSrc: (num) => `https://www.uveda.org/media/recitation/PMT.${num}.mp3` 
-        },
+
+
+'PMT': { 
+    hasSub: false, 
+    maxCh: 10, 
+    defPas: 10, 
+    label: "Current Pasuram",
+    // Only Chapter 1 is treated as a single file
+    isSingleFile: (num) => {
+        const chapter = parseInt(num.split('.')[0]); 
+        return chapter === 1; 
+    },
+    getAudioSrc: (num) => {
+        const chapter = parseInt(num.split('.')[0]);
+        if (chapter === 1) {
+            // Your Google Drive direct link for Chapter 1
+            return `https://docs.google.com/uc?export=download&id=1UeXA1irKaSZBXXKDsqvw_786fgGeiAHL`;
+        }
+        // Standard URL for Chapters 2-10
+        return `https://www.uveda.org/media/recitation/PMT.${num}.mp3`; 
+    }
+},
+
+    
         'NAT': { 
             hasSub: false, maxCh: 14, defPas: 10, label: "Current Pasuram",
             getAudioSrc: (num) => `https://www.uveda.org/media/recitation/NAT.${num}.mp3` 
