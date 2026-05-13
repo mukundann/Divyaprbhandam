@@ -89,268 +89,267 @@
 
 <script>
 const CONFIG = {
-        'TVM': { 
-            hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, label: "Current Pasuram",
-            getAudioSrc: (num) => `https://www.uveda.org/media/recitation/TVM.${num}.mp3` 
-        },
-        'PT':  { 
-            hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, label: "Current Pasuram",
-            getAudioSrc: (num) => `https://www.uveda.org/media/recitation/PT.${num}.mp3` 
-        },
-
-
-'PMT': { 
-    hasSub: false, 
-    maxCh: 10, 
-    defPas: 10, 
-    label: "Current Pasuram",
-    // Only Chapter 1 is treated as a single file
-    isSingleFile: (num) => {
-        const chapter = parseInt(num.split('.')[0]); 
-        return chapter === 1; 
+    'TVM': { 
+        hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, label: "Current Pasuram",
+        getAudioSrc: (num) => `https://www.uveda.org/media/recitation/TVM.${num}.mp3` 
     },
-    getAudioSrc: (num) => {
-        const chapter = parseInt(num.split('.')[0]);
-        if (chapter === 1) {
-            // Your Google Drive direct link for Chapter 1
-            return `audiofiles/PMT.1.all.m4a`;
+    'PT':  { 
+        hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, label: "Current Pasuram",
+        getAudioSrc: (num) => `https://www.uveda.org/media/recitation/PT.${num}.mp3` 
+    },
+    'PMT': { 
+        hasSub: false, 
+        maxCh: 10, 
+        defPas: 10, 
+        label: "Current Pasuram",
+        isSingleFile: (num) => parseInt(num.split('.')[0]) === 1,
+        getAudioSrc: (num) => {
+            const chapter = parseInt(num.split('.')[0]);
+            return chapter === 1 
+                ? `audiofiles/PMT.1.all.m4a` 
+                : `https://www.uveda.org/media/recitation/PMT.${num}.mp3`; 
         }
-        // Standard URL for Chapters 2-10
-        return `https://www.uveda.org/media/recitation/PMT.${num}.mp3`; 
+    },
+    'NAT': { 
+        hasSub: false, maxCh: 14, defPas: 10, label: "Current Pasuram",
+        getAudioSrc: (num) => `https://www.uveda.org/media/recitation/NAT.${num}.mp3` 
+    },
+    'MUM': { 
+        hasSub: false, maxCh: 1, defPas: 200, label: "Current Suthram", isSingleFile: true,
+        getAudioSrc: () => `audiofiles/charamaslokam.mp3`
     }
-},
-
-    
-        'NAT': { 
-            hasSub: false, maxCh: 14, defPas: 10, label: "Current Pasuram",
-            getAudioSrc: (num) => `https://www.uveda.org/media/recitation/NAT.${num}.mp3` 
-        },
-        'MUM': { 
-            hasSub: false, maxCh: 1, defPas: 200, label: "Current Suthram", isSingleFile: true,
-            getAudioSrc: () => `audiofiles/charamaslokam.mp3` // Always points to the master file
-        }
 };
 
-    let currentRepeatCount = 0;
-    let currentLineIndex = 0;
-    let learningMode = 'line'; 
-    let monitorInterval = null;
-    let currentSessionData = {}; 
-    let activePasuramMarkers = []; 
-    const player = document.getElementById('audioPlayer');
+let currentRepeatCount = 0;
+let currentLineIndex = 0;
+let learningMode = 'line'; 
+let monitorInterval = null;
+let currentSessionData = {}; 
+let activePasuramMarkers = []; 
+const player = document.getElementById('audioPlayer');
 
-    function setMode(mode) {
-        learningMode = mode;
-        document.querySelectorAll('.btn-nav').forEach(b => {
-            if(b.id.startsWith('m-')) b.classList.remove('active-mode');
-        });
-        document.getElementById('m-' + mode).classList.add('active-mode');
-        stopMonitor();
+function setMode(mode) {
+    learningMode = mode;
+    document.querySelectorAll('.btn-nav').forEach(b => {
+        if(b.id.startsWith('m-')) b.classList.remove('active-mode');
+    });
+    document.getElementById('m-' + mode).classList.add('active-mode');
+    stopMonitor();
+}
+
+function stopMonitor() {
+    if (monitorInterval) clearInterval(monitorInterval);
+    monitorInterval = null;
+}
+
+function stopAudio() {
+    stopMonitor();
+    player.pause();
+    document.getElementById('status').innerText = "Stopped";
+}
+
+function startLearning() {
+    currentRepeatCount = 0;
+    currentLineIndex = 0;
+    activePasuramMarkers = []; 
+    playAudio();
+}
+
+function playAudio() {
+    stopMonitor();
+    const pre = document.getElementById('prefix').value;
+    const numInput = document.getElementById('number').value.trim();
+    const status = document.getElementById('status');
+    const limit = parseInt(document.getElementById('repeatLimit').value) || 1;
+    
+    const workConfig = CONFIG[pre];
+    const isSingle = typeof workConfig.isSingleFile === 'function' ? workConfig.isSingleFile(numInput) : workConfig.isSingleFile;
+    const audioSrc = workConfig.getAudioSrc(numInput);
+
+    if (player.src.indexOf(audioSrc) === -1) {
+        player.src = audioSrc;
+        player.load();
     }
 
-    function stopMonitor() {
-        if (monitorInterval) clearInterval(monitorInterval);
-        monitorInterval = null;
-    }
-
-    function stopAudio() {
-        stopMonitor();
-        player.pause();
-        document.getElementById('status').innerText = "Stopped";
-    }
-
-    function startLearning() {
-        currentRepeatCount = 0;
-        currentLineIndex = 0;
-        activePasuramMarkers = []; 
-        playAudio();
-    }
-
- function playAudio() {
-        stopMonitor();
-        const pre = document.getElementById('prefix').value;
-        const numInput = document.getElementById('number').value.trim();
-        const status = document.getElementById('status');
-        const limit = parseInt(document.getElementById('repeatLimit').value) || 1;
+    if (isSingle) {
+        const parts = numInput.split('.');
+        const chapter = parts[0];
+        const pasuramIdx = (parts.length > 1 ? parseInt(parts[1]) : parseInt(parts[0])) - 1;
         
-        const workConfig = CONFIG[pre];
-        const audioSrc = workConfig.getAudioSrc(numInput); // Dynamically fetch path from CONFIG
-
-        if (player.src.indexOf(audioSrc) === -1) {
-            player.src = audioSrc;
-            player.load();
+        const masterKey = `${pre}.${chapter}.all`; 
+        const masterMarkers = window.MARKER_DATABASE ? window.MARKER_DATABASE[masterKey] : null;
+        
+        if (!masterMarkers || masterMarkers[pasuramIdx] === undefined) {
+            status.innerText = "Marker not found.";
+            return;
         }
 
-        if (workConfig.isSingleFile) {
-            // Logic for Single File (Mumukshupadi)
-            const suthramMarkers = window.MARKER_DATABASE ? window.MARKER_DATABASE[`${pre}.all`] : null;
-            const suthramIdx = parseInt(numInput) - 1;
-            
-            if (!suthramMarkers || suthramMarkers[suthramIdx] === undefined) {
-                status.innerText = "Suthram marker not found.";
-                return;
-            }
+        let start = masterMarkers[pasuramIdx];
+        let end = masterMarkers[pasuramIdx + 1]; 
 
-            let start = suthramMarkers[suthramIdx];
-            let end = suthramMarkers[suthramIdx + 1]; 
+        player.currentTime = start;
+        player.play();
+        status.innerText = `Section ${numInput} | Repeat ${currentRepeatCount + 1}/${limit}`;
 
-            player.currentTime = start;
-            player.play();
-            status.innerText = `Suthram ${numInput} | Repeat ${currentRepeatCount + 1}/${limit}`;
-
-            if (end !== undefined) {
-                monitorInterval = setInterval(() => {
-                    if (player.currentTime >= end) {
-                        player.pause();
-                        stopMonitor();
-                        handleSegmentEnd(null, limit);
-                    }
-                }, 30);
-            }
-        } else {
-            // Logic for Multi-file (Prabandhams)
-            const key = `${pre}.${numInput}`;
-            const markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[key] : null;
-
-            if (learningMode === 'full' || !markers) {
-                status.innerText = `Full Mode | Repeat ${currentRepeatCount + 1}/${limit}`;
-                player.play();
-                return;
-            }
-
-            let start = (currentLineIndex === 0) ? 0 : markers[currentLineIndex - 1];
-            let end = (learningMode === 'line') ? markers[currentLineIndex] : markers[currentLineIndex + 1];
-
-            player.currentTime = start;
-            player.play();
-
-            if (end === undefined) {
-                status.innerText = `Final Section | Repeat ${currentRepeatCount + 1}/${limit}`;
-            } else {
-                status.innerText = `Section ${currentLineIndex + 1} | Repeat ${currentRepeatCount + 1}/${limit}`;
-                monitorInterval = setInterval(() => {
-                    if (player.currentTime >= end) {
-                        player.pause();
-                        stopMonitor();
-                        handleSegmentEnd(markers, limit);
-                    }
-                }, 30);
-            }
-        }
-    }
-
-    function handleSegmentEnd(markers, limit) {
-        currentRepeatCount++;
-        if (currentRepeatCount < limit) {
-            playAudio(); 
-        } else {
-            currentRepeatCount = 0;
-            const pre = document.getElementById('prefix').value;
-            if (CONFIG[pre].isSingleFile) {
-                // If auto-advance is on, move to the next suthram
-                if (document.getElementById('autoNext').value === "true") {
-                    navigate(1);
-                } else {
-                    document.getElementById('status').innerText = "Suthram Complete.";
+        if (end !== undefined) {
+            monitorInterval = setInterval(() => {
+                if (player.currentTime >= end) {
+                    player.pause();
+                    stopMonitor();
+                    handleSegmentEnd(null, limit);
                 }
-            } else {
-                advanceLine(markers);
-            }
+            }, 30);
+        }
+    } else {
+        const key = `${pre}.${numInput}`;
+        const markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[key] : null;
+
+        if (learningMode === 'full' || !markers) {
+            status.innerText = `Full Mode | Repeat ${currentRepeatCount + 1}/${limit}`;
+            player.play();
+            return;
+        }
+
+        let start = (currentLineIndex === 0) ? 0 : markers[currentLineIndex - 1];
+        let end = (learningMode === 'line') ? markers[currentLineIndex] : markers[currentLineIndex + 1];
+
+        player.currentTime = start;
+        player.play();
+
+        if (end === undefined) {
+            status.innerText = `Final Section | Repeat ${currentRepeatCount + 1}/${limit}`;
+        } else {
+            status.innerText = `Section ${currentLineIndex + 1} | Repeat ${currentRepeatCount + 1}/${limit}`;
+            monitorInterval = setInterval(() => {
+                if (player.currentTime >= end) {
+                    player.pause();
+                    stopMonitor();
+                    handleSegmentEnd(markers, limit);
+                }
+            }, 30);
         }
     }
+}
 
-    function advanceLine(markers) {
-        const step = (learningMode === 'couplet') ? 2 : 1;
-        currentLineIndex += step;
+function handleSegmentEnd(markers, limit) {
+    currentRepeatCount++;
+    if (currentRepeatCount < limit) {
+        playAudio(); 
+    } else {
+        currentRepeatCount = 0;
+        const pre = document.getElementById('prefix').value;
+        const workConfig = CONFIG[pre];
+        const numInput = document.getElementById('number').value.trim();
+        const isSingle = typeof workConfig.isSingleFile === 'function' ? workConfig.isSingleFile(numInput) : workConfig.isSingleFile;
 
-        if (markers && currentLineIndex <= markers.length) {
-            playAudio();
-        } else {
+        if (isSingle) {
             if (document.getElementById('autoNext').value === "true") {
-                setTimeout(() => navigate(1), 1000);
+                navigate(1);
             } else {
                 document.getElementById('status').innerText = "Complete.";
-                currentLineIndex = 0;
             }
+        } else {
+            advanceLine(markers);
         }
     }
+}
 
-    function navigate(dir) {
-        stopMonitor();
-        const input = document.getElementById('number');
-        const pre = document.getElementById('prefix').value;
-        const c = CONFIG[pre];
-        
-        if (!c.hasSub) {
+function advanceLine(markers) {
+    const step = (learningMode === 'couplet') ? 2 : 1;
+    currentLineIndex += step;
+
+    if (markers && currentLineIndex <= markers.length) {
+        playAudio();
+    } else {
+        if (document.getElementById('autoNext').value === "true") {
+            setTimeout(() => navigate(1), 1000);
+        } else {
+            document.getElementById('status').innerText = "Complete.";
+            currentLineIndex = 0;
+        }
+    }
+}
+
+function navigate(dir) {
+    stopMonitor();
+    const input = document.getElementById('number');
+    const pre = document.getElementById('prefix').value;
+    const c = CONFIG[pre];
+    
+    if (!c.hasSub) {
+        if (input.value.includes('.')) {
+            let parts = input.value.split('.').map(Number);
+            parts[1] += dir;
+            if (parts[1] < 1) parts[1] = 1;
+            input.value = parts.join('.');
+        } else {
             let val = parseInt(input.value) + dir;
             if (val < 1) val = 1;
             input.value = val;
-        } else {
-            let parts = input.value.split('.').map(Number);
-            let [ch, sub, pas] = parts;
-            pas += dir;
-            const currentLimit = (c.ex[`${ch}.${sub}`] || c.defPas);
-            if (pas > currentLimit) { pas = 1; sub++; if (sub > c.maxSub) { sub = 1; ch++; } }
-            if (pas < 1) { pas = c.defPas; sub--; if (sub < 1) { sub = c.maxSub; ch--; } }
-            input.value = `${ch}.${sub}.${pas}`;
         }
-        startLearning();
+    } else {
+        let parts = input.value.split('.').map(Number);
+        let [ch, sub, pas] = parts;
+        pas += dir;
+        const currentLimit = (c.ex && c.ex[`${ch}.${sub}`] ? c.ex[`${ch}.${sub}`] : c.defPas);
+        if (pas > currentLimit) { pas = 1; sub++; if (sub > c.maxSub) { sub = 1; ch++; } }
+        if (pas < 1) { pas = c.defPas; sub--; if (sub < 1) { sub = c.maxSub; ch--; } }
+        input.value = `${ch}.${sub}.${pas}`;
     }
+    startLearning();
+}
 
-    function resetToStart() {
-        const pre = document.getElementById('prefix').value;
-        const c = CONFIG[pre];
-        document.getElementById('numLabel').innerText = c.label;
-        document.getElementById('number').value = c.hasSub ? "1.1.1" : "1";
-        stopMonitor();
+function resetToStart() {
+    const pre = document.getElementById('prefix').value;
+    const c = CONFIG[pre];
+    document.getElementById('numLabel').innerText = c.label;
+    document.getElementById('number').value = c.hasSub ? "1.1.1" : (pre === "PMT" ? "1.1" : "1");
+    stopMonitor();
+}
+
+function logMarker() {
+    const currentTime = parseFloat(player.currentTime.toFixed(2));
+    if (currentTime > 0) {
+        activePasuramMarkers.push(currentTime);
+        document.getElementById('recorded-markers').innerText = `Logged ${activePasuramMarkers.length} marks`;
     }
+}
 
-    function logMarker() {
-        const currentTime = parseFloat(player.currentTime.toFixed(2));
-        if (currentTime > 0) {
-            activePasuramMarkers.push(currentTime);
-            document.getElementById('recorded-markers').innerText = `Logged ${activePasuramMarkers.length} marks`;
-        }
-    }
-
-    function commitCurrentPasuram() {
-        const pre = document.getElementById('prefix').value;
-        const key = CONFIG[pre].isSingleFile ? `${pre}.all` : `${pre}.${document.getElementById('number').value}`;
+function commitCurrentPasuram() {
+    const pre = document.getElementById('prefix').value;
+    const num = document.getElementById('number').value.trim();
+    const isSingle = typeof CONFIG[pre].isSingleFile === 'function' ? CONFIG[pre].isSingleFile(num) : CONFIG[pre].isSingleFile;
+    const key = isSingle ? `${pre}.${num.split('.')[0]}.all` : `${pre}.${num}`;
+    
+    if (activePasuramMarkers.length > 0) {
+        if (!currentSessionData[key]) currentSessionData[key] = [];
+        currentSessionData[key] = [...currentSessionData[key], ...activePasuramMarkers];
         
-        if (activePasuramMarkers.length > 0) {
-            if (!currentSessionData[key]) currentSessionData[key] = [];
-            // For single file, we append to a master list
-            if (CONFIG[pre].isSingleFile) {
-                currentSessionData[key] = [...currentSessionData[key], ...activePasuramMarkers];
-            } else {
-                currentSessionData[key] = [...activePasuramMarkers];
-            }
-            
-            let txt = "";
-            for (let k in currentSessionData) txt += `    '${k}': [${currentSessionData[k].join(', ')}],\n`;
-            document.getElementById('final-session-output').value = txt;
-            activePasuramMarkers = []; 
-        }
+        let txt = "";
+        for (let k in currentSessionData) txt += `    '${k}': [${currentSessionData[k].join(', ')}],\n`;
+        document.getElementById('final-session-output').value = txt;
+        activePasuramMarkers = []; 
     }
+}
 
-    function copySessionLog() {
-        const el = document.getElementById('final-session-output');
-        el.select();
-        document.execCommand('copy');
-        document.getElementById('status').innerText = "Markers Copied!";
+function copySessionLog() {
+    const el = document.getElementById('final-session-output');
+    el.select();
+    document.execCommand('copy');
+    document.getElementById('status').innerText = "Markers Copied!";
+}
+
+window.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'm') logMarker(); });
+
+player.onended = function() {
+    commitCurrentPasuram();
+    const pre = document.getElementById('prefix').value;
+    const num = document.getElementById('number').value.trim();
+    const markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[`${pre}.${num}`] : null;
+    if (CONFIG[pre].isSingleFile || learningMode === 'full' || !markers || currentLineIndex >= markers.length - 1) {
+        handleSegmentEnd(markers, parseInt(document.getElementById('repeatLimit').value) || 1);
     }
-
-    window.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'm') logMarker(); });
-
-    player.onended = function() {
-        commitCurrentPasuram();
-        const pre = document.getElementById('prefix').value;
-        const num = document.getElementById('number').value.trim();
-        const markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[`${pre}.${num}`] : null;
-        if (CONFIG[pre].isSingleFile || learningMode === 'full' || !markers || currentLineIndex >= markers.length - 1) {
-            handleSegmentEnd(markers, parseInt(document.getElementById('repeatLimit').value) || 1);
-        }
-    };
+};
 </script>
 </body>
 </html>
