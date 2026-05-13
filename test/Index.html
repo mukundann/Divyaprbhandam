@@ -88,13 +88,27 @@
 <script src="marker.js"></script>
 
 <script>
-    const CONFIG = {
-        'TVM': { hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, label: "Current Pasuram" },
-        'PT':  { hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, label: "Current Pasuram" },
-        'PMT': { hasSub: false, maxCh: 10, defPas: 10, label: "Current Pasuram" },
-        'NAT': { hasSub: false, maxCh: 14, defPas: 10, label: "Current Pasuram" },
-        'MUM': { hasSub: false, maxCh: 1, defPas: 200, label: "Current Suthram", isSingleFile: true }
-    };
+const CONFIG = {
+        'TVM': { 
+            hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, label: "Current Pasuram",
+            getAudioSrc: (num) => `https://www.uveda.org/media/recitation/TVM.${num}.mp3` 
+        },
+        'PT':  { 
+            hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, label: "Current Pasuram",
+            getAudioSrc: (num) => `https://www.uveda.org/media/recitation/PT.${num}.mp3` 
+        },
+        'PMT': { 
+            hasSub: false, maxCh: 10, defPas: 10, label: "Current Pasuram",
+            getAudioSrc: (num) => `https://www.uveda.org/media/recitation/PMT.${num}.mp3` 
+        },
+        'NAT': { 
+            hasSub: false, maxCh: 14, defPas: 10, label: "Current Pasuram",
+            getAudioSrc: (num) => `https://www.uveda.org/media/recitation/NAT.${num}.mp3` 
+        },
+        'MUM': { 
+            hasSub: false, maxCh: 1, defPas: 200, label: "Current Suthram", isSingleFile: true,
+            getAudioSrc: () => `audiofile/charamaslokam.mp3` // Always points to the master file
+        }
 
     let currentRepeatCount = 0;
     let currentLineIndex = 0;
@@ -131,19 +145,23 @@
         playAudio();
     }
 
-    function playAudio() {
+ function playAudio() {
         stopMonitor();
         const pre = document.getElementById('prefix').value;
         const numInput = document.getElementById('number').value.trim();
         const status = document.getElementById('status');
         const limit = parseInt(document.getElementById('repeatLimit').value) || 1;
         
-        let audioSrc;
-        let markers;
+        const workConfig = CONFIG[pre];
+        const audioSrc = workConfig.getAudioSrc(numInput); // Dynamically fetch path from CONFIG
 
-        if (CONFIG[pre].isSingleFile) {
-            // Single file logic for Mumukshupadi
-            audioSrc = `audiofile/${pre}.all.mp3`;
+        if (player.src.indexOf(audioSrc) === -1) {
+            player.src = audioSrc;
+            player.load();
+        }
+
+        if (workConfig.isSingleFile) {
+            // Logic for Single File (Mumukshupadi)
             const suthramMarkers = window.MARKER_DATABASE ? window.MARKER_DATABASE[`${pre}.all`] : null;
             const suthramIdx = parseInt(numInput) - 1;
             
@@ -152,14 +170,8 @@
                 return;
             }
 
-            // Determine the start and end of the specific suthram from the master list
             let start = suthramMarkers[suthramIdx];
             let end = suthramMarkers[suthramIdx + 1]; 
-
-            if (player.src.indexOf(audioSrc) === -1) {
-                player.src = audioSrc;
-                player.load();
-            }
 
             player.currentTime = start;
             player.play();
@@ -170,20 +182,14 @@
                     if (player.currentTime >= end) {
                         player.pause();
                         stopMonitor();
-                        handleSegmentEnd(null, limit); // Reuse logic
+                        handleSegmentEnd(null, limit);
                     }
                 }, 30);
             }
         } else {
-            // Original multi-file logic for Prabandhams
+            // Logic for Multi-file (Prabandhams)
             const key = `${pre}.${numInput}`;
-            markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[key] : null;
-            audioSrc = `https://www.uveda.org/media/recitation/${pre}.${numInput}.mp3`;
-
-            if (player.src !== audioSrc) {
-                player.src = audioSrc;
-                player.load();
-            }
+            const markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[key] : null;
 
             if (learningMode === 'full' || !markers) {
                 status.innerText = `Full Mode | Repeat ${currentRepeatCount + 1}/${limit}`;
