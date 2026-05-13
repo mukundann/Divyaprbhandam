@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Divya Prabandham Sandhai - Test</title>
+    <title>Divya Prabandham Anusandhanam</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
         .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
@@ -11,26 +11,20 @@
         .input-group { margin-bottom: 12px; }
         label { display: block; font-size: 0.8rem; margin-bottom: 4px; color: #4b4f56; font-weight: 600; }
         select, input { width: 100%; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-        
         .learning-controls { background: #f9fafb; border: 1px solid #e4e6eb; padding: 15px; border-radius: 12px; margin: 15px 0; }
         .flex-row { display: flex; gap: 10px; align-items: center; }
-        
         .nav-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 15px; }
         button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-play { background-color: #0070ba; color: white; grid-column: span 3; margin-bottom: 5px; }
-        .btn-nav { background-color: #e4e6eb; color: #050505; font-size: 0.75rem; }
-        
-        /* Active state for mode buttons */
-        .active-mode { background-color: #0070ba !important; color: white !important; }
-        
+        .btn-play { background-color: #0070ba; color: white; grid-column: span 3; }
+        .btn-nav { background-color: #e4e6eb; color: #050505; }
         audio { width: 100%; margin-top: 15px; }
-        .status { margin-top: 10px; font-size: 0.75rem; font-weight: bold; color: #0070ba; text-align: center; min-height: 1.2em; }
+        .status { margin-top: 10px; font-size: 0.7rem; color: #0070ba; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Prabandham Anusandhanam</h2>
+    <h2>Divya Prabandham Anusandhanam</h2>
     
     <div class="input-group">
         <label>Select Prabandham</label>
@@ -48,24 +42,17 @@
     </div>
 
     <div class="learning-controls">
-        <label>Step 1: Choose Mode</label>
-        <div class="nav-controls" style="margin-top: 0; margin-bottom: 15px;">
-            <button class="btn-nav active-mode" id="m-line" onclick="setMode('line')">Line</button>
-            <button class="btn-nav" id="m-couplet" onclick="setMode('couplet')">Couplet</button>
-            <button class="btn-nav" id="m-full" onclick="setMode('full')">Full</button>
-        </div>
-
-        <label>Step 2: Settings</label>
+        <label>Learning Settings</label>
         <div class="flex-row">
             <div style="flex: 1;">
-                <label style="font-weight: normal; font-size: 0.7rem;">Repeat Each</label>
+                <label style="font-weight: normal; font-size: 0.7rem;">Repeat Pasuram</label>
                 <input type="number" id="repeatLimit" value="1" min="1">
             </div>
             <div style="flex: 2;">
                 <label style="font-weight: normal; font-size: 0.7rem;">Auto-Advance</label>
                 <select id="autoNext">
-                    <option value="true">Next Pasuram</option>
-                    <option value="false">Stop at End</option>
+                    <option value="true">Yes, move to next</option>
+                    <option value="false">No, stop here</option>
                 </select>
             </div>
         </div>
@@ -86,25 +73,38 @@
 
 <script>
     const CONFIG = {
-        'TVM': { hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, ex: {'2.7': 13} },
-        'PT':  { hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, ex: {} },
-        'PMT': { hasSub: false, maxCh: 10, defPas: 10, ex: {} },
-        'NAT': { hasSub: false, maxCh: 14, defPas: 10, ex: {} }
+        'TVM': { 
+            hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, ex: {'2.7': 13},
+            getAudioSrc: (num) => `https://www.uveda.org/media/recitation/TVM.${num}.mp3`
+        },
+        'PT':  { 
+            hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, ex: {},
+            getAudioSrc: (num) => `https://www.uveda.org/media/recitation/PT.${num}.mp3`
+        },
+        'PMT': { 
+            hasSub: false, maxCh: 10, defPas: 10, ex: {},
+            isSingleFile: (num) => parseInt(num.split('.')[0]) === 1,
+            getAudioSrc: (num) => {
+                const chapter = parseInt(num.split('.')[0]);
+                return chapter === 1 
+                    ? `audiofiles/PMT.1.all.m4a` 
+                    : `https://www.uveda.org/media/recitation/PMT.${num}.mp3`;
+            }
+        },
+        'NAT': { 
+            hasSub: false, maxCh: 14, defPas: 10, ex: {},
+            getAudioSrc: (num) => `https://www.uveda.org/media/recitation/NAT.${num}.mp3`
+        }
     };
 
     let currentRepeatCount = 0;
-    let currentLineIndex = 0;
-    let learningMode = 'line'; 
     let monitorInterval = null;
     const player = document.getElementById('audioPlayer');
 
-    function setMode(mode) {
-        learningMode = mode;
-        document.querySelectorAll('.btn-nav').forEach(b => {
-            if(b.id.startsWith('m-')) b.classList.remove('active-mode');
-        });
-        document.getElementById('m-' + mode).classList.add('active-mode');
-        stopMonitor();
+    function getLimit(pre, ch, sub) {
+        const c = CONFIG[pre];
+        const key = c.hasSub ? `${ch}.${sub}` : `${ch}`;
+        return c.ex[key] || c.defPas;
     }
 
     function stopMonitor() {
@@ -120,74 +120,74 @@
 
     function startLearning() {
         currentRepeatCount = 0;
-        currentLineIndex = 0;
         playAudio();
     }
 
     function playAudio() {
         stopMonitor();
         const pre = document.getElementById('prefix').value;
-        const num = document.getElementById('number').value.trim();
+        const numInput = document.getElementById('number').value.trim();
         const status = document.getElementById('status');
-        const limit = parseInt(document.getElementById('repeatLimit').value) || 1;
+        const limit = parseInt(document.getElementById('repeatLimit').value);
         
-        const key = `${pre}.${num}`;
-        const markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[key] : null;
+        const workConfig = CONFIG[pre];
+        const isSingle = typeof workConfig.isSingleFile === 'function' ? workConfig.isSingleFile(numInput) : false;
+        const audioSrc = workConfig.getAudioSrc(numInput);
 
-        // Construct URL
-        player.src = `https://www.uveda.org/media/recitation/${pre}.${num}.mp3`;
-        
-        // Mode logic
-        if (learningMode === 'full' || !markers) {
-            status.innerText = markers ? `Playing ${num} (Full Mode)` : `Playing ${num} (No Markers Found)`;
-            player.play();
-            return;
+        if (player.src.indexOf(audioSrc) === -1) {
+            player.src = audioSrc;
+            player.load();
         }
 
-        // Marker-based segment logic
-        let start = markers[currentLineIndex];
-        let end = (learningMode === 'line') 
-                  ? markers[currentLineIndex + 1] 
-                  : markers[Math.min(currentLineIndex + 2, markers.length - 1)];
-
-        status.innerText = `Line ${currentLineIndex + 1} | Repeat ${currentRepeatCount + 1}/${limit}`;
-        
-        player.currentTime = start;
-        player.play();
-
-        // High-precision interval for markers
-        monitorInterval = setInterval(() => {
-            if (player.currentTime >= end) {
-                player.pause();
-                stopMonitor();
-                
-                currentRepeatCount++;
-                if (currentRepeatCount < limit) {
-                    playAudio(); // Repeat the same segment
-                } else {
-                    currentRepeatCount = 0;
-                    advanceLine(markers);
-                }
+        if (isSingle) {
+            const parts = numInput.split('.');
+            const chapter = parts[0];
+            const pasuramIdx = parseInt(parts[1] || parts[0]) - 1;
+            const masterKey = `${pre}.${chapter}.all`; 
+            const masterMarkers = window.MARKER_DATABASE ? window.MARKER_DATABASE[masterKey] : null;
+            
+            if (!masterMarkers || masterMarkers[pasuramIdx] === undefined) {
+                status.innerText = "Marker not found for " + numInput;
+                return;
             }
-        }, 30);
+
+            let start = masterMarkers[pasuramIdx];
+            let end = masterMarkers[pasuramIdx + 1]; 
+
+            player.currentTime = start;
+            player.play();
+            status.innerText = `Playing ${numInput} | Repeat ${currentRepeatCount + 1}/${limit}`;
+
+            if (end !== undefined) {
+                monitorInterval = setInterval(() => {
+                    if (player.currentTime >= end) {
+                        player.pause();
+                        stopMonitor();
+                        onTrackEnded();
+                    }
+                }, 30);
+            }
+        } else {
+            status.innerText = `Playing ${numInput} | Repeat ${currentRepeatCount + 1}/${limit}`;
+            player.play().catch(() => { status.innerText = "File not found: " + numInput; });
+        }
     }
 
-    function advanceLine(markers) {
-        const step = (learningMode === 'couplet') ? 2 : 1;
-        currentLineIndex += step;
+    function onTrackEnded() {
+        const limit = parseInt(document.getElementById('repeatLimit').value);
+        const autoNext = document.getElementById('autoNext').value === "true";
+        currentRepeatCount++;
 
-        if (currentLineIndex < markers.length - 1) {
+        if (currentRepeatCount < limit) {
             playAudio();
         } else {
-            const autoNext = document.getElementById('autoNext').value === "true";
-            if (autoNext) {
-                document.getElementById('status').innerText = "Pasuram Done. Moving to next...";
-                setTimeout(() => navigate(1), 1000);
-            } else {
-                document.getElementById('status').innerText = "Pasuram Complete.";
-            }
+            currentRepeatCount = 0;
+            if (autoNext) navigate(1);
+            else document.getElementById('status').innerText = "Finished repeats.";
         }
     }
+
+    player.onended = onTrackEnded;
 
     function navigate(dir) {
         stopMonitor();
@@ -197,22 +197,15 @@
         let parts = input.value.split('.').map(Number);
         
         let ch, sub, pas;
-        if (c.hasSub) {
-            [ch, sub, pas] = parts;
-        } else {
-            [ch, pas] = parts;
-            sub = 0; 
-        }
+        if (c.hasSub) { [ch, sub, pas] = parts; } 
+        else { [ch, pas] = parts; sub = 0; }
         
         pas += dir;
-
         if (dir === 1) {
-            if (pas > (c.ex[`${ch}.${sub}`] || c.ex[`${ch}`] || c.defPas)) {
+            if (pas > getLimit(pre, ch, sub)) {
                 pas = 1;
-                if (c.hasSub) {
-                    sub++;
-                    if (sub > c.maxSub) { sub = 1; ch++; }
-                } else { ch++; }
+                if (c.hasSub) { sub++; if (sub > c.maxSub) { sub = 1; ch++; } } 
+                else { ch++; }
             }
             if (ch > c.maxCh) ch = c.maxCh;
         } else {
@@ -220,16 +213,15 @@
                 if (c.hasSub) {
                     sub--;
                     if (sub < 1) {
-                        if (ch > 1) { ch--; sub = c.maxSub; pas = (c.ex[`${ch}.${sub}`] || c.defPas); }
+                        if (ch > 1) { ch--; sub = c.maxSub; pas = getLimit(pre, ch, sub); }
                         else { ch = 1; sub = 1; pas = 1; }
-                    } else { pas = (c.ex[`${ch}.${sub}`] || c.defPas); }
+                    } else { pas = getLimit(pre, ch, sub); }
                 } else {
-                    if (ch > 1) { ch--; pas = c.defPas; }
+                    if (ch > 1) { ch--; pas = getLimit(pre, ch, 0); }
                     else { ch = 1; pas = 1; }
                 }
             }
         }
-
         input.value = c.hasSub ? `${ch}.${sub}.${pas}` : `${ch}.${pas}`;
         startLearning();
     }
@@ -238,8 +230,8 @@
         const pre = document.getElementById('prefix').value;
         const label = document.getElementById('numLabel');
         const input = document.getElementById('number');
+        currentRepeatCount = 0;
         stopMonitor();
-        
         if (CONFIG[pre].hasSub) {
             label.innerText = "Current Pasuram (Ch.Sub.Pas)";
             input.value = "1.1.1";
@@ -248,14 +240,6 @@
             input.value = "1.1";
         }
     }
-
-    player.onended = function() {
-        if (learningMode === 'full') {
-            const autoNext = document.getElementById('autoNext').value === "true";
-            if (autoNext) navigate(1);
-        }
-    };
 </script>
-
 </body>
 </html>
