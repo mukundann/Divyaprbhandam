@@ -29,6 +29,12 @@ window.MARKER_DATABASE = {
     
     // Thiruvaimozhi (TVM)
     'TVM.1.1.1': [0.50, 4.20, 8.10, 12.30, 16.40, 19.50],
+    'MUM.all': [0,      // Suthram 1 start
+        15.4,   // Suthram 2 start
+        32.1,   // Suthram 3 start
+        48.9,   // Suthram 4 start
+        65.3    // ... continue adding as you record
+                ],
     
     // Add new markers here
 };
