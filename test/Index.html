@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Divya Prabandham Sandhai</title>
+    <title>Anusandhanam Studio</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; flex-direction: column; }
         .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
@@ -20,25 +20,23 @@
         .active-mode { background-color: #0070ba !important; color: white !important; }
         audio { width: 100%; margin-top: 15px; }
         .status { margin-top: 10px; font-size: 0.75rem; font-weight: bold; color: #0070ba; text-align: center; min-height: 1.5em; border-top: 1px solid #eee; padding-top: 10px; }
-        
-        /* Marker Studio Styles */
         #session-log-container { width: 100%; max-width: 420px; margin-top: 20px; border: 2px solid #0070ba; padding: 15px; border-radius: 12px; background: #fff; }
-        textarea { width: 100%; height: 150px; font-family: monospace; font-size: 0.75rem; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px; resize: vertical; box-sizing: border-box; }
-        .recorder-hint { font-size: 0.7rem; color: #606770; text-align: center; margin-top: 5px; }
+        textarea { width: 100%; height: 120px; font-family: monospace; font-size: 0.75rem; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px; resize: vertical; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Divya Prabandham Anusandhanam</h2>
+    <h2>Anusandhanam Studio</h2>
     
     <div class="input-group">
-        <label>Select Prabandham</label>
+        <label>Select Work</label>
         <select id="prefix" onchange="resetToStart()">
             <option value="TVM">Thiruvaimozhi (TVM)</option>
             <option value="PT">Periya Thirumozhi (PT)</option>
             <option value="PMT">Perumal Thirumozhi (PMT)</option>
             <option value="NAT">Naachiyar Thirumozhi (NAT)</option>
+            <option value="MUM">Mumukshupadi (Charama Sloka)</option>
         </select>
     </div>
 
@@ -48,23 +46,23 @@
     </div>
 
     <div class="learning-controls">
-        <label>Learning Mode</label>
+        <label>Practice Mode</label>
         <div class="nav-controls" style="margin-top: 0; margin-bottom: 15px;">
-            <button class="btn-nav active-mode" id="m-line" onclick="setMode('line')">Line</button>
-            <button class="btn-nav" id="m-couplet" onclick="setMode('couplet')">Couplet</button>
+            <button class="btn-nav active-mode" id="m-line" onclick="setMode('line')">Segment</button>
+            <button class="btn-nav" id="m-couplet" onclick="setMode('couplet')">Pairs</button>
             <button class="btn-nav" id="m-full" onclick="setMode('full')">Full</button>
         </div>
 
         <div class="flex-row">
             <div style="flex: 1;">
-                <label style="font-weight: normal; font-size: 0.7rem;">Repeat Limit</label>
+                <label style="font-weight: normal; font-size: 0.7rem;">Repeat</label>
                 <input type="number" id="repeatLimit" value="1" min="1">
             </div>
             <div style="flex: 2;">
                 <label style="font-weight: normal; font-size: 0.7rem;">Auto-Advance</label>
                 <select id="autoNext">
-                    <option value="true">Next Pasuram</option>
-                    <option value="false">Stop at End</option>
+                    <option value="true">Next Section</option>
+                    <option value="false">Stop</option>
                 </select>
             </div>
         </div>
@@ -79,34 +77,32 @@
 
     <audio id="audioPlayer" controls></audio>
     <div id="status" class="status">Ready</div>
-    <div id="recorded-markers" class="recorder-hint">Press 'M' to log marker</div>
+    <div id="recorded-markers" style="font-size: 0.7rem; color: #606770; text-align: center; margin-top: 5px;">Press 'M' to record markers</div>
 </div>
 
 <div id="session-log-container">
-    <h3 style="margin: 0 0 10px 0; color: #0070ba; font-size: 0.9rem;">Session Log (Paste into marker.js)</h3>
-    <textarea id="final-session-output" readonly placeholder="Your recorded markers will appear here after each pasuram ends..."></textarea>
-    <button class="btn-play" style="width: 100%; margin-top: 10px; font-size: 0.8rem;" onclick="copySessionLog()">COPY ALL MARKERS</button>
+    <textarea id="final-session-output" readonly placeholder="Session markers for marker.js appear here..."></textarea>
+    <button class="btn-play" style="width: 100%; margin-top: 10px; font-size: 0.8rem;" onclick="copySessionLog()">COPY MARKERS</button>
 </div>
 
 <script src="marker.js"></script>
 
 <script>
     const CONFIG = {
-        'TVM': { hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, ex: {'2.7': 13} },
-        'PT':  { hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, ex: {} },
-        'PMT': { hasSub: false, maxCh: 10, defPas: 10, ex: {} },
-        'NAT': { hasSub: false, maxCh: 14, defPas: 10, ex: {} }
+        'TVM': { hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, label: "Current Pasuram" },
+        'PT':  { hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, label: "Current Pasuram" },
+        'PMT': { hasSub: false, maxCh: 10, defPas: 10, label: "Current Pasuram" },
+        'NAT': { hasSub: false, maxCh: 14, defPas: 10, label: "Current Pasuram" },
+        'MUM': { hasSub: false, maxCh: 1, defPas: 200, label: "Current Suthram", isSingleFile: true }
     };
 
     let currentRepeatCount = 0;
     let currentLineIndex = 0;
     let learningMode = 'line'; 
     let monitorInterval = null;
-    const player = document.getElementById('audioPlayer');
-
-    // --- SESSION RECORDER VARIABLES ---
     let currentSessionData = {}; 
     let activePasuramMarkers = []; 
+    const player = document.getElementById('audioPlayer');
 
     function setMode(mode) {
         learningMode = mode;
@@ -131,51 +127,88 @@
     function startLearning() {
         currentRepeatCount = 0;
         currentLineIndex = 0;
-        activePasuramMarkers = []; // Clear current buffer for new start
+        activePasuramMarkers = []; 
         playAudio();
     }
 
     function playAudio() {
         stopMonitor();
         const pre = document.getElementById('prefix').value;
-        const num = document.getElementById('number').value.trim();
+        const numInput = document.getElementById('number').value.trim();
         const status = document.getElementById('status');
         const limit = parseInt(document.getElementById('repeatLimit').value) || 1;
         
-        const key = `${pre}.${num}`;
-        const markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[key] : null;
+        let audioSrc;
+        let markers;
 
-        const targetSrc = `https://www.uveda.org/media/recitation/${pre}.${num}.mp3`;
-        if (player.src !== targetSrc) {
-            player.src = targetSrc;
-            player.load();
-        }
-        
-        if (learningMode === 'full' || !markers) {
-            status.innerText = `Full Mode | Repeat ${currentRepeatCount + 1}/${limit}`;
-            player.play();
-            return;
-        }
-
-        let start = (currentLineIndex === 0) ? 0 : markers[currentLineIndex - 1];
-        let end = (learningMode === 'line') ? markers[currentLineIndex] : markers[currentLineIndex + 1];
-
-        player.currentTime = start;
-        player.play();
-
-        if (end === undefined) {
-            status.innerText = `Final Section | Repeat ${currentRepeatCount + 1}/${limit}`;
-        } else {
-            const displayIdx = Math.floor(currentLineIndex / (learningMode === 'couplet' ? 2 : 1) + 1);
-            status.innerText = `Section ${displayIdx} | Repeat ${currentRepeatCount + 1}/${limit}`;
+        if (CONFIG[pre].isSingleFile) {
+            // Single file logic for Mumukshupadi
+            audioSrc = `audiofile/${pre}.all.mp3`;
+            const suthramMarkers = window.MARKER_DATABASE ? window.MARKER_DATABASE[`${pre}.all`] : null;
+            const suthramIdx = parseInt(numInput) - 1;
             
-            monitorInterval = setInterval(() => {
-                if (player.currentTime >= end) {
-                    player.pause();
-                    stopMonitor();
-                    handleSegmentEnd(markers, limit);
-                }
-            }, 30);
+            if (!suthramMarkers || suthramMarkers[suthramIdx] === undefined) {
+                status.innerText = "Suthram marker not found.";
+                return;
+            }
+
+            // Determine the start and end of the specific suthram from the master list
+            let start = suthramMarkers[suthramIdx];
+            let end = suthramMarkers[suthramIdx + 1]; 
+
+            if (player.src.indexOf(audioSrc) === -1) {
+                player.src = audioSrc;
+                player.load();
+            }
+
+            player.currentTime = start;
+            player.play();
+            status.innerText = `Suthram ${numInput} | Repeat ${currentRepeatCount + 1}/${limit}`;
+
+            if (end !== undefined) {
+                monitorInterval = setInterval(() => {
+                    if (player.currentTime >= end) {
+                        player.pause();
+                        stopMonitor();
+                        handleSegmentEnd(null, limit); // Reuse logic
+                    }
+                }, 30);
+            }
+        } else {
+            // Original multi-file logic for Prabandhams
+            const key = `${pre}.${numInput}`;
+            markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[key] : null;
+            audioSrc = `https://www.uveda.org/media/recitation/${pre}.${numInput}.mp3`;
+
+            if (player.src !== audioSrc) {
+                player.src = audioSrc;
+                player.load();
+            }
+
+            if (learningMode === 'full' || !markers) {
+                status.innerText = `Full Mode | Repeat ${currentRepeatCount + 1}/${limit}`;
+                player.play();
+                return;
+            }
+
+            let start = (currentLineIndex === 0) ? 0 : markers[currentLineIndex - 1];
+            let end = (learningMode === 'line') ? markers[currentLineIndex] : markers[currentLineIndex + 1];
+
+            player.currentTime = start;
+            player.play();
+
+            if (end === undefined) {
+                status.innerText = `Final Section | Repeat ${currentRepeatCount + 1}/${limit}`;
+            } else {
+                status.innerText = `Section ${currentLineIndex + 1} | Repeat ${currentRepeatCount + 1}/${limit}`;
+                monitorInterval = setInterval(() => {
+                    if (player.currentTime >= end) {
+                        player.pause();
+                        stopMonitor();
+                        handleSegmentEnd(markers, limit);
+                    }
+                }, 30);
+            }
         }
     }
 
@@ -185,7 +218,17 @@
             playAudio(); 
         } else {
             currentRepeatCount = 0;
-            advanceLine(markers);
+            const pre = document.getElementById('prefix').value;
+            if (CONFIG[pre].isSingleFile) {
+                // If auto-advance is on, move to the next suthram
+                if (document.getElementById('autoNext').value === "true") {
+                    navigate(1);
+                } else {
+                    document.getElementById('status').innerText = "Suthram Complete.";
+                }
+            } else {
+                advanceLine(markers);
+            }
         }
     }
 
@@ -196,12 +239,10 @@
         if (markers && currentLineIndex <= markers.length) {
             playAudio();
         } else {
-            const autoNext = document.getElementById('autoNext').value === "true";
-            if (autoNext) {
-                document.getElementById('status').innerText = "Pasuram Done. Advancing...";
+            if (document.getElementById('autoNext').value === "true") {
                 setTimeout(() => navigate(1), 1000);
             } else {
-                document.getElementById('status').innerText = "Pasuram Complete.";
+                document.getElementById('status').innerText = "Complete.";
                 currentLineIndex = 0;
             }
         }
@@ -212,108 +253,77 @@
         const input = document.getElementById('number');
         const pre = document.getElementById('prefix').value;
         const c = CONFIG[pre];
-        let parts = input.value.split('.').map(Number);
         
-        let ch, sub, pas;
-        if (c.hasSub) { [ch, sub, pas] = parts; } 
-        else { [ch, pas] = parts; sub = 0; }
-        
-        pas += dir;
-        const currentLimit = (c.ex[`${ch}.${sub}`] || c.ex[`${ch}`] || c.defPas);
-
-        if (dir === 1) {
-            if (pas > currentLimit) {
-                pas = 1;
-                if (c.hasSub) { sub++; if (sub > c.maxSub) { sub = 1; ch++; } } 
-                else { ch++; }
-            }
+        if (!c.hasSub) {
+            let val = parseInt(input.value) + dir;
+            if (val < 1) val = 1;
+            input.value = val;
         } else {
-            if (pas < 1) {
-                if (c.hasSub) {
-                    sub--;
-                    if (sub < 1) {
-                        if (ch > 1) { ch--; sub = c.maxSub; pas = (c.ex[`${ch}.${sub}`] || c.defPas); }
-                        else { ch = 1; sub = 1; pas = 1; }
-                    } else { pas = (c.ex[`${ch}.${sub}`] || c.defPas); }
-                } else {
-                    if (ch > 1) { ch--; pas = c.defPas; }
-                    else { ch = 1; pas = 1; }
-                }
-            }
+            let parts = input.value.split('.').map(Number);
+            let [ch, sub, pas] = parts;
+            pas += dir;
+            const currentLimit = (c.ex[`${ch}.${sub}`] || c.defPas);
+            if (pas > currentLimit) { pas = 1; sub++; if (sub > c.maxSub) { sub = 1; ch++; } }
+            if (pas < 1) { pas = c.defPas; sub--; if (sub < 1) { sub = c.maxSub; ch--; } }
+            input.value = `${ch}.${sub}.${pas}`;
         }
-
-        input.value = c.hasSub ? `${ch}.${sub}.${pas}` : `${ch}.${pas}`;
         startLearning();
     }
 
     function resetToStart() {
         const pre = document.getElementById('prefix').value;
-        const label = document.getElementById('numLabel');
-        const input = document.getElementById('number');
+        const c = CONFIG[pre];
+        document.getElementById('numLabel').innerText = c.label;
+        document.getElementById('number').value = c.hasSub ? "1.1.1" : "1";
         stopMonitor();
-        if (CONFIG[pre].hasSub) { label.innerText = "Current Pasuram (Ch.Sub.Pas)"; input.value = "1.1.1"; } 
-        else { label.innerText = "Current Pasuram (Ch.Pas)"; input.value = "1.1"; }
     }
 
-    // --- STUDIO RECORDER LOGIC ---
     function logMarker() {
         const currentTime = parseFloat(player.currentTime.toFixed(2));
-        const pre = document.getElementById('prefix').value;
-        const num = document.getElementById('number').value.trim();
         if (currentTime > 0) {
             activePasuramMarkers.push(currentTime);
-            document.getElementById('recorded-markers').innerText = `Logged ${activePasuramMarkers.length} markers for ${pre}.${num}`;
-            console.log(`Marker logged: ${currentTime}s`);
+            document.getElementById('recorded-markers').innerText = `Logged ${activePasuramMarkers.length} marks`;
         }
     }
 
     function commitCurrentPasuram() {
         const pre = document.getElementById('prefix').value;
-        const num = document.getElementById('number').value.trim();
-        const key = `${pre}.${num}`;
+        const key = CONFIG[pre].isSingleFile ? `${pre}.all` : `${pre}.${document.getElementById('number').value}`;
+        
         if (activePasuramMarkers.length > 0) {
-            currentSessionData[key] = [...activePasuramMarkers];
-            updateFinalOutput();
+            if (!currentSessionData[key]) currentSessionData[key] = [];
+            // For single file, we append to a master list
+            if (CONFIG[pre].isSingleFile) {
+                currentSessionData[key] = [...currentSessionData[key], ...activePasuramMarkers];
+            } else {
+                currentSessionData[key] = [...activePasuramMarkers];
+            }
+            
+            let txt = "";
+            for (let k in currentSessionData) txt += `    '${k}': [${currentSessionData[k].join(', ')}],\n`;
+            document.getElementById('final-session-output').value = txt;
             activePasuramMarkers = []; 
-            console.log(`Committed ${key} to session log.`);
         }
-    }
-
-    function updateFinalOutput() {
-        const outputArea = document.getElementById('final-session-output');
-        let formattedText = "";
-        for (const [key, markers] of Object.entries(currentSessionData)) {
-            formattedText += `    '${key}': [${markers.join(', ')}],\n`;
-        }
-        outputArea.value = formattedText;
     }
 
     function copySessionLog() {
-        const outputArea = document.getElementById('final-session-output');
-        outputArea.select();
+        const el = document.getElementById('final-session-output');
+        el.select();
         document.execCommand('copy');
-        document.getElementById('status').innerText = "Copied to Clipboard!";
+        document.getElementById('status').innerText = "Markers Copied!";
     }
 
-    // Keyboard 'M' listener
-    window.addEventListener('keydown', (e) => {
-        if (e.key.toLowerCase() === 'm') {
-            logMarker();
-        }
-    });
+    window.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'm') logMarker(); });
 
     player.onended = function() {
-        commitCurrentPasuram(); // Auto-save what was just logged
-        const limit = parseInt(document.getElementById('repeatLimit').value) || 1;
+        commitCurrentPasuram();
         const pre = document.getElementById('prefix').value;
         const num = document.getElementById('number').value.trim();
         const markers = window.MARKER_DATABASE ? window.MARKER_DATABASE[`${pre}.${num}`] : null;
-
-        if (learningMode === 'full' || !markers || currentLineIndex >= markers.length - 1) {
-            handleSegmentEnd(markers, limit);
+        if (CONFIG[pre].isSingleFile || learningMode === 'full' || !markers || currentLineIndex >= markers.length - 1) {
+            handleSegmentEnd(markers, parseInt(document.getElementById('repeatLimit').value) || 1);
         }
     };
 </script>
-
 </body>
 </html>
