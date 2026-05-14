@@ -38,7 +38,7 @@ const CONFIG = {
             // Logic to route to local files or external URLs
             return chapter === 2 
                 ? `audiofiles/NAT.2.all.m4a` 
-                : `https://www.uveda.org/media/recitation/NTM.${num}.mp3`;
+                : `https://www.uveda.org/media/recitation/NAT.${num}.mp3`;
         }
     }
 };
