@@ -10,14 +10,32 @@ const CONFIG = {
         hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, ex: {},
         getAudioSrc: (num) => `https://www.uveda.org/media/recitation/PT.${num}.mp3`
     },
-    'PMT': { 
-        hasSub: false, maxCh: 10, defPas: 10, ex: {},
-        isSingleFile: (num) => parseInt(num.split('.')[0]) === 1,
-        getAudioSrc: (num) => {
-            const chapter = parseInt(num.split('.')[0]);
-            return chapter === 1 ? `audiofiles/PMT.1.all.m4a` : `https://www.uveda.org/media/recitation/PMT.${num}.mp3`;
-        }
+ 'PMT': { 
+    hasSub: false, 
+    maxCh: 10, 
+    defPas: 10, 
+    ex: {},
+    // Chapter 1 and 2 are handled as single files by our automation
+    isSingleFile: (num) => {
+        const chapter = parseInt(num.split('.')[0]);
+        return chapter === 1 || chapter === 2;
     },
+    getAudioSrc: (num) => {
+        const chapter = parseInt(num.split('.')[0]);
+        
+        // Routing logic based on chapter availability
+        if (chapter === 1) {
+            return `audiofiles/PMT.1.all.m4a`; 
+        } 
+        if (chapter === 2) {
+            // Using the OGG version for Chapter 2
+            return `audiofiles/PMT.2.all.ogg`;
+        }
+        
+        // Default remote fallback for Chapters 3-10
+        return `https://www.uveda.org/media/recitation/PMT.${num}.mp3`;
+    }
+},
     'MUM': {
         hasSub: false, maxCh: 1, defPas: 64, ex: {},
         isSingleFile: () => true,
