@@ -18,7 +18,7 @@ const CONFIG = {
     // Chapter 1 and 2 are handled as single files by our automation
     isSingleFile: (num) => {
         const chapter = parseInt(num.split('.')[0]);
-        return chapter === 1 || chapter === 2;
+        return chapter === 1 || chapter === 2|| chapter === 3;
     },
     getAudioSrc: (num) => {
         const chapter = parseInt(num.split('.')[0]);
@@ -31,7 +31,10 @@ const CONFIG = {
             // Using the OGG version for Chapter 2
             return `audiofiles/PMT.2.all.ogg`;
         }
-        
+                if (chapter === 3) {
+            // Using the OGG version for Chapter 2
+            return `audiofiles/PMT.3.all.ogg`;
+        }
         // Default remote fallback for Chapters 3-10
         return `https://www.uveda.org/media/recitation/PMT.${num}.mp3`;
     }
