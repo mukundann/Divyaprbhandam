@@ -36,8 +36,8 @@ const CONFIG = {
         getAudioSrc: (num) => {
             const chapter = parseInt(num.split('.')[0]);
             // Logic to route to local files or external URLs
-            return chapter === 1 
-                ? `audiofiles/NTM.1.all.m4a` 
+            return chapter === 2 
+                ? `audiofiles/NAT.2.all.m4a` 
                 : `https://www.uveda.org/media/recitation/NTM.${num}.mp3`;
         }
     }
