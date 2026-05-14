@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marker Studio - Smart Playback & Export</title>
+    <title>Marker Studio - Specialized Import</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
         .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 950px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -18,8 +18,7 @@
         .btn-record:disabled { background: #ccd0d5; cursor: not-allowed; }
         .btn-import { background: #28a745; color: white; margin-top: 5px; }
         .btn-gen { background: #0070ba; color: white; margin-top: 15px; }
-        .btn-clear { background: #e4e6eb; color: #050505; }
-        textarea { flex-grow: 1; font-family: 'Courier New', monospace; font-size: 0.8rem; padding: 12px; border: 1px solid #ccd0d5; border-radius: 8px; resize: none; min-height: 250px; line-height: 1.4; }
+        textarea { flex-grow: 1; font-family: 'Courier New', monospace; font-size: 0.8rem; padding: 12px; border: 1px solid #ccd0d5; border-radius: 8px; resize: none; min-height: 250px; }
         #marker-list { background: #f9fafb; border: 1px solid #e4e6eb; border-radius: 8px; height: 550px; overflow-y: auto; }
         .marker-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
         .playing-marker { border-left: 5px solid #0070ba; background: #e7f3ff !important; }
@@ -31,7 +30,7 @@
 <body>
 
 <div class="container">
-    <h2>Marker Studio: Smart Playback</h2>
+    <h2>Marker Studio: Smart Selection</h2>
 
     <div class="left-panel">
         <div class="upload-zone" onclick="document.getElementById('audioInput').click()">
@@ -43,18 +42,18 @@
         <button class="btn-record" id="recordBtn" onclick="addMarker()" disabled>Record Marker (Press 'M')</button>
         
         <div class="controls">
-            <button class="btn-clear" onclick="clearMarkers()">Clear All</button>
+            <button class="btn-clear" onclick="clearMarkers()" style="background:#e4e6eb">Clear All</button>
             <button style="background:#6c757d; color:white" onclick="player.currentTime -= 2">Rewind 2s</button>
         </div>
 
-        <label style="margin-top: 15px;">Marker.js Data (Input/Output):</label>
-        <textarea id="ioJson" placeholder='Paste [12.75, 56.1, ...] here'></textarea>
-        <button class="btn-import" onclick="importFromText()">↑ Load Markers for Testing</button>
-        <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate Updated Data</button>
+        <label style="margin-top: 15px;">Input/Output Data:</label>
+        <textarea id="ioJson" placeholder='Paste your array of objects here...'></textarea>
+        <button class="btn-import" onclick="importFromText()">↑ Load Segments for Testing</button>
+        <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate marker.js Data</button>
     </div>
 
     <div class="right-panel">
-        <label>Segments (Uncheck to Skip in Playback):</label>
+        <label>Selected Verses (Uncheck to Remove):</label>
         <div id="marker-list"></div>
     </div>
 </div>
@@ -73,21 +72,30 @@
         player.src = URL.createObjectURL(file);
         document.getElementById('recordBtn').disabled = false;
         
-        // Smart Monitor: Honors unchecked segments during normal play
         player.ontimeupdate = () => {
             if (player.paused || rawMarkers.length === 0) return;
             const time = player.currentTime;
             
             const idx = rawMarkers.findIndex(m => time >= m.start && time < m.end);
+            
+            // If we are currently IN an active segment
             if (idx !== -1) {
                 if (idx !== currentHighlightIndex) {
                     currentHighlightIndex = idx;
                     highlightMarker(idx);
                 }
                 
-                // If segment is unchecked, jump immediately
+                // If segment is unchecked, skip it
                 if (!rawMarkers[idx].active) {
                     jumpToNextActive(idx + 1);
+                }
+            } 
+            // If we are in a GAP (between segments)
+            else {
+                // Find the next active segment ahead of us
+                const nextIdx = rawMarkers.findIndex(m => m.start > time);
+                if (nextIdx !== -1) {
+                    jumpToNextActive(nextIdx);
                 }
             }
         };
@@ -100,24 +108,23 @@
                 return;
             }
         }
-        player.pause(); // No more active segments
+        player.pause(); 
     }
 
     function importFromText() {
         try {
             const data = JSON.parse(ioJson.value.trim());
             if (!Array.isArray(data)) return;
+            
             rawMarkers = [];
-            let lastEnd = 0;
             data.forEach(item => {
-                let start, end;
+                // Support both {start, end} and simple numbers
                 if (typeof item === 'object' && item !== null) {
-                    start = item.start; end = item.end;
+                    rawMarkers.push({ start: item.start, end: item.end, active: true });
                 } else {
-                    start = lastEnd; end = item;
+                    const lastEnd = rawMarkers.length > 0 ? rawMarkers[rawMarkers.length - 1].end : 0;
+                    rawMarkers.push({ start: lastEnd, end: item, active: true });
                 }
-                rawMarkers.push({ start, end, active: true });
-                lastEnd = end;
             });
             renderMarkers();
         } catch (e) { alert("Invalid JSON array."); }
@@ -126,7 +133,6 @@
     function addMarker() {
         const time = parseFloat(player.currentTime.toFixed(2));
         const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
-        if (time <= start) return;
         rawMarkers.push({ start: start, end: time, active: true });
         renderMarkers();
     }
@@ -156,7 +162,6 @@
         highlightMarker(index);
         player.currentTime = start;
         player.play();
-        // Use a one-time interval to stop just this segment
         const checker = setInterval(() => {
             if (player.currentTime >= end || player.paused) {
                 player.pause();
@@ -170,6 +175,7 @@
         let runningEnd = 0;
         rawMarkers.forEach(m => {
             if (!m.active) return;
+            // Logic for marker.js: Use number if contiguous, object if not
             if (m.start === runningEnd) { result.push(m.end); } 
             else { result.push({ start: m.start, end: m.end }); }
             runningEnd = m.end;
