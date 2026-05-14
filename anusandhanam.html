@@ -1,0 +1,41 @@
+<script src="marker.js"></script>
+<script src="markerProcessor.js"></script>
+<script src="config.js"></script>
+<script src="learningEngine.js"></script>
+<script src="navigation.js"></script>
+
+<script>
+    // Glue code to connect modules
+    LearningEngine.init(document.getElementById('audioPlayer'));
+
+    window.addEventListener('learning-track-ended', () => {
+        const limit = parseInt(document.getElementById('repeatLimit').value);
+        LearningEngine.state.currentRepeatCount++;
+
+        if (LearningEngine.state.currentRepeatCount < limit) {
+            startLearning(); // Re-run current
+        } else {
+            LearningEngine.state.currentRepeatCount = 0;
+            if (document.getElementById('autoNext').value === "true") navigate(1);
+        }
+    });
+
+    function startLearning() {
+        const pre = document.getElementById('prefix').value;
+        const numInput = document.getElementById('number').value;
+        const c = CONFIG[pre];
+        const coords = Navigation.parseCoords(numInput, c.hasSub);
+        
+        const isSingle = typeof c.isSingleFile === 'function' ? c.isSingleFile(numInput) : false;
+        let bounds = null;
+
+        if (isSingle) {
+            const markers = window.MARKER_DATABASE[`${pre}.${coords.ch}.all`];
+            bounds = MarkerProcessor.getSegmentBounds(markers, coords.pas - 1);
+        }
+
+        LearningEngine.playSegment(c.getAudioSrc(numInput), bounds, () => {
+            window.dispatchEvent(new CustomEvent('learning-track-ended'));
+        });
+    }
+</script>
