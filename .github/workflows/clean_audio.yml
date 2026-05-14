@@ -4,6 +4,7 @@ on:
     paths:
       - 'marker.js' # Triggered only when you update markers
       - 'audiofiles/**'  # Or when you upload new raw audio files
+workflow_dispatch:  # This enables the "Run workflow" button in the UI
 
 jobs:
   clean-audio:
