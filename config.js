@@ -22,6 +22,24 @@ const CONFIG = {
         hasSub: false, maxCh: 1, defPas: 64, ex: {},
         isSingleFile: () => true,
         getAudioSrc: () => `audiofiles/charamaslokam.mp3`
+    },
+    'NTM': { 
+        hasSub: false, 
+        maxCh: 14, 
+        defPas: 10, 
+        ex: { '1': 10, '8': 10, '11': 10 }, // Add specific pasuram counts per chapter here
+        isSingleFile: (num) => {
+            // If you have a single audio file for Chapter 1, mark it here
+            const chapter = parseInt(num.split('.')[0]);
+            return chapter === 1; 
+        },
+        getAudioSrc: (num) => {
+            const chapter = parseInt(num.split('.')[0]);
+            // Logic to route to local files or external URLs
+            return chapter === 1 
+                ? `audiofiles/NTM.1.all.m4a` 
+                : `https://www.uveda.org/media/recitation/NTM.${num}.mp3`;
+        }
     }
 };
 window.CONFIG = CONFIG;
