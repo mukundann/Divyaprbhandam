@@ -27,11 +27,11 @@ const CONFIG = {
         hasSub: false, 
         maxCh: 14, 
         defPas: 10, 
-        ex: { '1': 10, '8': 10, '11': 10 }, // Add specific pasuram counts per chapter here
+   
         isSingleFile: (num) => {
             // If you have a single audio file for Chapter 1, mark it here
             const chapter = parseInt(num.split('.')[0]);
-            return chapter === 1; 
+            return chapter === 2; 
         },
         getAudioSrc: (num) => {
             const chapter = parseInt(num.split('.')[0]);
