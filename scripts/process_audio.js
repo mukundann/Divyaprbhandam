@@ -70,7 +70,13 @@ Object.keys(MARKER_DATABASE).forEach(key => {
     });
 
     // Run FFmpeg
-    const cmd = `ffmpeg -i "${inputFile}" -filter_complex "${filter}${inputs}concat=n=${markers.length}:v=0:a=1[outa]" -map "[outa]" -y "${outputFile}"`;
+//    const cmd = `ffmpeg -i "${inputFile}" -filter_complex "${filter}${inputs}concat=n=${markers.length}:v=0:a=1[outa]" -map "[outa]" -y "${outputFile}"`;
+    // Add these filter settings for high-quality learning audio
+const noiseFilter = "afftdn=nr=12:nf=-25"; // Noise reduction
+const compressionFilter = "compand=attacks=0:points=-80/-80|-40/-15|-20/-10|0/-7"; // Volume leveling
+
+// Update the FFmpeg command to include the new filters
+const cmd = `ffmpeg -i "${inputFile}" -filter_complex "${filter}${inputs}concat=n=${markers.length}:v=0:a=1[raw]; [raw]${noiseFilter},${compressionFilter}[outa]" -map "[outa]" -y "${outputFile}"`;
 
     try {
         execSync(cmd);
