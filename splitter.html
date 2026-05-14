@@ -3,58 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marker.js Studio: Import & Export</title>
+    <title>Marker Studio - Test, Select & Export</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
-        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .left-panel, .right-panel { display: flex; flex-direction: column; }
-        h2 { text-align: center; font-size: 1.2rem; margin-bottom: 15px; grid-column: span 2; }
-        .upload-zone { border: 2px dashed #ccd0d5; padding: 15px; text-align: center; border-radius: 12px; cursor: pointer; margin-bottom: 10px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 950px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        h2 { text-align: center; font-size: 1.2rem; margin-top: 0; margin-bottom: 15px; grid-column: span 2; color: #1c1e21; }
+        .left-panel, .right-panel { display: flex; flex-direction: column; min-width: 0; }
+        .upload-zone { border: 2px dashed #ccd0d5; padding: 20px; text-align: center; border-radius: 12px; cursor: pointer; margin-bottom: 10px; transition: 0.2s; }
+        .upload-zone:hover { background: #f9fafb; border-color: #0070ba; }
         audio { width: 100%; margin-bottom: 10px; }
         .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        button { padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
-        .btn-record { background: #fb7373; color: white; }
-        .btn-gen { background: #0070ba; color: white; grid-column: span 2; margin-top: 10px; }
-        .btn-import { background: #28a745; color: white; width: 100%; margin-top: 5px; }
-        textarea { flex-grow: 1; font-family: monospace; font-size: 0.75rem; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px; resize: none; min-height: 250px; }
-        #marker-list { background: #f9fafb; border: 1px solid #e4e6eb; border-radius: 8px; height: 500px; overflow-y: auto; }
-        .marker-item { display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.8rem; }
+        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem; transition: background 0.2s; }
+        .btn-record { background: #fb7373; color: white; width: 100%; margin-bottom: 10px; }
+        .btn-record:disabled { background: #ccd0d5; cursor: not-allowed; }
+        .btn-import { background: #28a745; color: white; margin-top: 5px; }
+        .btn-gen { background: #0070ba; color: white; margin-top: 15px; }
+        .btn-clear { background: #e4e6eb; color: #050505; }
+        textarea { flex-grow: 1; font-family: 'Courier New', monospace; font-size: 0.8rem; padding: 12px; border: 1px solid #ccd0d5; border-radius: 8px; resize: none; min-height: 250px; line-height: 1.4; }
+        #marker-list { background: #f9fafb; border: 1px solid #e4e6eb; border-radius: 8px; height: 550px; overflow-y: auto; }
+        .marker-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; transition: 0.1s; }
         .marker-item:hover { background: #f0f7ff; }
-        .item-info { flex-grow: 1; margin-left: 10px; }
-        .btn-test { background: #6c757d; color: white; padding: 3px 8px; border-radius: 4px; margin-left: 5px; }
-        .playing-marker { border-left: 5px solid #0070ba; background: #e7f3ff; }
+        .playing-marker { border-left: 5px solid #0070ba; background: #e7f3ff !important; }
+        .item-info { flex-grow: 1; margin-left: 12px; }
+        .btn-test { background: #6c757d; color: white; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; }
+        label { font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; color: #4b4f56; display: block; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Marker Studio: Two-Way Data Sync</h2>
+    <h2>Marker Studio: Test, Filter & Export</h2>
 
     <div class="left-panel">
         <div class="upload-zone" onclick="document.getElementById('audioInput').click()">
-            <p id="file-label">1. Upload MP3/M4A</p>
+            <p id="file-label">1. Upload MP3 or M4A File</p>
             <input type="file" id="audioInput" accept="audio/*" style="display:none" onchange="loadAudio(this)">
         </div>
         <audio id="player" controls></audio>
+        
+        <button class="btn-record" id="recordBtn" onclick="addMarker()" disabled>Record Marker (Press 'M')</button>
+        
         <div class="controls">
-            <button class="btn-record" id="recordBtn" onclick="addMarker()" disabled>Record Marker (M)</button>
-            <button onclick="clearMarkers()">Clear All</button>
+            <button class="btn-clear" onclick="clearMarkers()">Clear All</button>
+            <button style="background:#6c757d; color:white" onclick="player.currentTime -= 2">Rewind 2s</button>
         </div>
 
-        <label style="font-size: 0.75rem; font-weight: bold; margin-top: 10px;">Marker.js Data (Input/Output):</label>
-        <textarea id="ioJson" placeholder="Paste existing [9.7, 22.4, ...] array here to import..."></textarea>
-        <button class="btn-import" onclick="importFromText()">↑ Load Markers from Text</button>
-        <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate Updated Data</button>
+        <label style="margin-top: 15px;">Marker.js Data (Input/Output):</label>
+        <textarea id="ioJson" placeholder='Paste existing array here: [12.75, 56.1, ...]'></textarea>
+        <button class="btn-import" onclick="importFromText()">↑ Load Markers for Testing</button>
+        <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate Updated marker.js Data</button>
     </div>
 
     <div class="right-panel">
-        <label style="font-size: 0.75rem; font-weight: bold; margin-bottom: 5px;">Recorded Segments (Uncheck to Skip):</label>
+        <label>Segments (Uncheck to Skip):</label>
         <div id="marker-list"></div>
     </div>
 </div>
 
 <script>
-    let rawMarkers = []; // Objects: {start, end, active}
+    let rawMarkers = []; 
     const player = document.getElementById('player');
     const markerList = document.getElementById('marker-list');
     const ioJson = document.getElementById('ioJson');
@@ -63,58 +70,63 @@
         const file = input.files[0];
         if (!file) return;
         document.getElementById('file-label').innerText = file.name;
-        const arrayBuffer = await file.arrayBuffer();
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        await audioCtx.decodeAudioData(arrayBuffer);
         player.src = URL.createObjectURL(file);
         document.getElementById('recordBtn').disabled = false;
     }
 
-    function addMarker() {
-        const time = parseFloat(player.currentTime.toFixed(2));
-        const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
-        
-        if (time <= start) return;
-
-        rawMarkers.push({ start: start, end: time, active: true });
-        renderMarkers();
-    }
-
+    // Handles importing both simple [1, 2, 3] and complex [{start, end}] formats
     function importFromText() {
         try {
-            const data = JSON.parse(ioJson.value);
-            if (!Array.isArray(data)) return;
+            const data = JSON.parse(ioJson.value.trim());
+            if (!Array.isArray(data)) {
+                alert("Input must be a JSON array.");
+                return;
+            }
 
             rawMarkers = [];
             let lastEnd = 0;
 
             data.forEach(item => {
-                if (typeof item === 'object') {
-                    rawMarkers.push({ start: item.start, end: item.end, active: true });
-                    lastEnd = item.end;
+                let start, end;
+                if (typeof item === 'object' && item !== null) {
+                    start = item.start;
+                    end = item.end;
                 } else {
-                    rawMarkers.push({ start: lastEnd, end: item, active: true });
-                    lastEnd = item;
+                    start = lastEnd;
+                    end = item;
                 }
+                rawMarkers.push({ start, end, active: true });
+                lastEnd = end;
             });
-
             renderMarkers();
         } catch (e) {
-            alert("Invalid JSON format. Ensure it is an array [].");
+            alert("Error parsing JSON. Check your brackets and commas.");
         }
+    }
+
+    function addMarker() {
+        const time = parseFloat(player.currentTime.toFixed(2));
+        const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
+        if (time <= start) return;
+        
+        rawMarkers.push({ start: start, end: time, active: true });
+        renderMarkers();
     }
 
     function renderMarkers() {
         markerList.innerHTML = rawMarkers.map((m, i) => `
             <div class="marker-item" id="item-${i}">
-                <input type="checkbox" ${m.active ? 'checked' : ''} onchange="toggleSelection(${i})">
-                <div class="item-info">Seg ${i+1}: ${m.start}s - ${m.end}s</div>
+                <input type="checkbox" ${m.active ? 'checked' : ''} onchange="toggleActive(${i})">
+                <div class="item-info">
+                    <strong>#${i+1}</strong>: ${m.start.toFixed(2)}s - ${m.end.toFixed(2)}s 
+                    <span style="color:#888; font-size:0.7rem">(${(m.end - m.start).toFixed(1)}s)</span>
+                </div>
                 <button class="btn-test" onclick="testSegment(${m.start}, ${m.end}, ${i})">Test</button>
             </div>
         `).join('');
     }
 
-    function toggleSelection(index) {
+    function toggleActive(index) {
         rawMarkers[index].active = !rawMarkers[index].active;
     }
 
@@ -126,6 +138,7 @@
         player.currentTime = start;
         player.play();
         if (testMonitor) clearInterval(testMonitor);
+        
         testMonitor = setInterval(() => {
             if (player.currentTime >= end) {
                 player.pause();
@@ -136,14 +149,16 @@
 
     function generateMarkerJS() {
         const result = [];
-        let runningEnd = 0;
+        let runningEnd = 0; // The end-point of the last verse that was kept
 
-        rawMarkers.forEach(m => {
-            if (!m.active) return;
+        rawMarkers.forEach((m) => {
+            if (!m.active) return; // Skip inactive segments entirely
 
             if (m.start === runningEnd) {
+                // Contiguous: This verse starts exactly where the previous kept verse ended
                 result.push(m.end);
             } else {
+                // Non-contiguous: There is a gap (skipped audio) before this verse
                 result.push({ start: m.start, end: m.end });
             }
             runningEnd = m.end;
@@ -153,10 +168,20 @@
     }
 
     function clearMarkers() {
-        if(confirm("Clear all?")) { rawMarkers = []; renderMarkers(); ioJson.value = ""; }
+        if(confirm("Discard all markers?")) {
+            rawMarkers = [];
+            renderMarkers();
+            ioJson.value = "";
+        }
     }
 
-    window.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'm') addMarker(); });
+    // Shortcut key for recording while playing
+    window.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'm' && !document.getElementById('recordBtn').disabled) {
+            addMarker();
+        }
+    });
 </script>
+
 </body>
 </html>
