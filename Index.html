@@ -93,7 +93,14 @@
         },
         'NAT': { 
             hasSub: false, maxCh: 14, defPas: 10, ex: {},
-            getAudioSrc: (num) => `https://www.uveda.org/media/recitation/NAT.${num}.mp3`
+             isSingleFile: (num) => parseInt(num.split('.')[0]) === 1,
+            getAudioSrc: (num) => {
+                const chapter = parseInt(num.split('.')[0]);
+                return chapter === 2 
+                    ? `audiofiles/NAT.1.all.m4a` 
+                    : `https://www.uveda.org/media/recitation/NAT.${num}.mp3`;
+            }
+           
         }
     };
 
