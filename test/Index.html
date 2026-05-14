@@ -352,52 +352,7 @@ player.onended = function() {
 };
 
 
-async function downloadSplits() {
-    const pre = document.getElementById('prefix').value;
-    const numInput = document.getElementById('number').value.trim();
-    const chapter = numInput.split('.')[0];
-    const masterKey = `${pre}.${chapter}.all`;
-    const markers = window.MARKER_DATABASE[masterKey];
 
-    if (!markers) return alert("No markers found for splitting.");
-
-    const response = await fetch(player.src);
-    const arrayBuffer = await response.arrayBuffer();
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const decodedData = await audioCtx.decodeAudioData(arrayBuffer);
-
-    // We add 0 to the start and the full duration to the end to capture all segments
-    const points = [0, ...markers, decodedData.duration];
-
-    for (let i = 0; i < points.length - 1; i++) {
-        const start = points[i];
-        const end = points[i + 1];
-        const segmentDuration = end - start;
-        
-        const segmentBuffer = audioCtx.createBuffer(
-            decodedData.numberOfChannels,
-            segmentDuration * decodedData.sampleRate,
-            decodedData.sampleRate
-        );
-
-        for (let channel = 0; channel < decodedData.numberOfChannels; channel++) {
-            const channelData = decodedData.getChannelData(channel);
-            const segmentData = segmentBuffer.getChannelData(channel);
-            const startOffset = Math.floor(start * decodedData.sampleRate);
-            for (let j = 0; j < segmentData.length; j++) {
-                segmentData[j] = channelData[startOffset + j];
-            }
-        }
-
-        // Convert buffer to Wav/Mp3 and trigger download
-        const blob = bufferToWave(segmentBuffer, segmentDuration);
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = `${pre}.${chapter}.${i + 1}.wav`;
-        anchor.click();
-    }
-}
 
     
 </script>
