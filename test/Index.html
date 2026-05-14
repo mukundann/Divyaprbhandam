@@ -352,7 +352,7 @@ player.onended = function() {
 };
 
 
-sync function downloadSplits() {
+async function downloadSplits() {
     const pre = document.getElementById('prefix').value;
     const numInput = document.getElementById('number').value.trim();
     const chapter = numInput.split('.')[0];
