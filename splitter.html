@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marker Studio - Test, Select & Export</title>
+    <title>Marker Studio - Smart Playback & Export</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
         .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 950px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -21,8 +21,7 @@
         .btn-clear { background: #e4e6eb; color: #050505; }
         textarea { flex-grow: 1; font-family: 'Courier New', monospace; font-size: 0.8rem; padding: 12px; border: 1px solid #ccd0d5; border-radius: 8px; resize: none; min-height: 250px; line-height: 1.4; }
         #marker-list { background: #f9fafb; border: 1px solid #e4e6eb; border-radius: 8px; height: 550px; overflow-y: auto; }
-        .marker-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; transition: 0.1s; }
-        .marker-item:hover { background: #f0f7ff; }
+        .marker-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
         .playing-marker { border-left: 5px solid #0070ba; background: #e7f3ff !important; }
         .item-info { flex-grow: 1; margin-left: 12px; }
         .btn-test { background: #6c757d; color: white; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; }
@@ -32,7 +31,7 @@
 <body>
 
 <div class="container">
-    <h2>Marker Studio: Test, Filter & Export</h2>
+    <h2>Marker Studio: Smart Playback</h2>
 
     <div class="left-panel">
         <div class="upload-zone" onclick="document.getElementById('audioInput').click()">
@@ -49,66 +48,85 @@
         </div>
 
         <label style="margin-top: 15px;">Marker.js Data (Input/Output):</label>
-        <textarea id="ioJson" placeholder='Paste existing array here: [12.75, 56.1, ...]'></textarea>
+        <textarea id="ioJson" placeholder='Paste [12.75, 56.1, ...] here'></textarea>
         <button class="btn-import" onclick="importFromText()">↑ Load Markers for Testing</button>
-        <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate Updated marker.js Data</button>
+        <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate Updated Data</button>
     </div>
 
     <div class="right-panel">
-        <label>Segments (Uncheck to Skip):</label>
+        <label>Segments (Uncheck to Skip in Playback):</label>
         <div id="marker-list"></div>
     </div>
 </div>
 
 <script>
     let rawMarkers = []; 
+    let currentHighlightIndex = -1;
     const player = document.getElementById('player');
     const markerList = document.getElementById('marker-list');
     const ioJson = document.getElementById('ioJson');
 
-    async function loadAudio(input) {
+    function loadAudio(input) {
         const file = input.files[0];
         if (!file) return;
         document.getElementById('file-label').innerText = file.name;
         player.src = URL.createObjectURL(file);
         document.getElementById('recordBtn').disabled = false;
+        
+        // Smart Monitor: Honors unchecked segments during normal play
+        player.ontimeupdate = () => {
+            if (player.paused || rawMarkers.length === 0) return;
+            const time = player.currentTime;
+            
+            const idx = rawMarkers.findIndex(m => time >= m.start && time < m.end);
+            if (idx !== -1) {
+                if (idx !== currentHighlightIndex) {
+                    currentHighlightIndex = idx;
+                    highlightMarker(idx);
+                }
+                
+                // If segment is unchecked, jump immediately
+                if (!rawMarkers[idx].active) {
+                    jumpToNextActive(idx + 1);
+                }
+            }
+        };
     }
 
-    // Handles importing both simple [1, 2, 3] and complex [{start, end}] formats
+    function jumpToNextActive(startIndex) {
+        for (let i = startIndex; i < rawMarkers.length; i++) {
+            if (rawMarkers[i].active) {
+                player.currentTime = rawMarkers[i].start;
+                return;
+            }
+        }
+        player.pause(); // No more active segments
+    }
+
     function importFromText() {
         try {
             const data = JSON.parse(ioJson.value.trim());
-            if (!Array.isArray(data)) {
-                alert("Input must be a JSON array.");
-                return;
-            }
-
+            if (!Array.isArray(data)) return;
             rawMarkers = [];
             let lastEnd = 0;
-
             data.forEach(item => {
                 let start, end;
                 if (typeof item === 'object' && item !== null) {
-                    start = item.start;
-                    end = item.end;
+                    start = item.start; end = item.end;
                 } else {
-                    start = lastEnd;
-                    end = item;
+                    start = lastEnd; end = item;
                 }
                 rawMarkers.push({ start, end, active: true });
                 lastEnd = end;
             });
             renderMarkers();
-        } catch (e) {
-            alert("Error parsing JSON. Check your brackets and commas.");
-        }
+        } catch (e) { alert("Invalid JSON array."); }
     }
 
     function addMarker() {
         const time = parseFloat(player.currentTime.toFixed(2));
         const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
         if (time <= start) return;
-        
         rawMarkers.push({ start: start, end: time, active: true });
         renderMarkers();
     }
@@ -117,71 +135,53 @@
         markerList.innerHTML = rawMarkers.map((m, i) => `
             <div class="marker-item" id="item-${i}">
                 <input type="checkbox" ${m.active ? 'checked' : ''} onchange="toggleActive(${i})">
-                <div class="item-info">
-                    <strong>#${i+1}</strong>: ${m.start.toFixed(2)}s - ${m.end.toFixed(2)}s 
-                    <span style="color:#888; font-size:0.7rem">(${(m.end - m.start).toFixed(1)}s)</span>
-                </div>
-                <button class="btn-test" onclick="testSegment(${m.start}, ${m.end}, ${i})">Test</button>
+                <div class="item-info"><strong>#${i+1}</strong>: ${m.start}s - ${m.end}s</div>
+                <button class="btn-test" onclick="testOne(${m.start}, ${m.end}, ${i})">Test</button>
             </div>
         `).join('');
     }
 
-    function toggleActive(index) {
-        rawMarkers[index].active = !rawMarkers[index].active;
+    function toggleActive(i) { rawMarkers[i].active = !rawMarkers[i].active; }
+
+    function highlightMarker(index) {
+        document.querySelectorAll('.marker-item').forEach(el => el.classList.remove('playing-marker'));
+        const el = document.getElementById(`item-${index}`);
+        if (el) {
+            el.classList.add('playing-marker');
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
     }
 
-    let testMonitor = null;
-    function testSegment(start, end, index) {
-        document.querySelectorAll('.marker-item').forEach(el => el.classList.remove('playing-marker'));
-        document.getElementById(`item-${index}`).classList.add('playing-marker');
-        
+    function testOne(start, end, index) {
+        highlightMarker(index);
         player.currentTime = start;
         player.play();
-        if (testMonitor) clearInterval(testMonitor);
-        
-        testMonitor = setInterval(() => {
-            if (player.currentTime >= end) {
+        // Use a one-time interval to stop just this segment
+        const checker = setInterval(() => {
+            if (player.currentTime >= end || player.paused) {
                 player.pause();
-                clearInterval(testMonitor);
+                clearInterval(checker);
             }
         }, 30);
     }
 
     function generateMarkerJS() {
         const result = [];
-        let runningEnd = 0; // The end-point of the last verse that was kept
-
-        rawMarkers.forEach((m) => {
-            if (!m.active) return; // Skip inactive segments entirely
-
-            if (m.start === runningEnd) {
-                // Contiguous: This verse starts exactly where the previous kept verse ended
-                result.push(m.end);
-            } else {
-                // Non-contiguous: There is a gap (skipped audio) before this verse
-                result.push({ start: m.start, end: m.end });
-            }
+        let runningEnd = 0;
+        rawMarkers.forEach(m => {
+            if (!m.active) return;
+            if (m.start === runningEnd) { result.push(m.end); } 
+            else { result.push({ start: m.start, end: m.end }); }
             runningEnd = m.end;
         });
-
         ioJson.value = JSON.stringify(result, null, 2);
     }
 
-    function clearMarkers() {
-        if(confirm("Discard all markers?")) {
-            rawMarkers = [];
-            renderMarkers();
-            ioJson.value = "";
-        }
-    }
+    function clearMarkers() { if(confirm("Clear?")) { rawMarkers = []; renderMarkers(); ioJson.value = ""; } }
 
-    // Shortcut key for recording while playing
     window.addEventListener('keydown', (e) => {
-        if (e.key.toLowerCase() === 'm' && !document.getElementById('recordBtn').disabled) {
-            addMarker();
-        }
+        if (e.key.toLowerCase() === 'm' && !document.getElementById('recordBtn').disabled) addMarker();
     });
 </script>
-
 </body>
 </html>
