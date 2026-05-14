@@ -23,7 +23,7 @@ const CONFIG = {
         isSingleFile: () => true,
         getAudioSrc: () => `audiofiles/charamaslokam.mp3`
     },
-    'NTM': { 
+    'NAT': { 
         hasSub: false, 
         maxCh: 14, 
         defPas: 10, 
