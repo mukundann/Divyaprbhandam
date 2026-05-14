@@ -175,8 +175,11 @@
         });
 
         // WRAPPER: Generates the code snippet for your marker.js file
-        const finalJS = `window.MARKER_DATABASE = window.MARKER_DATABASE || {};\n` +
-                        `window.MARKER_DATABASE["${currentFileName}"] = ${JSON.stringify(result, null, 2)};`;
+    // 1. Generate a comma-separated list with 2 decimal places
+const markerList = result.map(n => n.toFixed(2)).join(', ');
+
+// 2. Format the final string as a single line entry for your database
+const finalJS = `'${currentFileName}' : [${markerList}],`;
         
         ioJson.value = finalJS;
     }
