@@ -3,33 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Marker & M4A Splitter</title>
+    <title>Audio Splitter - Paste & Process</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 40px; }
-        .container { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        .container { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 650px; }
         h2 { text-align: center; color: #1c1e21; margin-bottom: 25px; }
-        .upload-zone { border: 2px dashed #ccd0d5; padding: 30px; text-align: center; border-radius: 12px; margin-bottom: 20px; cursor: pointer; transition: 0.2s; }
-        .upload-zone:hover { background: #f8f9fa; border-color: #0070ba; }
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+        .upload-zone { border: 2px dashed #ccd0d5; padding: 20px; text-align: center; border-radius: 12px; margin-bottom: 20px; cursor: pointer; }
+        .flex-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .box { flex: 1; }
+        label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: #4b4f56; }
+        textarea { width: 100%; height: 120px; font-family: monospace; font-size: 0.75rem; padding: 10px; border-radius: 8px; border: 1px solid #ccd0d5; box-sizing: border-box; resize: none; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
         button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-primary { background: #0070ba; color: white; }
         .btn-record { background: #fb7373; color: white; }
-        .btn-download { background: #28a745; color: white; grid-column: span 2; }
-        audio { width: 100%; margin: 15px 0; }
-        #marker-list { background: #f9fafb; padding: 15px; border-radius: 8px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; border: 1px solid #e4e6eb; }
-        .marker-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; }
-        .status-text { margin-top: 10px; font-size: 0.8rem; text-align: center; font-weight: bold; color: #0070ba; }
+        .btn-download { background: #28a745; color: white; grid-column: span 2; height: 50px; font-size: 1rem; }
+        audio { width: 100%; margin-bottom: 10px; }
+        #status { font-size: 0.8rem; text-align: center; font-weight: bold; color: #0070ba; margin-top: 10px; }
+        #marker-list { background: #f9fafb; padding: 10px; border-radius: 8px; height: 100px; overflow-y: auto; font-family: monospace; font-size: 0.75rem; border: 1px solid #e4e6eb; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Audio Segmenter Studio</h2>
+    <h2>Advanced Audio Splitter</h2>
     
     <div class="upload-zone" onclick="document.getElementById('audioInput').click()">
-        <p id="file-label">Click or Drag to upload MP3</p>
+        <p id="file-label">1. Upload MP3 File</p>
         <input type="file" id="audioInput" accept="audio/mp3" style="display:none" onchange="loadAudio(this)">
+    </div>
+
+    <div class="flex-row">
+        <div class="box">
+            <label>2. Paste Existing Markers (Array)</label>
+            <textarea id="markerInput" placeholder="[9.7, 22.42, 31.24...]" oninput="syncMarkers()"></textarea>
+        </div>
     </div>
 
     <audio id="player" controls></audio>
@@ -37,22 +46,113 @@
     <div class="controls">
         <button class="btn-record" id="recordBtn" onclick="addMarker()" disabled>Record Marker (M)</button>
         <button class="btn-primary" onclick="clearMarkers()">Clear All</button>
-        <button id="splitBtn" class="btn-download" onclick="processAndDownload()" disabled>Split & Download M4A Segments</button>
+        <button id="splitBtn" class="btn-download" onclick="processAndDownload()" disabled>SPLIT & DOWNLOAD M4A FILES</button>
     </div>
 
-    <div id="status" class="status-text">Ready</div>
-
-    <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-top: 15px;">Recorded Timestamps:</label>
-    <div id="marker-list"></div>
+    <div id="marker-list">Markers ready: 0</div>
+    <div id="status">Ready</div>
 </div>
 
 <script>
     let audioBuffer = null;
     let markers = [];
     const player = document.getElementById('player');
+    const markerInput = document.getElementById('markerInput');
     const markerList = document.getElementById('marker-list');
     const splitBtn = document.getElementById('splitBtn');
-    const recordBtn = document.getElementById('recordBtn');
     const statusDiv = document.getElementById('status');
 
-    async function load
+    async function loadAudio(input) {
+        const file = input.files[0];
+        if (!file) return;
+        statusDiv.innerText = "Decoding audio...";
+        document.getElementById('file-label').innerText = file.name;
+        
+        const arrayBuffer = await file.arrayBuffer();
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        
+        player.src = URL.createObjectURL(file);
+        splitBtn.disabled = false;
+        document.getElementById('recordBtn').disabled = false;
+        statusDiv.innerText = "Ready to split.";
+    }
+
+    function syncMarkers() {
+        try {
+            let val = markerInput.value.trim();
+            // Handle if they paste a raw string of numbers or a JS array
+            if (!val.startsWith('[')) val = '[' + val + ']';
+            const parsed = JSON.parse(val);
+            if (Array.isArray(parsed)) {
+                markers = parsed.map(Number).sort((a, b) => a - b);
+                markerList.innerText = `Markers ready: ${markers.length}`;
+            }
+        } catch (e) {
+            markerList.innerText = "Invalid marker format.";
+        }
+    }
+
+    function addMarker() {
+        const time = player.currentTime;
+        if (time <= 0) return;
+        markers.push(parseFloat(time.toFixed(2)));
+        markers.sort((a, b) => a - b);
+        markerInput.value = JSON.stringify(markers);
+        markerList.innerText = `Markers ready: ${markers.length}`;
+    }
+
+    function clearMarkers() {
+        markers = [];
+        markerInput.value = "";
+        markerList.innerText = "Markers ready: 0";
+    }
+
+    window.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'm') addMarker(); });
+
+    async function processAndDownload() {
+        if (!audioBuffer || markers.length === 0) return;
+        const exportCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const points = [0, ...markers, audioBuffer.duration];
+        
+        splitBtn.disabled = true;
+        for (let i = 0; i < points.length - 1; i++) {
+            statusDiv.innerText = `Processing ${i+1}/${points.length-1}...`;
+            await exportSegment(exportCtx, points[i], points[i+1], i+1);
+        }
+        statusDiv.innerText = "Complete!";
+        splitBtn.disabled = false;
+    }
+
+    async function exportSegment(ctx, startTime, endTime, index) {
+        const duration = endTime - startTime;
+        const segmentBuffer = ctx.createBuffer(audioBuffer.numberOfChannels, Math.max(1, Math.floor(duration * audioBuffer.sampleRate)), audioBuffer.sampleRate);
+
+        for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+            segmentBuffer.copyToChannel(audioBuffer.getChannelData(ch).subarray(startTime * audioBuffer.sampleRate, endTime * audioBuffer.sampleRate), ch);
+        }
+
+        return new Promise((resolve) => {
+            const destination = ctx.createMediaStreamDestination();
+            const source = ctx.createBufferSource();
+            source.buffer = segmentBuffer;
+            source.connect(destination);
+
+            const recorder = new MediaRecorder(destination.stream);
+            const chunks = [];
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = () => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob(chunks, { type: 'audio/mp4' }));
+                a.download = `Segment.${index}.m4a`;
+                a.click();
+                resolve();
+            };
+            recorder.start();
+            source.start(0);
+            setTimeout(() => { source.stop(); recorder.stop(); }, (duration * 1000) + 150);
+        });
+    }
+</script>
+</body>
+</html>
