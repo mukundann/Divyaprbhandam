@@ -2,9 +2,13 @@ name: Audio Cleanup Action
 on:
   push:
     paths:
-      - 'marker.js' # Triggered only when you update markers
-      - 'audiofiles/**'  # Or when you upload new raw audio files
-  workflow_dispatch:  # This enables the "Run workflow" button in the UI
+      - 'marker.js'
+      - 'audiofiles/**'
+  workflow_dispatch:
+
+# ADD THIS SECTION:
+permissions:
+  contents: write
 
 jobs:
   clean-audio:
@@ -24,5 +28,5 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add audiofiles/clean/
-          git commit -m "Automated cleanup of NAT/PMT audio" || echo "No changes"
+          git commit -m "Automated audio cleanup" || echo "No changes"
           git push
