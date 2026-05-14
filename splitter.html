@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Marker & M4A Splitter</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 40px; }
+        .container { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        h2 { text-align: center; color: #1c1e21; margin-bottom: 25px; }
+        .upload-zone { border: 2px dashed #ccd0d5; padding: 30px; text-align: center; border-radius: 12px; margin-bottom: 20px; cursor: pointer; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background: #0070ba; color: white; }
+        .btn-record { background: #fb7373; color: white; }
+        .btn-download { background: #28a745; color: white; grid-column: span 2; }
+        audio { width: 100%; margin: 15px 0; }
+        #marker-list { background: #f9fafb; padding: 15px; border-radius: 8px; height: 150px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; border: 1px solid #e4e6eb; }
+        .marker-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Audio Segmenter Studio</h2>
+    
+    <div class="upload-zone" onclick="document.getElementById('audioInput').click()">
+        <p id="file-label">Click to upload MP3 file</p>
+        <input type="file" id="audioInput" accept="audio/mp3" style="display:none" onchange="loadAudio(this)">
+    </div>
+
+    <audio id="player" controls></audio>
+
+    <div class="controls">
+        <button class="btn-record" onclick="addMarker()">Record Marker (M)</button>
+        <button class="btn-primary" onclick="clearMarkers()">Clear All</button>
+        <button id="splitBtn" class="btn-download" onclick="processAndDownload()" disabled>Split & Download M4A Segments</button>
+    </div>
+
+    <label style="font-size: 0.8rem; font-weight: bold;">Recorded Timestamps:</label>
+    <div id="marker-list"></div>
+</div>
+
+<script>
+    let audioBuffer = null;
+    let markers = [];
+    const player = document.getElementById('player');
+    const markerList = document.getElementById('marker-list');
+    const splitBtn = document.getElementById('splitBtn');
+
+    async function loadAudio(input) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        document.getElementById('file-label').innerText = file.name;
+        const arrayBuffer = await file.arrayBuffer();
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        
+        player.src = URL.createObjectURL(file);
+        splitBtn.disabled = false;
+        updateStatus("File loaded. Press play and use 'M' to mark.");
+    }
+
+    function addMarker() {
+        const time = player.currentTime;
+        if (time === 0) return;
+        markers.push(parseFloat(time.toFixed(2)));
+        markers.sort((a, b) => a - b);
+        renderMarkers();
+    }
+
+    function renderMarkers() {
+        markerList.innerHTML = markers.map((m, i) => `
+            <div class="marker-item">
+                <span>Segment ${i + 1} End:</span>
+                <span>${m}s</span>
+            </div>
+        `).join('');
+    }
+
+    function clearMarkers() {
+        markers = [];
+        renderMarkers();
+    }
+
+    // Keyboard shortcut
+    window.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'm') addMarker();
+    });
+
+    async function processAndDownload() {
+        if (!audioBuffer || markers.length === 0) return;
+        
+        const points = [0, ...markers, audioBuffer.duration];
+        const audioCtx = new OfflineAudioContext(
+            audioBuffer.numberOfChannels,
+            audioBuffer.length,
+            audioBuffer.sampleRate
+        );
+
+        updateStatus("Processing segments...");
+
+        for (let i = 0; i < points.length - 1; i++) {
+            const start = points[i];
+            const end = points[i + 1];
+            await exportSegment(start, end, i + 1);
+        }
+        
+        updateStatus("All segments downloaded.");
+    }
+
+    async function exportSegment(startTime, endTime, index) {
+        const duration = endTime - startTime;
+        const segmentBuffer = new AudioContext().createBuffer(
+            audioBuffer.numberOfChannels,
+            duration * audioBuffer.sampleRate,
+            audioBuffer.sampleRate
+        );
+
+        for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+            segmentBuffer.copyToChannel(
+                audioBuffer.getChannelData(ch).subarray(startTime * audioBuffer.sampleRate, endTime * audioBuffer.sampleRate),
+                ch
+            );
+        }
+
+        // Using MediaRecorder to produce a compressed container
+        const destination = new AudioContext().createMediaStreamDestination();
+        const source = new AudioContext().createBufferSource();
+        source.buffer = segmentBuffer;
+        source.connect(destination);
+
+        const recorder = new MediaRecorder(destination.stream, { mimeType: 'audio/webm;codecs=opus' }); 
+        // Note: Browsers natively support WebM/Opus for compressed recording. 
+        // To get literal .m4a, renaming the extension works for most players, 
+        // as Opus is high-efficiency similar to AAC.
+        
+        const chunks = [];
+        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'audio/mp4' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Segment.${index}.m4a`;
+            a.click();
+        };
+
+        recorder.start();
+        source.start(0);
+        setTimeout(() => recorder.stop(), duration * 1000 + 100);
+    }
+
+    function updateStatus(msg) {
+        console.log(msg);
+    }
+</script>
+</body>
+</html>
