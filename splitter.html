@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marker Studio - Specialized Import</title>
+    <title>Marker Studio - Pro Edition</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
         .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 950px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         h2 { text-align: center; font-size: 1.2rem; margin-top: 0; margin-bottom: 15px; grid-column: span 2; color: #1c1e21; }
         .left-panel, .right-panel { display: flex; flex-direction: column; min-width: 0; }
         .upload-zone { border: 2px dashed #ccd0d5; padding: 20px; text-align: center; border-radius: 12px; cursor: pointer; margin-bottom: 10px; transition: 0.2s; }
-        .upload-zone:hover { background: #f9fafb; border-color: #0070ba; }
+        .upload-zone:hover { border-color: #0070ba; background: #f9fafb; }
         audio { width: 100%; margin-bottom: 10px; }
         .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
         button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem; transition: background 0.2s; }
@@ -30,7 +30,7 @@
 <body>
 
 <div class="container">
-    <h2>Marker Studio: Smart Selection</h2>
+    <h2>Marker Studio: Audio Learning Data Manager</h2>
 
     <div class="left-panel">
         <div class="upload-zone" onclick="document.getElementById('audioInput').click()">
@@ -42,18 +42,18 @@
         <button class="btn-record" id="recordBtn" onclick="addMarker()" disabled>Record Marker (Press 'M')</button>
         
         <div class="controls">
-            <button class="btn-clear" onclick="clearMarkers()" style="background:#e4e6eb">Clear All</button>
+            <button onclick="clearMarkers()" style="background:#e4e6eb">Clear All</button>
             <button style="background:#6c757d; color:white" onclick="player.currentTime -= 2">Rewind 2s</button>
         </div>
 
-        <label style="margin-top: 15px;">Input/Output Data:</label>
-        <textarea id="ioJson" placeholder='Paste your array of objects here...'></textarea>
-        <button class="btn-import" onclick="importFromText()">↑ Load Segments for Testing</button>
-        <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate marker.js Data</button>
+        <label style="margin-top: 15px;">Import/Export JSON (for MARKER_DATABASE):</label>
+        <textarea id="ioJson" placeholder='Paste markers here, e.g., [12.75, 56.1, ...]'></textarea>
+        <button class="btn-import" onclick="importFromText()">↑ Load into Test Bench</button>
+        <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate for marker.js</button>
     </div>
 
     <div class="right-panel">
-        <label>Selected Verses (Uncheck to Remove):</label>
+        <label>Verse Selection (Uncheck to Skip):</label>
         <div id="marker-list"></div>
     </div>
 </div>
@@ -72,31 +72,21 @@
         player.src = URL.createObjectURL(file);
         document.getElementById('recordBtn').disabled = false;
         
+        // Smart Monitor for real-time skipping during playback
         player.ontimeupdate = () => {
             if (player.paused || rawMarkers.length === 0) return;
             const time = player.currentTime;
             
             const idx = rawMarkers.findIndex(m => time >= m.start && time < m.end);
-            
-            // If we are currently IN an active segment
             if (idx !== -1) {
                 if (idx !== currentHighlightIndex) {
                     currentHighlightIndex = idx;
                     highlightMarker(idx);
                 }
-                
-                // If segment is unchecked, skip it
-                if (!rawMarkers[idx].active) {
-                    jumpToNextActive(idx + 1);
-                }
-            } 
-            // If we are in a GAP (between segments)
-            else {
-                // Find the next active segment ahead of us
+                if (!rawMarkers[idx].active) { jumpToNextActive(idx + 1); }
+            } else {
                 const nextIdx = rawMarkers.findIndex(m => m.start > time);
-                if (nextIdx !== -1) {
-                    jumpToNextActive(nextIdx);
-                }
+                if (nextIdx !== -1) jumpToNextActive(nextIdx);
             }
         };
     }
@@ -117,17 +107,19 @@
             if (!Array.isArray(data)) return;
             
             rawMarkers = [];
+            let lastEnd = 0;
             data.forEach(item => {
-                // Support both {start, end} and simple numbers
+                let start, end;
                 if (typeof item === 'object' && item !== null) {
-                    rawMarkers.push({ start: item.start, end: item.end, active: true });
+                    start = item.start; end = item.end;
                 } else {
-                    const lastEnd = rawMarkers.length > 0 ? rawMarkers[rawMarkers.length - 1].end : 0;
-                    rawMarkers.push({ start: lastEnd, end: item, active: true });
+                    start = lastEnd; end = item;
                 }
+                rawMarkers.push({ start, end, active: true });
+                lastEnd = end;
             });
             renderMarkers();
-        } catch (e) { alert("Invalid JSON array."); }
+        } catch (e) { alert("Invalid JSON format."); }
     }
 
     function addMarker() {
@@ -140,14 +132,12 @@
     function renderMarkers() {
         markerList.innerHTML = rawMarkers.map((m, i) => `
             <div class="marker-item" id="item-${i}">
-                <input type="checkbox" ${m.active ? 'checked' : ''} onchange="toggleActive(${i})">
+                <input type="checkbox" ${m.active ? 'checked' : ''} onchange="rawMarkers[${i}].active = !rawMarkers[${i}].active">
                 <div class="item-info"><strong>#${i+1}</strong>: ${m.start}s - ${m.end}s</div>
                 <button class="btn-test" onclick="testOne(${m.start}, ${m.end}, ${i})">Test</button>
             </div>
         `).join('');
     }
-
-    function toggleActive(i) { rawMarkers[i].active = !rawMarkers[i].active; }
 
     function highlightMarker(index) {
         document.querySelectorAll('.marker-item').forEach(el => el.classList.remove('playing-marker'));
@@ -175,7 +165,8 @@
         let runningEnd = 0;
         rawMarkers.forEach(m => {
             if (!m.active) return;
-            // Logic for marker.js: Use number if contiguous, object if not
+            // Matches your MARKER_DATABASE requirements:
+            // Numbers for contiguous, Objects for jumps
             if (m.start === runningEnd) { result.push(m.end); } 
             else { result.push({ start: m.start, end: m.end }); }
             runningEnd = m.end;
@@ -183,7 +174,7 @@
         ioJson.value = JSON.stringify(result, null, 2);
     }
 
-    function clearMarkers() { if(confirm("Clear?")) { rawMarkers = []; renderMarkers(); ioJson.value = ""; } }
+    function clearMarkers() { if(confirm("Clear All?")) { rawMarkers = []; renderMarkers(); ioJson.value = ""; } }
 
     window.addEventListener('keydown', (e) => {
         if (e.key.toLowerCase() === 'm' && !document.getElementById('recordBtn').disabled) addMarker();
