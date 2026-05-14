@@ -3,121 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marker Studio | Audio Processor</title>
+    <title>Marker Studio - Pro Edition</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; padding: 20px; max-width: 800px; margin: 0 auto; background: #f4f4f9; }
-        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        audio { width: 100%; margin: 20px 0; }
-        .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: opacity 0.2s; }
-        .btn-start { background: #28a745; color: white; }
-        .btn-end { background: #dc3545; color: white; }
-        .btn-export { background: #007bff; color: white; }
-        #marker-list { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
-        .marker-item { background: #f8f9fa; padding: 8px; margin-bottom: 5px; border-radius: 4px; display: flex; justify-content: space-between; }
-        .file-info { font-size: 0.9em; color: #666; margin-bottom: 15px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 950px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        h2 { text-align: center; font-size: 1.2rem; margin-top: 0; margin-bottom: 15px; grid-column: span 2; color: #1c1e21; }
+        .left-panel, .right-panel { display: flex; flex-direction: column; min-width: 0; }
+        .upload-zone { border: 2px dashed #ccd0d5; padding: 20px; text-align: center; border-radius: 12px; cursor: pointer; margin-bottom: 10px; transition: 0.2s; }
+        .upload-zone:hover { border-color: #0070ba; background: #f9fafb; }
+        audio { width: 100%; margin-bottom: 10px; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem; transition: background 0.2s; }
+        .btn-record { background: #fb7373; color: white; width: 100%; margin-bottom: 10px; }
+        .btn-record:disabled { background: #ccd0d5; cursor: not-allowed; }
+        .btn-import { background: #28a745; color: white; margin-top: 5px; }
+        .btn-gen { background: #0070ba; color: white; margin-top: 15px; }
+        textarea { flex-grow: 1; font-family: 'Courier New', monospace; font-size: 0.8rem; padding: 12px; border: 1px solid #ccd0d5; border-radius: 8px; resize: none; min-height: 250px; }
+        #marker-list { background: #f9fafb; border: 1px solid #e4e6eb; border-radius: 8px; height: 550px; overflow-y: auto; }
+        .marker-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+        .playing-marker { border-left: 5px solid #0070ba; background: #e7f3ff !important; }
+        .item-info { flex-grow: 1; margin-left: 12px; }
+        .btn-test { background: #6c757d; color: white; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; }
+        label { font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; color: #4b4f56; display: block; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Marker Studio</h2>
-    
-    <div class="file-info">
-        <label for="audioUpload"><strong>Load Audio File:</strong></label><br>
-        <input type="file" id="audioUpload" accept=".m4a, .mp3, .ogg, .wav" />
+    <h2>Marker Studio: Audio Learning Data Manager</h2>
+
+    <div class="left-panel">
+        <div class="upload-zone" onclick="document.getElementById('audioInput').click()">
+            <p id="file-label">1. Upload MP3, M4A, or OGG File</p>
+            <input type="file" id="audioInput" accept="audio/*,.ogg" style="display:none" onchange="loadAudio(this)">
+        </div>
+        <audio id="player" controls></audio>
+        
+        <button class="btn-record" id="recordBtn" onclick="addMarker()" disabled>Record Marker (Press 'M')</button>
+        
+        <div class="controls">
+            <button onclick="clearMarkers()" style="background:#e4e6eb">Clear All</button>
+            <button style="background:#6c757d; color:white" onclick="player.currentTime -= 2">Rewind 2s</button>
+        </div>
+
+        <label style="margin-top: 15px;">Import/Export JSON (for MARKER_DATABASE):</label>
+        <textarea id="ioJson" placeholder='Paste markers here, e.g., [12.75, 56.1, ...]'></textarea>
+        <button class="btn-import" onclick="importFromText()">↑ Load into Test Bench</button>
+        <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate for marker.js</button>
     </div>
 
-    <audio id="audioPlayer" controls></audio>
-
-    <div class="controls">
-        <button class="btn-start" onclick="setStart()">Set Start (S)</button>
-        <button class="btn-end" onclick="setEnd()">Set End (E)</button>
-        <button class="btn-export" onclick="exportMarkers()">Export marker.js</button>
-    </div>
-
-    <div id="marker-list">
-        <h3>Current Markers</h3>
-        <div id="display-area"></div>
+    <div class="right-panel">
+        <label>Verse Selection (Uncheck to Skip):</label>
+        <div id="marker-list"></div>
     </div>
 </div>
 
 <script>
-    const audio = document.getElementById('audioPlayer');
-    const display = document.getElementById('display-area');
-    const audioUpload = document.getElementById('audioUpload');
-    
-    let markers = [];
-    let currentStart = null;
-    let currentFileName = "unknown";
+    let rawMarkers = []; 
+    let currentHighlightIndex = -1;
+    let currentFileName = "audio_data"; // Default fallback
+    const player = document.getElementById('player');
+    const markerList = document.getElementById('marker-list');
+    const ioJson = document.getElementById('ioJson');
 
-    // Handle Ogg/M4A Loading
-    audioUpload.addEventListener('change', function(e) {
-        const file = e.target.files[0];
+    function loadAudio(input) {
+        const file = input.files[0];
         if (!file) return;
-
-        currentFileName = file.name.split('.')[0];
-        const url = URL.createObjectURL(file);
-        audio.src = url;
-        audio.load();
-        console.log("Loaded:", file.name, "Type:", file.type);
-    });
-
-    function setStart() {
-        currentStart = audio.currentTime.toFixed(3);
-        console.log("Start set at:", currentStart);
+        
+        // Extract base filename (e.g., NAT.2.all) for exports
+        currentFileName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+        
+        document.getElementById('file-label').innerText = file.name;
+        player.src = URL.createObjectURL(file);
+        document.getElementById('recordBtn').disabled = false;
+        
+        player.ontimeupdate = () => {
+            if (player.paused || rawMarkers.length === 0) return;
+            const time = player.currentTime;
+            
+            const idx = rawMarkers.findIndex(m => time >= m.start && time < m.end);
+            if (idx !== -1) {
+                if (idx !== currentHighlightIndex) {
+                    currentHighlightIndex = idx;
+                    highlightMarker(idx);
+                }
+                if (!rawMarkers[idx].active) { jumpToNextActive(idx + 1); }
+            } else {
+                const nextIdx = rawMarkers.findIndex(m => m.start > time);
+                if (nextIdx !== -1) jumpToNextActive(nextIdx);
+            }
+        };
     }
 
-    function setEnd() {
-        if (currentStart === null) {
-            alert("Set a start point first!");
-            return;
+    function jumpToNextActive(startIndex) {
+        for (let i = startIndex; i < rawMarkers.length; i++) {
+            if (rawMarkers[i].active) {
+                player.currentTime = rawMarkers[i].start;
+                return;
+            }
         }
-        const end = audio.currentTime.toFixed(3);
-        markers.push({ start: parseFloat(currentStart), end: parseFloat(end) });
-        currentStart = null;
-        updateDisplay();
+        player.pause(); 
     }
 
-    function updateDisplay() {
-        display.innerHTML = '';
-        markers.forEach((m, i) => {
-            display.innerHTML += `
-                <div class="marker-item">
-                    <span>Segment ${i + 1}: ${m.start}s - ${m.end}s</span>
-                    <button onclick="removeMarker(${i})" style="padding:2px 8px; font-size:12px;">Delete</button>
-                </div>`;
+    function importFromText() {
+        try {
+            const data = JSON.parse(ioJson.value.trim());
+            if (!Array.isArray(data)) return;
+            
+            rawMarkers = [];
+            let lastEnd = 0;
+            data.forEach(item => {
+                let start, end;
+                if (typeof item === 'object' && item !== null) {
+                    start = item.start; end = item.end;
+                } else {
+                    start = lastEnd; end = item;
+                }
+                rawMarkers.push({ start, end, active: true });
+                lastEnd = end;
+            });
+            renderMarkers();
+        } catch (e) { alert("Invalid JSON format."); }
+    }
+
+    function addMarker() {
+        const time = parseFloat(player.currentTime.toFixed(2));
+        const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
+        rawMarkers.push({ start: start, end: time, active: true });
+        renderMarkers();
+    }
+
+    function renderMarkers() {
+        markerList.innerHTML = rawMarkers.map((m, i) => `
+            <div class="marker-item" id="item-${i}">
+                <input type="checkbox" ${m.active ? 'checked' : ''} onchange="rawMarkers[${i}].active = !rawMarkers[${i}].active">
+                <div class="item-info"><strong>#${i+1}</strong>: ${m.start}s - ${m.end}s</div>
+                <button class="btn-test" onclick="testOne(${m.start}, ${m.end}, ${i})">Test</button>
+            </div>
+        `).join('');
+    }
+
+    function highlightMarker(index) {
+        document.querySelectorAll('.marker-item').forEach(el => el.classList.remove('playing-marker'));
+        const el = document.getElementById(`item-${index}`);
+        if (el) {
+            el.classList.add('playing-marker');
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function testOne(start, end, index) {
+        highlightMarker(index);
+        player.currentTime = start;
+        player.play();
+        const checker = setInterval(() => {
+            if (player.currentTime >= end || player.paused) {
+                player.pause();
+                clearInterval(checker);
+            }
+        }, 30);
+    }
+
+    function generateMarkerJS() {
+        const result = [];
+        let runningEnd = 0;
+        rawMarkers.forEach(m => {
+            if (!m.active) return;
+            if (m.start === runningEnd) { result.push(m.end); } 
+            else { result.push({ start: m.start, end: m.end }); }
+            runningEnd = m.end;
         });
+
+        // WRAPPER: Generates the code snippet for your marker.js file
+        const finalJS = `window.MARKER_DATABASE = window.MARKER_DATABASE || {};\n` +
+                        `window.MARKER_DATABASE["${currentFileName}"] = ${JSON.stringify(result, null, 2)};`;
+        
+        ioJson.value = finalJS;
     }
 
-    function removeMarker(index) {
-        markers.splice(index, 1);
-        updateDisplay();
-    }
+    function clearMarkers() { if(confirm("Clear All?")) { rawMarkers = []; renderMarkers(); ioJson.value = ""; } }
 
-    function exportMarkers() {
-        if (markers.length === 0) {
-            alert("No markers to export!");
-            return;
-        }
-
-        const databaseKey = `${currentFileName}.all`;
-        const output = `window.MARKER_DATABASE = window.MARKER_DATABASE || {};\n` +
-                       `window.MARKER_DATABASE["${databaseKey}"] = ${JSON.stringify(markers, null, 2)};`;
-
-        const blob = new Blob([output], { type: 'text/javascript' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'marker.js';
-        a.click();
-    }
-
-    // Keyboard Shortcuts for Efficiency
     window.addEventListener('keydown', (e) => {
-        if (e.key.toLowerCase() === 's') setStart();
-        if (e.key.toLowerCase() === 'e') setEnd();
+        if (e.key.toLowerCase() === 'm' && !document.getElementById('recordBtn').disabled) addMarker();
     });
 </script>
-
 </body>
 </html>
