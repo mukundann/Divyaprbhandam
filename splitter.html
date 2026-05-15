@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marker Studio - Stepped Learning Pro</title>
+    <title>Marker Studio - 4-Step Learning Pro</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 1100px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        h2 { text-align: center; font-size: 1.2rem; margin-top: 0; margin-bottom: 15px; grid-column: span 2; color: #1c1e21; }
+        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 1150px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        h2 { text-align: center; font-size: 1.2rem; margin: 0 0 15px 0; grid-column: span 2; color: #1c1e21; }
         .left-panel, .right-panel { display: flex; flex-direction: column; min-width: 0; }
         .upload-zone { border: 2px dashed #ccd0d5; padding: 15px; text-align: center; border-radius: 12px; margin-bottom: 10px; }
         .url-input-group { display: flex; gap: 5px; margin-bottom: 10px; }
@@ -15,55 +15,56 @@
         audio { width: 100%; margin-bottom: 10px; }
         #yt-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; margin-bottom: 10px; overflow: hidden; display: none; }
         .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
         .btn-record { background: #fb7373; color: white; width: 100%; margin-bottom: 10px; }
         .btn-record:disabled { background: #ccd0d5; cursor: not-allowed; }
         .btn-import { background: #28a745; color: white; margin-top: 5px; }
         .btn-gen { background: #0070ba; color: white; margin-top: 15px; }
-        textarea { flex-grow: 1; font-family: 'Courier New', monospace; font-size: 0.8rem; padding: 12px; border: 1px solid #ccd0d5; border-radius: 8px; resize: none; min-height: 200px; }
-        #marker-list { background: #f9fafb; border: 1px solid #e4e6eb; border-radius: 8px; height: 600px; overflow-y: auto; }
-        .marker-item { display: flex; flex-direction: column; padding: 12px; border-bottom: 2px solid #ddd; font-size: 0.85rem; background: white; }
-        .playing-marker { border-left: 5px solid #0070ba; background: #e7f3ff !important; }
-        .step-row { display: flex; align-items: center; justify-content: space-between; margin: 4px 0; background: #f0f2f5; padding: 5px; border-radius: 4px; }
+        textarea { flex-grow: 1; font-family: 'Courier New', monospace; font-size: 0.8rem; padding: 12px; border: 1px solid #ccd0d5; border-radius: 8px; resize: none; min-height: 180px; }
+        #marker-list { background: #f9fafb; border: 1px solid #e4e6eb; border-radius: 8px; height: 620px; overflow-y: auto; }
+        .pasuram-group { background: white; border: 2px solid #eee; border-radius: 8px; margin: 10px; padding: 10px; }
+        .step-indicator { font-size: 0.7rem; color: #666; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
+        .segment-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px; background: #f0f2f5; margin-bottom: 2px; border-radius: 4px; font-size: 0.75rem; }
+        .playing-segment { border-left: 4px solid #0070ba; background: #e7f3ff !important; }
         .verse-text { width: 95%; margin-top: 8px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; }
         .btn-test { background: #6c757d; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; }
-        .status-bar { font-size: 0.75rem; font-weight: bold; color: #0070ba; margin-bottom: 5px; text-align: center; }
+        .status-bar { font-size: 0.8rem; font-weight: bold; color: #0070ba; background: #e7f3ff; padding: 8px; border-radius: 8px; margin-bottom: 10px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Marker Studio: Stepped Learning Manager</h2>
+    <h2>Marker Studio: 4-Step Learning (8 Segments/Pasuram)</h2>
 
     <div class="left-panel">
         <div class="upload-zone">
             <div class="url-input-group">
-                <input type="text" id="urlInput" placeholder="YouTube Link or Audio URL">
-                <button onclick="handleURL()" style="background:#0070ba; color:white; border-radius:8px; padding:0 15px;">Load</button>
+                <input type="text" id="urlInput" placeholder="YouTube URL or Audio URL">
+                <button onclick="handleURL()" style="background:#0070ba; color:white; padding:0 15px; border-radius:8px;">Load</button>
             </div>
-            <p id="file-label" style="margin: 5px 0; font-size: 0.75rem; color: #666;">Load source to begin</p>
-            <button style="width:100%; background:#f0f2f5; border:1px solid #ccd0d5" onclick="document.getElementById('audioInput').click()">Local File</button>
+            <p id="file-label" style="font-size: 0.7rem; color: #666; margin: 5px 0;">Local file or URL required</p>
+            <button style="width:100%; background:#f0f2f5; border:1px solid #ccd0d5" onclick="document.getElementById('audioInput').click()">Upload File</button>
             <input type="file" id="audioInput" accept="audio/*,.ogg" style="display:none" onchange="loadLocalFile(this)">
         </div>
 
-        <div id="status" class="status-bar">Ready</div>
-        <audio id="player" controls></audio>
+        <div id="status" class="status-bar">Waiting for Audio...</div>
+        <audio id="player" controls style="display:none"></audio>
         <div id="yt-container"><div id="yt-player"></div></div>
         
-        <button class="btn-record" id="recordBtn" onclick="addMarker()" disabled>Record Segment (Press 'M')</button>
+        <button class="btn-record" id="recordBtn" onclick="addMarker()" disabled>Record Half-Line (Press 'M')</button>
         
         <div class="controls">
             <button onclick="clearMarkers()" style="background:#e4e6eb">Clear All</button>
             <button style="background:#6c757d; color:white" onclick="rewind()">Rewind 2s</button>
         </div>
 
-        <textarea id="ioJson" placeholder="Paste JSON here..."></textarea>
+        <textarea id="ioJson" placeholder="JSON IO Area..."></textarea>
         <button class="btn-import" onclick="importFromText()">↑ Load into Test Bench</button>
-        <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate Stepped JSON</button>
+        <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate 4-Step JSON</button>
     </div>
 
     <div class="right-panel">
-        <label style="font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; display: block;">Pasuram Groups (3 Steps each):</label>
+        <label style="font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; display: block;">8-Segment Pasuram Progress:</label>
         <div id="marker-list"></div>
     </div>
 </div>
@@ -79,7 +80,6 @@
     const markerList = document.getElementById('marker-list');
     const ioJson = document.getElementById('ioJson');
 
-    // 1. DUAL-PLAYER LOADING
     function handleURL() {
         const url = document.getElementById('urlInput').value.trim();
         if (!url) return;
@@ -94,7 +94,7 @@
         if (ytPlayer) ytPlayer.loadVideoById(videoId);
         else {
             ytPlayer = new YT.Player('yt-player', { height: '100%', width: '100%', videoId: videoId,
-                events: { 'onReady': () => { document.getElementById('recordBtn').disabled = false; setupSyncLoop(); } }
+                events: { 'onReady': () => { document.getElementById('recordBtn').disabled = false; setupSyncLoop(); document.getElementById('status').innerText = "YouTube Ready"; } }
             });
         }
     }
@@ -103,6 +103,7 @@
         isYouTube = false; currentFileName = url.split('/').pop().split('.')[0] || "audio";
         document.getElementById('yt-container').style.display = 'none'; player.style.display = 'block';
         player.src = url; player.load(); document.getElementById('recordBtn').disabled = false;
+        document.getElementById('status').innerText = "Audio Ready";
         setupSyncLoop();
     }
 
@@ -111,41 +112,32 @@
         setupDirectAudio(URL.createObjectURL(file)); currentFileName = file.name.split('.')[0];
     }
 
-    // 2. RECORDING LOGIC
     function addMarker() {
         const time = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
         const formattedTime = parseFloat(time.toFixed(2));
         const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
         rawMarkers.push({ start, end: formattedTime, active: true, text: "" });
         
-        const currentStep = (rawMarkers.length % 3) || 3;
-        const currentPasuram = Math.ceil(rawMarkers.length / 3);
-        document.getElementById('status').innerText = `Recording Pasuram ${currentPasuram}, Step ${currentStep}`;
-        
+        const currentSegment = (rawMarkers.length % 8) || 8;
+        const currentPasuram = Math.ceil(rawMarkers.length / 8);
+        document.getElementById('status').innerText = `Pasuram ${currentPasuram} | Segment ${currentSegment} of 8`;
         renderMarkers();
     }
 
-    // 3. RENDER & TEST LOGIC (Stepped grouping)
     function renderMarkers() {
         let html = '';
-        for (let i = 0; i < rawMarkers.length; i += 3) {
-            const pIdx = (i / 3) + 1;
-            const steps = rawMarkers.slice(i, i + 3);
-            const fullStart = steps[0].start;
-            const fullEnd = steps[steps.length - 1].end;
-
-            html += `<div class="marker-item" id="pasuram-${pIdx}">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <strong>Pasuram ${pIdx}</strong>
-                    <button class="btn-test" style="background:#0070ba" onclick="testSegment(${fullStart}, ${fullEnd}, ${i})">Test Full</button>
-                </div>
-                ${steps.map((s, stepIdx) => `
-                    <div class="step-row" id="item-${i + stepIdx}">
-                        <span>Step ${stepIdx + 1}: ${s.start} - ${s.end}s</span>
-                        <button class="btn-test" onclick="testSegment(${s.start}, ${s.end}, ${i + stepIdx})">Test</button>
+        for (let i = 0; i < rawMarkers.length; i += 8) {
+            const pIdx = (i / 8) + 1;
+            const segments = rawMarkers.slice(i, i + 8);
+            html += `<div class="pasuram-group">
+                <div class="step-indicator">Pasuram ${pIdx}</div>
+                ${segments.map((s, sIdx) => `
+                    <div class="segment-row" id="item-${i + sIdx}">
+                        <span>H${sIdx+1}: ${s.start} - ${s.end}s</span>
+                        <button class="btn-test" onclick="testSegment(${s.start}, ${s.end}, ${i + sIdx})">Play</button>
                     </div>
                 `).join('')}
-                <textarea class="verse-text" placeholder="Pasuram Text..." onchange="rawMarkers[${i}].text = this.value">${rawMarkers[i].text || ""}</textarea>
+                <textarea class="verse-text" placeholder="Paste Tamil text for Pasuram ${pIdx}..." onchange="rawMarkers[${i}].text = this.value">${rawMarkers[i].text || ""}</textarea>
             </div>`;
         }
         markerList.innerHTML = html;
@@ -158,26 +150,32 @@
         const checker = setInterval(() => {
             const curr = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
             if (curr >= end) { isYouTube ? ytPlayer.pauseVideo() : player.pause(); clearInterval(checker); }
-        }, 50);
+        }, 30);
     }
 
     function highlightMarker(index) {
-        document.querySelectorAll('.step-row').forEach(el => el.style.background = "#f0f2f5");
+        document.querySelectorAll('.segment-row').forEach(el => el.classList.remove('playing-segment'));
         const el = document.getElementById(`item-${index}`);
-        if (el) { el.style.background = "#e7f3ff"; el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+        if (el) { el.classList.add('playing-segment'); el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
     }
 
-    // 4. STEPPED GENERATION
     function generateMarkerJS() {
         const result = [];
-        for (let i = 0; i < rawMarkers.length; i += 3) {
-            const steps = rawMarkers.slice(i, i + 3);
-            if (steps.length === 3) {
+        for (let i = 0; i < rawMarkers.length; i += 8) {
+            const seg = rawMarkers.slice(i, i + 8);
+            if (seg.length === 8) {
                 result.push({
-                    p: (i / 3) + 1,
-                    steps: steps.map(s => [s.start, s.end]),
-                    full: [steps[0].start, steps[2].end],
-                    text: steps[0].text
+                    p: (i / 8) + 1,
+                    text: seg[0].text,
+                    step1: seg.map(s => [s.start, s.end]), // Half-lines
+                    step2: [ // Full lines
+                        [seg[0].start, seg[1].end], [seg[2].start, seg[3].end],
+                        [seg[4].start, seg[5].end], [seg[6].start, seg[7].end]
+                    ],
+                    step3: [ // Two lines
+                        [seg[0].start, seg[3].end], [seg[4].start, seg[7].end]
+                    ],
+                    step4: [seg[0].start, seg[7].end] // Full Pasuram
                 });
             }
         }
@@ -186,15 +184,17 @@
 
     function importFromText() {
         try {
-            const data = JSON.parse(ioJson.value.trim().split(': ')[1] || ioJson.value);
+            const raw = ioJson.value.trim();
+            const jsonPart = raw.includes(':') ? raw.split(': ')[1] : raw;
+            const data = JSON.parse(jsonPart);
             rawMarkers = [];
             data.forEach(p => {
-                p.steps.forEach((s, idx) => {
+                p.step1.forEach((s, idx) => {
                     rawMarkers.push({ start: s[0], end: s[1], active: true, text: idx === 0 ? p.text : "" });
                 });
             });
             renderMarkers();
-        } catch (e) { alert("Format: Ensure you paste the valid JSON array."); }
+        } catch (e) { alert("Format Error: Paste the valid JSON structure."); }
     }
 
     function setupSyncLoop() {
