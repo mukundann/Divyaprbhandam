@@ -43,17 +43,27 @@
         <label>Learning Settings</label>
         <div class="flex-row">
             <div style="flex: 1;"><label>Repeat</label><input type="number" id="repeatLimit" value="1" min="1"></div>
-            <div style="flex: 2;"><label>Auto-Advance</label>
-                <select id="autoNext"><option value="true">Yes</option><option value="false">No</option></select>
-            </div>
+            <div style="flex: 1.2;"><label>Pause (secs)</label><input type="number" id="pauseLimit" value="0.8" min="0" step="0.1" inputmode="decimal"></div>
         </div>
-        <div style="margin-top: 10px;">
+        <div style="margin-top: 12px;">
+            <label>Auto-Advance</label>
+            <select id="autoNext"><option value="true">Yes</option><option value="false">No</option></select>
+        </div>
+        <div style="margin-top: 12px;">
             <label>Learning Mode</label>
             <select id="learningStep" onchange="resetLineTracking()">
                 <option value="step1">Step 1: Half-Line Segments</option>
                 <option value="step2" selected>Step 2: Full-Line Segments</option>
                 <option value="step3">Step 3: Two-Line Segments</option>
                 <option value="step4">Step 4: Full Pasuram Practice</option>
+            </select>
+        </div>
+        <div style="margin-top: 12px;" id="focusControlBlock">
+            <label>Recitation Focus (Full Pasuram)</label>
+            <select id="recitationFocus">
+                <option value="both" selected>Play Both (Normal)</option>
+                <option value="munnadi">Recite Munnadi (Mute Pinnadi)</option>
+                <option value="pinnadi">Recite Pinnadi (Mute Munnadi)</option>
             </select>
         </div>
     </div>
