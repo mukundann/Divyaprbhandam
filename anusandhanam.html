@@ -149,52 +149,64 @@
         });
     });
 
-    function startLearning() {
-        if (pauseTimeoutHandle) clearTimeout(pauseTimeoutHandle); 
+function startLearning() {
+    if (pauseTimeoutHandle) clearTimeout(pauseTimeoutHandle); 
+    
+    const pre = document.getElementById('prefix').value;
+    const numInput = document.getElementById('number').value;
+    const chosenStep = document.getElementById('learningStep').value;
+    const focusMode = document.getElementById('recitationFocus').value;
+    const c = CONFIG[pre];
+    const coords = Navigation.parseCoords(numInput, c.hasSub);
+    const isSingle = typeof c.isSingleFile === 'function' ? c.isSingleFile(numInput) : c.isSingleFile;
+    
+    let bounds = null;
+    let halfLineWindows = null;
+
+    if (isSingle) {
+        const oldKey = `${pre}.${coords.ch}.all`;
+        const stepsKey = `${pre}.${coords.ch}.steps`;
         
-        const pre = document.getElementById('prefix').value;
-        const numInput = document.getElementById('number').value;
-        const chosenStep = document.getElementById('learningStep').value;
-        const c = CONFIG[pre];
-        const coords = Navigation.parseCoords(numInput, c.hasSub);
-        const isSingle = typeof c.isSingleFile === 'function' ? c.isSingleFile(numInput) : c.isSingleFile;
-        let bounds = null;
-
-        if (isSingle) {
-            const oldKey = `${pre}.${coords.ch}.all`;
-            const stepsKey = `${pre}.${coords.ch}.steps`;
+        const oldDatabaseBlock = window.MARKER_DATABASE[oldKey];
+        const stepsDatabaseBlock = window.MARKER_DATABASE[stepsKey] || window.MARKER_DATABASE['PTM_2_DATA'];
+        
+        if (stepsDatabaseBlock && stepsDatabaseBlock[coords.pas - 1]) {
+            const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
             
-            const oldDatabaseBlock = window.MARKER_DATABASE[oldKey];
-            const stepsDatabaseBlock = window.MARKER_DATABASE[stepsKey] || window.MARKER_DATABASE['PTM_2_DATA'];
+            // Extract Step 1 bounds for the muting engine map references
+            halfLineWindows = targetPasuram["step1"] || null;
             
-            if (stepsDatabaseBlock && stepsDatabaseBlock[coords.pas - 1]) {
-                const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
-                const activeSegments = targetPasuram[chosenStep] || targetPasuram["step2"];
-                
-                if (activeSegments && activeSegments.length > 0) {
-                    if (activeLineIndex >= activeSegments.length) {
-                        activeLineIndex = 0;
-                    }
-                    
-                    const targetPair = activeSegments[activeLineIndex];
-                    bounds = {
-                        start: targetPair[0],
-                        end: targetPair[1]
-                    };
-                    
-                    document.getElementById('status').innerText = `Playing Phrase ${activeLineIndex + 1} of ${activeSegments.length}`;
+            const activeSegments = targetPasuram[chosenStep] || targetPasuram["step2"];
+            
+            if (chosenStep === "step4") {
+                // Step 4 plays the absolute master boundaries of the complete Pasuram frame
+                const fullPasuramBounds = targetPasuram["step4"] ? targetPasuram["step4"][0] : null;
+                if (fullPasuramBounds) {
+                    bounds = { start: fullPasuramBounds[0], end: fullPasuramBounds[1] };
+                } else {
+                    // Fallback configuration if step4 bounding element array wrapper is flat
+                    const step1Data = targetPasuram["step1"];
+                    bounds = { start: step1Data[0][0], end: step1Data[step1Data.length - 1][1] };
                 }
-            } else if (oldDatabaseBlock) {
-                activeLineIndex = 0;
-                bounds = MarkerProcessor.getSegmentBounds(oldDatabaseBlock, coords.pas - 1);
-                document.getElementById('status').innerText = `Playing Complete Pasuram ${coords.pas}`;
+                document.getElementById('status').innerText = `Full Pasuram Recitation (${focusMode.toUpperCase()} Focus)`;
+            } else if (activeSegments && activeSegments.length > 0) {
+                if (activeLineIndex >= activeSegments.length) activeLineIndex = 0;
+                const targetPair = activeSegments[activeLineIndex];
+                bounds = { start: targetPair[0], end: targetPair[1] };
+                document.getElementById('status').innerText = `Playing Phrase ${activeLineIndex + 1} of ${activeSegments.length}`;
             }
+        } else if (oldDatabaseBlock) {
+            activeLineIndex = 0;
+            bounds = MarkerProcessor.getSegmentBounds(oldDatabaseBlock, coords.pas - 1);
+            document.getElementById('status').innerText = `Playing Complete Pasuram ${coords.pas}`;
         }
-
-        LearningEngine.playSegment(c.getAudioSrc(numInput), bounds, () => {
-            window.dispatchEvent(new CustomEvent('learning-track-ended'));
-        });
     }
+
+    // Trigger execution loop handling by piping the time tracking matrices cleanly down
+    LearningEngine.playSegment(c.getAudioSrc(numInput), bounds, () => {
+        window.dispatchEvent(new CustomEvent('learning-track-ended'));
+    }, halfLineWindows, focusMode);
+}
 
     function navigate(dir) {
         if (pauseTimeoutHandle) clearTimeout(pauseTimeoutHandle);
