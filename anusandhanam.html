@@ -92,48 +92,54 @@
         });
     });
 
-    function startLearning() {
-        const pre = document.getElementById('prefix').value;
-        const numInput = document.getElementById('number').value;
-        const chosenStep = document.getElementById('learningStep').value; 
-        const c = CONFIG[pre];
-        const coords = Navigation.parseCoords(numInput, c.hasSub);
-        const isSingle = typeof c.isSingleFile === 'function' ? c.isSingleFile(numInput) : c.isSingleFile;
-        let bounds = null;
+   function startLearning() {
+    const pre = document.getElementById('prefix').value;
+    const numInput = document.getElementById('number').value;
+    const chosenStep = document.getElementById('learningStep').value; 
+    const c = CONFIG[pre];
+    const coords = Navigation.parseCoords(numInput, c.hasSub);
+    const isSingle = typeof c.isSingleFile === 'function' ? c.isSingleFile(numInput) : c.isSingleFile;
+    let bounds = null;
 
-        if (isSingle) {
-            // Find the database entry (e.g. window.MARKER_DATABASE["PMT.2.all"])
-            const lookupKey = `${pre}.${coords.ch}.all`;
-            const masterDatabaseBlock = window.MARKER_DATABASE[lookupKey];
+    if (isSingle) {
+        // Look up both key possibilities
+        const oldKey = `${pre}.${coords.ch}.all`;
+        const stepsKey = `${pre}.${coords.ch}.steps`;
+        
+        const oldDatabaseBlock = window.MARKER_DATABASE[oldKey];
+        const stepsDatabaseBlock = window.MARKER_DATABASE[stepsKey];
+        
+        // 1. New Step Mode Path
+        if (stepsDatabaseBlock && stepsDatabaseBlock[coords.pas - 1]) {
+            const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
+            const activeSegments = targetPasuram[chosenStep] || targetPasuram["step2"];
             
-            // Check if the loaded data structure is the new nested step object model
-            if (masterDatabaseBlock && !Array.isArray(masterDatabaseBlock) && masterDatabaseBlock[coords.pas - 1]) {
-                const targetPasuram = masterDatabaseBlock[coords.pas - 1];
-                const activeSegments = targetPasuram[chosenStep] || targetPasuram["step2"];
+            if (activeSegments && activeSegments.length > 0) {
+                // Tracking internal count helps us pull the current exact loop fragment line
+                // Fallback to 0 if your engine doesn't track current line index mid-recitation yet
+                const segmentIndex = LearningEngine.state.currentLineIndex || 0; 
                 
-                // Convert the step's array of pairs [[start, end], [start, end]] 
-                // into a flat linear timestamp timeline array for MarkerProcessor compatibility
-                const flattenedTimeline = [];
-                activeSegments.forEach((pair, idx) => {
-                    flattenedTimeline.push(pair[0]);
-                    if (idx === activeSegments.length - 1) {
-                        flattenedTimeline.push(pair[1]);
-                    }
-                });
-
-                // Since we are working within the localized scope of one exact Pasuram file,
-                // segment index 0 will correctly point to your individual line block boundaries!
-                bounds = MarkerProcessor.getSegmentBounds(flattenedTimeline, 0);
-            } else {
-                // Fallback seamless support for standard flat marker arrays
-                bounds = MarkerProcessor.getSegmentBounds(masterDatabaseBlock, coords.pas - 1);
+                // Safety clamp to ensure index stays within available bounds
+                const safeIndex = Math.min(segmentIndex, activeSegments.length - 1);
+                const targetPair = activeSegments[safeIndex];
+                
+                bounds = {
+                    start: targetPair[0],
+                    end: targetPair[1]
+                };
             }
+        } 
+        // 2. Old Baseline Array Path
+        else if (oldDatabaseBlock) {
+            bounds = MarkerProcessor.getSegmentBounds(oldDatabaseBlock, coords.pas - 1);
         }
-
-        LearningEngine.playSegment(c.getAudioSrc(numInput), bounds, () => {
-            window.dispatchEvent(new CustomEvent('learning-track-ended'));
-        });
     }
+
+    // Hand over exact start and stop boundaries to your audio loop runner
+    LearningEngine.playSegment(c.getAudioSrc(numInput), bounds, () => {
+        window.dispatchEvent(new CustomEvent('learning-track-ended'));
+    });
+}
 
     function navigate(dir) {
         const input = document.getElementById('number');
