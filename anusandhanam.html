@@ -138,6 +138,68 @@
         const pre = document.getElementById('prefix').value;
         document.getElementById('number').value = CONFIG[pre].hasSub ? "1.1.1" : "1.1";
     }
+
+
+// State control for learning paths
+let currentLearningStep = 1; // Default to half-lines. Options: 1, 2, 3, 4
+let currentPasuramIndex = 0; // Tracks which pasuram block (0-10) is loaded
+
+/**
+ * Translates the 4-step structural block into a flat timeline array
+ * compatible with the legacy index1.html player logic.
+ */
+function getLegacyCompatibleMarkers(pasuramData, step) {
+    let activeSegments = [];
+    
+    // Choose step scale
+    if (step === 1) activeSegments = pasuramData.step1;
+    else if (step === 2) activeSegments = pasuramData.step2;
+    else if (step === 3) activeSegments = pasuramData.step3;
+    else activeSegments = pasuramData.step4;
+
+    const legacyTimestamps = [];
+    
+    // Flatten array-of-arrays into an ordered list of linear markers
+    activeSegments.forEach((chunk, i) => {
+        legacyTimestamps.push(chunk[0]);
+        if (i === activeSegments.length - 1) {
+            legacyTimestamps.push(chunk[1]);
+        }
+    });
+    
+    return legacyTimestamps;
+}
+
+/**
+ * Update this bridge runner right before you load the audio file timeline.
+ * It feeds the output array straight into your existing timeline variable.
+ */
+function loadPasuramTimeline() {
+    const activePasuram = PTM_2_DATA[currentPasuramIndex];
+    
+    // This outputs the exact flat array format your index1.html player expects:
+    // e.g. [0, 2.24, 3.65, 7.15, 8.8, 11.63, 14.08, 16.42, 18.77]
+    const activeTimelineMarkers = getLegacyCompatibleMarkers(activePasuram, currentLearningStep);
+    
+    // Map the output directly to the global marker array variable inside your index1.html player
+    if (typeof markers !== 'undefined') {
+        markers = activeTimelineMarkers; 
+        console.log("Timeline updated successfully for Step:", currentLearningStep, markers);
+        
+        // If your player has a method to refresh text bounds or buttons, invoke it here:
+        // Example: displayMarkers(); or initializeTimeline();
+    }
+}
+
+/**
+ * UI Action handler to switch learning granularity on the fly
+ */
+function changeStepMode(stepNumber) {
+    currentLearningStep = parseInt(stepNumber);
+    loadPasuramTimeline();
+}
+
+    
 </script>
 </body>
 </html>
