@@ -1,12 +1,12 @@
 /**
- * learningEngine.js - Handles playback logic, state, and real-time volume masking
+ * learningEngine.js - Handles playback logic, state, and index-based line muting
  */
 const LearningEngine = {
     state: {
         currentRepeatCount: 0,
         monitorInterval: null,
         player: null,
-        volumeMaskInterval: null
+        volumeInterval: null
     },
 
     init: function(playerElement) {
@@ -16,13 +16,14 @@ const LearningEngine = {
 
     stopMonitor: function() {
         if (this.state.monitorInterval) clearInterval(this.state.monitorInterval);
-        if (this.state.volumeMaskInterval) clearInterval(this.state.volumeMaskInterval);
+        if (this.state.volumeInterval) clearInterval(this.state.volumeInterval);
         this.state.monitorInterval = null;
-        this.state.volumeMaskInterval = null;
-        if (this.state.player) this.state.player.volume = 1.0; // Reset volume safely
+        this.state.volumeInterval = null;
+        if (this.state.player) this.state.player.volume = 1.0; // Clear masking states safely
     },
 
-    playSegment: function(src, bounds, onSegmentEnd, halfLineWindows = null, focusMode = "both") {
+    // Extension wrapper built on top of your original signature loop to parse runtime rules
+    playSegment: function(src, bounds, onSegmentEnd, lineWindows = null, chosenStep = "step2", focusMode = "both") {
         this.stopMonitor();
         const p = this.state.player;
         
@@ -41,30 +42,33 @@ const LearningEngine = {
                 }
             }, 30);
 
-            // Real-time Volume Masking Engine for Munnadi / Pinnadi
-            if (halfLineWindows && halfLineWindows.length > 0 && focusMode !== "both") {
-                this.state.volumeMaskInterval = setInterval(() => {
+            // STRICT ISOLATION: Volume rules apply ONLY during Step 4 (Full Pasuram Practice)
+            if (chosenStep === "step4" && lineWindows && lineWindows.length > 0 && focusMode !== "both") {
+                this.state.volumeInterval = setInterval(() => {
                     const currentTime = p.currentTime;
-                    let isMunnadi = false;
+                    let activeLineIdx = -1;
 
-                    // Determine if the current playhead is within an odd or even half-line boundary segment
-                    for (let i = 0; i < halfLineWindows.length; i++) {
-                        const start = halfLineWindows[i][0];
-                        const end = halfLineWindows[i][1];
-                        if (currentTime >= start && currentTime < end) {
-                            // Odd indices (0, 2, 4...) represent Munnadi chunks; even represent Pinnadi chunks
-                            isMunnadi = (i % 2 === 0);
+                    // Match current time location against full-line arrays to find active segment row
+                    for (let i = 0; i < lineWindows.length; i++) {
+                        if (currentTime >= lineWindows[i][0] && currentTime < lineWindows[i][1]) {
+                            activeLineIdx = i;
                             break;
                         }
                     }
 
-                    // Apply dynamic muting logic based on selection
-                    if (focusMode === "munnadi") {
-                        p.volume = isMunnadi ? 1.0 : 0.0; // Mute Pinnadi sections
-                    } else if (focusMode === "pinnadi") {
-                        p.volume = isMunnadi ? 0.0 : 1.0; // Mute Munnadi sections
+                    if (activeLineIdx !== -1) {
+                        if (focusMode === "munnadi") {
+                            // MUNNADI: Play first 2 segments (idx 0,1); Mute last 2 segments (idx 2,3)
+                            p.volume = (activeLineIdx < 2) ? 1.0 : 0.0;
+                        } else if (focusMode === "pinnadi") {
+                            // PINNADI: Mute first 2 segments (idx 0,1); Play last 2 segments (idx 2,3)
+                            p.volume = (activeLineIdx >= 2) ? 1.0 : 0.0;
+                        }
+                    } else {
+                        // Fallback fallback rule handling if playhead transitions through an unmapped space gap
+                        p.volume = 1.0;
                     }
-                }, 50); // High-frequency checks for tight switching transitions
+                }, 40); // Rapid sampling frequency ensures immediate line-mute cutting
             }
         }
         p.play();
