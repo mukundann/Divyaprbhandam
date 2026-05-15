@@ -1,205 +1,318 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ta">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Divya Prabandham Anusandhanam</title>
+    <title>Divya Prabandham Learning Tool - PTM Canto 2</title>
     <style>
-        /* Keep your existing CSS here */
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
-        h2 { text-align: center; color: #1c1e21; margin-top: 0; font-size: 1.3rem; }
-        .input-group { margin-bottom: 12px; }
-        label { display: block; font-size: 0.8rem; margin-bottom: 4px; color: #4b4f56; font-weight: 600; }
-        select, input { width: 100%; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-        .learning-controls { background: #f9fafb; border: 1px solid #e4e6eb; padding: 15px; border-radius: 12px; margin: 15px 0; }
-        .flex-row { display: flex; gap: 10px; align-items: center; }
-        .nav-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 15px; }
-        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-play { background-color: #0070ba; color: white; grid-column: span 3; }
-        .btn-nav { background-color: #e4e6eb; color: #050505; }
-        audio { width: 100%; margin-top: 15px; }
-        .status { margin-top: 10px; font-size: 0.7rem; color: #0070ba; text-align: center; font-weight: bold; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fcfcfc;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid #eef0f2;
+        }
+        h2 {
+            color: #1a365d;
+            text-align: center;
+            margin-top: 0;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        .control-panel {
+            background-color: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #4a5568;
+        }
+        select, button {
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e0;
+            background-color: #fff;
+            cursor: pointer;
+            outline: none;
+        }
+        select:focus, button:focus {
+            border-color: #3182ce;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+        }
+        button {
+            background-color: #3182ce;
+            color: white;
+            border: none;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #2b6cb0;
+        }
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+        .display-box {
+            background: #fffaf0;
+            border: 1px solid #feebc8;
+            border-radius: 6px;
+            padding: 20px;
+            min-height: 120px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .status-text {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 8px;
+        }
+        .timeline-info {
+            font-family: monospace;
+            font-size: 13px;
+            color: #a0aec0;
+            margin-top: 15px;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Divya Prabandham Anusandhanam</h2>
-    <div class="input-group">
-        <label>Select Prabandham</label>
-        <select id="prefix" onchange="resetToStart()">
-            <option value="TVM">Thiruvaimozhi (TVM)</option>
-            <option value="PT">Periya Thirumozhi (PT)</option>
-            <option value="PMT">Perumal Thirumozhi (PMT)</option>
-            <option value="NAT">Naachiyar Thirumozhi (NAT)</option>
+<div class="container">
+    <h2>Perumal Thirumozhi - Decad 2 Practice</h2>
 
-        </select>
-    </div>
-    <div class="input-group">
-        <label id="numLabel">Current Pasuram (Ch.Sub.Pas)</label>
-        <input type="text" id="number" value="1.1.1" inputmode="decimal">
-    </div>
-    <div class="learning-controls">
-        <label>Learning Settings</label>
-        <div class="flex-row">
-            <div style="flex: 1;"><label>Repeat</label><input type="number" id="repeatLimit" value="1" min="1"></div>
-            <div style="flex: 2;"><label>Auto-Advance</label>
-                <select id="autoNext"><option value="true">Yes</option><option value="false">No</option></select>
-            </div>
+    <div class="control-panel">
+        <div class="control-group">
+            <label for="pasuramDropdown">Pasuram:</label>
+            <select id="pasuramDropdown" onchange="onPasuramChange(this)">
+                <option value="0">Pasuram 1 (தேட்டிறல்வளநாடன்)</option>
+                <option value="1">Pasuram 2 (ஆனாத செல்வத்து)</option>
+                <option value="2">Pasuram 3 (வேரியார் பொழில்சூழ்)</option>
+                <option value="3">Pasuram 4 (கொம்பார்ந்த வேக)</option>
+                <option value="4">Pasuram 5 (வான்ஆளும் மாமதிபோல்)</option>
+                <option value="5">Pasuram 6 (மன்னிய தண்சாரல்)</option>
+                <option value="6">Pasuram 7 (இம்பவான் நாட்டோடு)</option>
+                <option value="7">Pasuram 8 (செடியாய வல்வினைகள்)</option>
+                <option value="8">Pasuram 9 (பினியவிழும் பூஞ்சோலை)</option>
+                <option value="9">Pasuram 10 (நன்னெறிஆவது ஏதும்)</option>
+                <option value="10">Pasuram 11 (மலிந்துவரும் சீர்ப்பிறதி)</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="learningStepDropdown">Learning Mode:</label>
+            <select id="learningStepDropdown" onchange="onLearningStepChange(this)">
+                <option value="1" selected>Step 1: Half-Line Segments</option>
+                <option value="2">Step 2: Full-Line Segments</option>
+                <option value="3">Step 3: Two-Line Segments</option>
+                <option value="4">Step 4: Full Pasuram Practice</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <button onclick="synchronizePlaybackEngine()">Sync Track</button>
         </div>
     </div>
 
-<div class="step-learning-controls" style="margin: 15px 0; padding: 10px; background: #f5f5f5; border-radius: 5px;">
-    <strong style="margin-right: 10px;">Learning Mode:</strong>
-    <button onclick="changeStepMode(1)" style="margin-right: 5px; padding: 6px 12px;">Step 1 (Half-line)</button>
-    <button onclick="changeStepMode(2)" style="margin-right: 5px; padding: 6px 12px;">Step 2 (Full-line)</button>
-    <button onclick="changeStepMode(3)" style="margin-right: 5px; padding: 6px 12px;">Step 3 (2 Lines)</button>
-    <button onclick="changeStepMode(4)" style="padding: 6px 12px;">Step 4 (Full Pasuram)</button>
-</div>
+    <audio id="audioPlayer" controls src="PTM2.mp3"></audio>
 
-    
-    <div class="nav-controls">
-        <button class="btn-play" onclick="startLearning()">START RECITATION</button>
-        <button class="btn-nav" onclick="navigate(-1)">Prev</button>
-        <button class="btn-nav" onclick="LearningEngine.stopAudio()">Stop</button> 
-        <button class="btn-nav" onclick="navigate(1)">Next</button>
+    <div class="display-box">
+        <div class="status-text" id="statusDisplay">Initializing engine...</div>
+        <div id="timelineDump" class="timeline-info"></div>
     </div>
-    <audio id="audioPlayer" controls></audio>
-    <div id="status" class="status">Ready</div>
 </div>
-
-<script src="marker.js"></script>
-<script src="markerProcessor.js"></script>
-<script src="config.js"></script>
-<script src="navigation.js"></script>
-<script src="learningEngine.js"></script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const audioPlayer = document.getElementById('audioPlayer');
-        if (audioPlayer) {
-            LearningEngine.init(audioPlayer);
-        }
+// =========================================================
+// 1. DATA REPOSITORY (Perumal Thirumozhi Decad 2 Dataset)
+// =========================================================
+const PTM_2_DATA = [
+  {
+    "p": 1,
+    "step1": [[0, 2.24], [2.24, 3.65], [3.65, 7.15], [7.15, 8.8], [8.8, 11.63], [11.63, 14.08], [14.08, 16.42], [16.42, 18.77]],
+    "step2": [[0, 3.65], [3.65, 8.8], [8.8, 14.08], [14.08, 18.77]],
+    "step3": [[0, 8.8], [8.8, 18.77]],
+    "step4": [[0, 18.77]]
+  },
+  {
+    "p": 2,
+    "step1": [[18.77, 21.43], [21.43, 23.37], [23.37, 25.67], [25.67, 28.06], [28.06, 31.55], [31.55, 33.92], [33.92, 36.51], [36.51, 37.54]],
+    "step2": [[18.77, 23.37], [23.37, 28.06], [28.06, 33.92], [33.92, 37.54]],
+    "step3": [[18.77, 28.06], [28.06, 37.54]],
+    "step4": [[18.77, 37.54]]
+  },
+  {
+    "p": 3,
+    "step1": [[37.54, 39.61], [39.61, 42.41], [42.41, 45.11], [45.11, 46.65], [46.65, 50.71], [50.71, 53.19], [53.19, 55.76], [55.76, 57.99]],
+    "step2": [[37.54, 42.41], [42.41, 46.65], [46.65, 53.19], [53.19, 57.99]],
+    "step3": [[37.54, 46.65], [46.65, 57.99]],
+    "step4": [[37.54, 57.99]]
+  },
+  {
+    "p": 4,
+    "step1": [[57.99, 61.24], [61.24, 63.34], [63.34, 65.67], [65.67, 67.63], [67.63, 71.24], [71.24, 73.4], [73.4, 75.53], [75.53, 77.42]],
+    "step2": [[57.99, 63.34], [63.34, 67.63], [67.63, 73.4], [73.4, 77.42]],
+    "step3": [[57.99, 67.63], [67.63, 77.42]],
+    "step4": [[57.99, 77.42]]
+  },
+  {
+    "p": 5,
+    "step1": [[77.42, 80.7], [80.7, 82.59], [82.59, 84.16], [84.16, 87], [87, 89.3], [89.3, 92], [92, 94.3], [94.3, 96.89]],
+    "step2": [[77.42, 82.59], [82.59, 87], [87, 92], [92, 96.89]],
+    "step3": [[77.42, 87], [87, 96.89]],
+    "step4": [[77.42, 96.89]]
+  },
+  {
+    "p": 6,
+    "step1": [[96.89, 100.18], [100.18, 102.05], [102.05, 104.94], [104.94, 106.66], [106.66, 108.86], [108.86, 111.93], [111.93, 114.69], [114.69, 116.93]],
+    "step2": [[96.89, 102.05], [102.05, 106.66], [106.66, 111.93], [111.93, 116.93]],
+    "step3": [[96.89, 106.66], [106.66, 116.93]],
+    "step4": [[96.89, 116.93]]
+  },
+  {
+    "p": 7,
+    "step1": [[116.93, 119.5], [119.5, 122.01], [122.01, 124.19], [124.19, 126.05], [126.05, 128.52], [128.52, 131.19], [131.19, 133.52], [133.52, 135.56]],
+    "step2": [[116.93, 122.01], [122.01, 126.05], [126.05, 131.19], [131.19, 135.56]],
+    "step3": [[116.93, 126.05], [126.05, 135.56]],
+    "step4": [[116.93, 135.56]]
+  },
+  {
+    "p": 8,
+    "step1": [[135.56, 138.11], [138.11, 139.99], [139.99, 142.58], [142.58, 143.96], [143.96, 146.87], [146.87, 148.75], [148.75, 151.84], [151.84, 153.91]],
+    "step2": [[135.56, 139.99], [139.99, 143.96], [143.96, 148.75], [148.75, 153.91]],
+    "step3": [[135.56, 143.96], [143.96, 153.91]],
+    "step4": [[135.56, 153.91]]
+  },
+  {
+    "p": 9,
+    "step1": [[153.91, 157.27], [157.27, 159.51], [159.51, 162.12], [162.12, 163.78], [163.78, 168.23], [168.23, 170.04], [170.04, 171.72], [171.72, 173.7]],
+    "step2": [[153.91, 159.51], [159.51, 163.78], [163.78, 170.04], [170.04, 173.7]],
+    "step3": [[153.91, 163.78], [163.78, 173.7]],
+    "step4": [[153.91, 173.7]]
+  },
+  {
+    "p": 10,
+    "step1": [[173.7, 176.99], [176.99, 179.09], [179.09, 181.69], [181.69, 183.31], [183.31, 186.4], [186.4, 188.78], [188.78, 191], [191, 195]],
+    "step2": [[173.7, 179.09], [179.09, 183.31], [183.31, 188.78], [188.78, 195]],
+    "step3": [[173.7, 183.31], [183.31, 195]],
+    "step4": [[173.7, 195]]
+  },
+  {
+    "p": 11,
+    "step1": [[195.0, 197.3], [197.3, 199.1], [199.1, 201.5], [201.5, 203.2], [203.2, 206.1], [206.1, 208.4], [208.4, 210.8], [210.8, 213.5]],
+    "step2": [[195.0, 199.1], [199.1, 203.2], [203.2, 208.4], [208.4, 213.5]],
+    "step3": [[195.0, 203.2], [203.2, 213.5]],
+    "step4": [[195.0, 213.5]]
+  }
+];
 
-        window.addEventListener('learning-track-ended', () => {
-            const limit = parseInt(document.getElementById('repeatLimit').value);
-            LearningEngine.state.currentRepeatCount++;
-            if (LearningEngine.state.currentRepeatCount < limit) {
-                startLearning();
-            } else {
-                LearningEngine.state.currentRepeatCount = 0;
-                if (document.getElementById('autoNext').value === "true") navigate(1);
-            }
-        });
+// =========================================================
+// 2. GLOBAL TRACKING VARIABLES (Original Compatibility)
+// =========================================================
+let markers = [];              // Global layout marker array required by player loops
+let currentLearningStep = 1;   // Selected step (1 to 4)
+let currentPasuramIndex = 0;   // Selected index inside data block (0 to 10)
+
+// Reference media element hooks
+const audioPlayer = document.getElementById('audioPlayer');
+const statusDisplay = document.getElementById('statusDisplay');
+const timelineDump = document.getElementById('timelineDump');
+
+// =========================================================
+// 3. RUNTIME TIMELINE FLATTENING ENGINE
+// =========================================================
+/**
+ * Processes matrix chunks into a simple chronological linear array 
+ * matching the legacy layout architecture.
+ */
+function generateFlatTimeline(pasuramData, step) {
+    let sourcePool = [];
+    
+    switch (step) {
+        case 1: sourcePool = pasuramData.step1; break;
+        case 2: sourcePool = pasuramData.step2; break;
+        case 3: sourcePool = pasuramData.step3; break;
+        case 4: sourcePool = pasuramData.step4; break;
+        default: sourcePool = pasuramData.step1;
+    }
+
+    const flatTimelineArray = [];
+    
+    sourcePool.forEach((segment, sliceIndex) => {
+        flatTimelineArray.push(segment[0]);
+        // Capture the final boundary termination timestamp
+        if (sliceIndex === sourcePool.length - 1) {
+            flatTimelineArray.push(segment[1]);
+        }
     });
-
-    function startLearning() {
-        const pre = document.getElementById('prefix').value;
-        const numInput = document.getElementById('number').value;
-        const c = CONFIG[pre];
-        const coords = Navigation.parseCoords(numInput, c.hasSub);
-        const isSingle = typeof c.isSingleFile === 'function' ? c.isSingleFile(numInput) : c.isSingleFile;
-        let bounds = null;
-
-        if (isSingle) {
-            const markers = window.MARKER_DATABASE[`${pre}.${coords.ch}.all`];
-            bounds = MarkerProcessor.getSegmentBounds(markers, coords.pas - 1);
-        }
-
-        LearningEngine.playSegment(c.getAudioSrc(numInput), bounds, () => {
-            window.dispatchEvent(new CustomEvent('learning-track-ended'));
-        });
-    }
-
-    function navigate(dir) {
-        const input = document.getElementById('number');
-        const pre = document.getElementById('prefix').value;
-        const c = CONFIG[pre];
-        let coords = Navigation.parseCoords(input.value, c.hasSub);
-        
-        coords.pas += dir;
-        const limit = Navigation.getLimit(pre, coords.ch, coords.sub);
-
-        if (dir === 1 && coords.pas > limit) {
-            coords.pas = 1;
-            if (c.hasSub) { coords.sub++; if (coords.sub > c.maxSub) { coords.sub = 1; coords.ch++; } }
-            else { coords.ch++; }
-        } else if (dir === -1 && coords.pas < 1) {
-            // Basic backward logic
-            coords.pas = 1; 
-        }
-
-        input.value = c.hasSub ? `${coords.ch}.${coords.sub}.${coords.pas}` : `${coords.ch}.${coords.pas}`;
-        startLearning();
-    }
-
-    function resetToStart() {
-        const pre = document.getElementById('prefix').value;
-        document.getElementById('number').value = CONFIG[pre].hasSub ? "1.1.1" : "1.1";
-    }
-
-
-// State control for learning paths
-let currentLearningStep = 1; // Default to half-lines. Options: 1, 2, 3, 4
-let currentPasuramIndex = 0; // Tracks which pasuram block (0-10) is loaded
-
-/**
- * Translates the 4-step structural block into a flat timeline array
- * compatible with the legacy index1.html player logic.
- */
-function getLegacyCompatibleMarkers(pasuramData, step) {
-    let activeSegments = [];
     
-    // Choose step scale
-    if (step === 1) activeSegments = pasuramData.step1;
-    else if (step === 2) activeSegments = pasuramData.step2;
-    else if (step === 3) activeSegments = pasuramData.step3;
-    else activeSegments = pasuramData.step4;
-
-    const legacyTimestamps = [];
-    
-    // Flatten array-of-arrays into an ordered list of linear markers
-    activeSegments.forEach((chunk, i) => {
-        legacyTimestamps.push(chunk[0]);
-        if (i === activeSegments.length - 1) {
-            legacyTimestamps.push(chunk[1]);
-        }
-    });
-    
-    return legacyTimestamps;
+    return flatTimelineArray;
 }
 
 /**
- * Update this bridge runner right before you load the audio file timeline.
- * It feeds the output array straight into your existing timeline variable.
+ * Reconfigures global marker arrays and alerts the audio interface layers.
  */
-function loadPasuramTimeline() {
-    const activePasuram = PTM_2_DATA[currentPasuramIndex];
+function synchronizePlaybackEngine() {
+    const targetedPasuram = PTM_2_DATA[currentPasuramIndex];
     
-    // This outputs the exact flat array format your index1.html player expects:
-    // e.g. [0, 2.24, 3.65, 7.15, 8.8, 11.63, 14.08, 16.42, 18.77]
-    const activeTimelineMarkers = getLegacyCompatibleMarkers(activePasuram, currentLearningStep);
+    // Process step conversion mapping
+    markers = generateFlatTimeline(targetedPasuram, currentLearningStep);
     
-    // Map the output directly to the global marker array variable inside your index1.html player
-    if (typeof markers !== 'undefined') {
-        markers = activeTimelineMarkers; 
-        console.log("Timeline updated successfully for Step:", currentLearningStep, markers);
-        
-        // If your player has a method to refresh text bounds or buttons, invoke it here:
-        // Example: displayMarkers(); or initializeTimeline();
+    // Update interface readouts
+    statusDisplay.innerText = `Active: Pasuram ${currentPasuramIndex + 1} | Learning Mode: Step ${currentLearningStep}`;
+    timelineDump.innerText = `Current Legacy Active Marker Array: [${markers.join(', ')}]`;
+    
+    // Automatically set audio playback cursor head to start point of the selected pasuram
+    if (markers.length > 0) {
+        audioPlayer.currentTime = markers[0];
     }
 }
 
-/**
- * UI Action handler to switch learning granularity on the fly
- */
-function changeStepMode(stepNumber) {
-    currentLearningStep = parseInt(stepNumber);
-    loadPasuramTimeline();
+// =========================================================
+// 4. INTERFACE DOM EVENT HANDLERS
+// =========================================================
+function onLearningStepChange(selectNode) {
+    currentLearningStep = parseInt(selectNode.value, 10);
+    synchronizePlaybackEngine();
 }
 
-    
+function onPasuramChange(selectNode) {
+    currentPasuramIndex = parseInt(selectNode.value, 10);
+    synchronizePlaybackEngine();
+}
+
+// Initialize structural timeline boundaries when template renders completely
+window.addEventListener('DOMContentLoaded', () => {
+    synchronizePlaybackEngine();
+});
 </script>
+
 </body>
 </html>
