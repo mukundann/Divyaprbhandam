@@ -51,12 +51,12 @@
             <label>Learning Mode</label>
             <select id="learningStep">
                 <option value="step1">Step 1: Half-Line Segments</option>
-                <option value="2" selected>Step 2: Full Line (Default)</option>
+                <option value="step2" selected>Step 2: Full-Line Segments</option>
                 <option value="step3">Step 3: Two-Line Segments</option>
                 <option value="step4">Step 4: Full Pasuram Practice</option>
             </select>
         </div>
-        </div>
+    </div>
     <div class="nav-controls">
         <button class="btn-play" onclick="startLearning()">START RECITATION</button>
         <button class="btn-nav" onclick="navigate(-1)">Prev</button>
@@ -95,25 +95,37 @@
     function startLearning() {
         const pre = document.getElementById('prefix').value;
         const numInput = document.getElementById('number').value;
-        const chosenStep = document.getElementById('learningStep').value; // Captured Dropdown Step Value
+        const chosenStep = document.getElementById('learningStep').value; 
         const c = CONFIG[pre];
         const coords = Navigation.parseCoords(numInput, c.hasSub);
         const isSingle = typeof c.isSingleFile === 'function' ? c.isSingleFile(numInput) : c.isSingleFile;
         let bounds = null;
 
         if (isSingle) {
-            // Checks if data block is the new multi-step style or classic array
-            const masterDatabaseBlock = window.MARKER_DATABASE[`${pre}.${coords.ch}.all` || `${pre}.${coords.ch}`];
+            // Find the database entry (e.g. window.MARKER_DATABASE["PMT.2.all"])
+            const lookupKey = `${pre}.${coords.ch}.all`;
+            const masterDatabaseBlock = window.MARKER_DATABASE[lookupKey];
             
+            // Check if the loaded data structure is the new nested step object model
             if (masterDatabaseBlock && !Array.isArray(masterDatabaseBlock) && masterDatabaseBlock[coords.pas - 1]) {
-                // If it's a structural 4-step object lookup, fetch the specific user-selected segment bounds
                 const targetPasuram = masterDatabaseBlock[coords.pas - 1];
                 const activeSegments = targetPasuram[chosenStep] || targetPasuram["step2"];
                 
-                // Return start and stop time targets directly for the timeline loop
-                bounds = { start: activeSegments[0][0], end: activeSegments[activeSegments.length - 1][1] };
+                // Convert the step's array of pairs [[start, end], [start, end]] 
+                // into a flat linear timestamp timeline array for MarkerProcessor compatibility
+                const flattenedTimeline = [];
+                activeSegments.forEach((pair, idx) => {
+                    flattenedTimeline.push(pair[0]);
+                    if (idx === activeSegments.length - 1) {
+                        flattenedTimeline.push(pair[1]);
+                    }
+                });
+
+                // Since we are working within the localized scope of one exact Pasuram file,
+                // segment index 0 will correctly point to your individual line block boundaries!
+                bounds = MarkerProcessor.getSegmentBounds(flattenedTimeline, 0);
             } else {
-                // Fallback safe path to original single line timeline array if using standard flat marker arrays
+                // Fallback seamless support for standard flat marker arrays
                 bounds = MarkerProcessor.getSegmentBounds(masterDatabaseBlock, coords.pas - 1);
             }
         }
@@ -137,7 +149,6 @@
             if (c.hasSub) { coords.sub++; if (coords.sub > c.maxSub) { coords.sub = 1; coords.ch++; } }
             else { coords.ch++; }
         } else if (dir === -1 && coords.pas < 1) {
-            // Basic backward logic
             coords.pas = 1; 
         }
 
