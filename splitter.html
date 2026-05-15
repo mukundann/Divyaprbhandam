@@ -3,67 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marker Studio - Pro Edition</title>
+    <title>Marker Studio - Stepped Learning Pro</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 1050px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 1100px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         h2 { text-align: center; font-size: 1.2rem; margin-top: 0; margin-bottom: 15px; grid-column: span 2; color: #1c1e21; }
         .left-panel, .right-panel { display: flex; flex-direction: column; min-width: 0; }
-        .upload-zone { border: 2px dashed #ccd0d5; padding: 15px; text-align: center; border-radius: 12px; margin-bottom: 10px; transition: 0.2s; }
+        .upload-zone { border: 2px dashed #ccd0d5; padding: 15px; text-align: center; border-radius: 12px; margin-bottom: 10px; }
         .url-input-group { display: flex; gap: 5px; margin-bottom: 10px; }
         input[type="text"] { flex-grow: 1; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 0.85rem; }
         audio { width: 100%; margin-bottom: 10px; }
         #yt-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; margin-bottom: 10px; overflow: hidden; display: none; }
         .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
         .btn-record { background: #fb7373; color: white; width: 100%; margin-bottom: 10px; }
         .btn-record:disabled { background: #ccd0d5; cursor: not-allowed; }
         .btn-import { background: #28a745; color: white; margin-top: 5px; }
         .btn-gen { background: #0070ba; color: white; margin-top: 15px; }
         textarea { flex-grow: 1; font-family: 'Courier New', monospace; font-size: 0.8rem; padding: 12px; border: 1px solid #ccd0d5; border-radius: 8px; resize: none; min-height: 200px; }
         #marker-list { background: #f9fafb; border: 1px solid #e4e6eb; border-radius: 8px; height: 600px; overflow-y: auto; }
-        .marker-item { display: flex; flex-direction: column; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; background: white; }
+        .marker-item { display: flex; flex-direction: column; padding: 12px; border-bottom: 2px solid #ddd; font-size: 0.85rem; background: white; }
         .playing-marker { border-left: 5px solid #0070ba; background: #e7f3ff !important; }
-        .item-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+        .step-row { display: flex; align-items: center; justify-content: space-between; margin: 4px 0; background: #f0f2f5; padding: 5px; border-radius: 4px; }
         .verse-text { width: 95%; margin-top: 8px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; }
-        .btn-test { background: #6c757d; color: white; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; }
-        label { font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; color: #4b4f56; display: block; }
+        .btn-test { background: #6c757d; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; }
+        .status-bar { font-size: 0.75rem; font-weight: bold; color: #0070ba; margin-bottom: 5px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Marker Studio: Universal Data Manager</h2>
+    <h2>Marker Studio: Stepped Learning Manager</h2>
 
     <div class="left-panel">
         <div class="upload-zone">
             <div class="url-input-group">
-                <input type="text" id="urlInput" placeholder="Paste YouTube Link or Audio URL">
+                <input type="text" id="urlInput" placeholder="YouTube Link or Audio URL">
                 <button onclick="handleURL()" style="background:#0070ba; color:white; border-radius:8px; padding:0 15px;">Load</button>
             </div>
-            <p id="file-label" style="margin: 5px 0; font-size: 0.75rem; color: #666;">Load URL or Upload Local File</p>
-            <button style="width:100%; background:#f0f2f5; border:1px solid #ccd0d5" onclick="document.getElementById('audioInput').click()">Upload MP3 / M4A / OGG</button>
+            <p id="file-label" style="margin: 5px 0; font-size: 0.75rem; color: #666;">Load source to begin</p>
+            <button style="width:100%; background:#f0f2f5; border:1px solid #ccd0d5" onclick="document.getElementById('audioInput').click()">Local File</button>
             <input type="file" id="audioInput" accept="audio/*,.ogg" style="display:none" onchange="loadLocalFile(this)">
         </div>
 
+        <div id="status" class="status-bar">Ready</div>
         <audio id="player" controls></audio>
         <div id="yt-container"><div id="yt-player"></div></div>
         
-        <button class="btn-record" id="recordBtn" onclick="addMarker()" disabled>Record Marker (Press 'M')</button>
+        <button class="btn-record" id="recordBtn" onclick="addMarker()" disabled>Record Segment (Press 'M')</button>
         
         <div class="controls">
             <button onclick="clearMarkers()" style="background:#e4e6eb">Clear All</button>
             <button style="background:#6c757d; color:white" onclick="rewind()">Rewind 2s</button>
         </div>
 
-        <label style="margin-top: 15px;">Import/Export JSON (Test Bench IO):</label>
-        <textarea id="ioJson" placeholder="Paste markers here..."></textarea>
+        <textarea id="ioJson" placeholder="Paste JSON here..."></textarea>
         <button class="btn-import" onclick="importFromText()">↑ Load into Test Bench</button>
-        <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate for marker.js</button>
+        <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate Stepped JSON</button>
     </div>
 
     <div class="right-panel">
-        <label>Verse Selection (Active Sync):</label>
+        <label style="font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; display: block;">Pasuram Groups (3 Steps each):</label>
         <div id="marker-list"></div>
     </div>
 </div>
@@ -89,173 +89,130 @@
 
     function setupYouTube(url) {
         const videoId = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
-        isYouTube = true;
-        currentFileName = videoId;
-        player.style.display = 'none';
-        document.getElementById('yt-container').style.display = 'block';
-        document.getElementById('file-label').innerText = "YouTube ID: " + videoId;
+        isYouTube = true; currentFileName = videoId;
+        player.style.display = 'none'; document.getElementById('yt-container').style.display = 'block';
         if (ytPlayer) ytPlayer.loadVideoById(videoId);
         else {
-            ytPlayer = new YT.Player('yt-player', {
-                height: '100%', width: '100%', videoId: videoId,
-                events: { 'onReady': () => {
-                    document.getElementById('recordBtn').disabled = false;
-                    setupSyncLoop();
-                }}
+            ytPlayer = new YT.Player('yt-player', { height: '100%', width: '100%', videoId: videoId,
+                events: { 'onReady': () => { document.getElementById('recordBtn').disabled = false; setupSyncLoop(); } }
             });
         }
     }
 
     function setupDirectAudio(url) {
-        isYouTube = false;
-        currentFileName = url.split('/').pop().split('?')[0].split('.')[0] || "remote_audio";
-        document.getElementById('yt-container').style.display = 'none';
-        player.style.display = 'block';
-        player.src = url;
-        player.load();
-        document.getElementById('file-label').innerText = "File: " + currentFileName;
-        document.getElementById('recordBtn').disabled = false;
+        isYouTube = false; currentFileName = url.split('/').pop().split('.')[0] || "audio";
+        document.getElementById('yt-container').style.display = 'none'; player.style.display = 'block';
+        player.src = url; player.load(); document.getElementById('recordBtn').disabled = false;
         setupSyncLoop();
     }
 
     function loadLocalFile(input) {
-        const file = input.files[0];
-        if (!file) return;
-        setupDirectAudio(URL.createObjectURL(file));
-        currentFileName = file.name.split('.')[0];
+        const file = input.files[0]; if (!file) return;
+        setupDirectAudio(URL.createObjectURL(file)); currentFileName = file.name.split('.')[0];
     }
 
-    // 2. THE SYNC MONITOR (Preserving your Test Bench Logic)
+    // 2. RECORDING LOGIC
+    function addMarker() {
+        const time = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
+        const formattedTime = parseFloat(time.toFixed(2));
+        const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
+        rawMarkers.push({ start, end: formattedTime, active: true, text: "" });
+        
+        const currentStep = (rawMarkers.length % 3) || 3;
+        const currentPasuram = Math.ceil(rawMarkers.length / 3);
+        document.getElementById('status').innerText = `Recording Pasuram ${currentPasuram}, Step ${currentStep}`;
+        
+        renderMarkers();
+    }
+
+    // 3. RENDER & TEST LOGIC (Stepped grouping)
+    function renderMarkers() {
+        let html = '';
+        for (let i = 0; i < rawMarkers.length; i += 3) {
+            const pIdx = (i / 3) + 1;
+            const steps = rawMarkers.slice(i, i + 3);
+            const fullStart = steps[0].start;
+            const fullEnd = steps[steps.length - 1].end;
+
+            html += `<div class="marker-item" id="pasuram-${pIdx}">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong>Pasuram ${pIdx}</strong>
+                    <button class="btn-test" style="background:#0070ba" onclick="testSegment(${fullStart}, ${fullEnd}, ${i})">Test Full</button>
+                </div>
+                ${steps.map((s, stepIdx) => `
+                    <div class="step-row" id="item-${i + stepIdx}">
+                        <span>Step ${stepIdx + 1}: ${s.start} - ${s.end}s</span>
+                        <button class="btn-test" onclick="testSegment(${s.start}, ${s.end}, ${i + stepIdx})">Test</button>
+                    </div>
+                `).join('')}
+                <textarea class="verse-text" placeholder="Pasuram Text..." onchange="rawMarkers[${i}].text = this.value">${rawMarkers[i].text || ""}</textarea>
+            </div>`;
+        }
+        markerList.innerHTML = html;
+    }
+
+    function testSegment(start, end, highlightIdx) {
+        highlightMarker(highlightIdx);
+        if (isYouTube) { ytPlayer.seekTo(start); ytPlayer.playVideo(); }
+        else { player.currentTime = start; player.play(); }
+        const checker = setInterval(() => {
+            const curr = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
+            if (curr >= end) { isYouTube ? ytPlayer.pauseVideo() : player.pause(); clearInterval(checker); }
+        }, 50);
+    }
+
+    function highlightMarker(index) {
+        document.querySelectorAll('.step-row').forEach(el => el.style.background = "#f0f2f5");
+        const el = document.getElementById(`item-${index}`);
+        if (el) { el.style.background = "#e7f3ff"; el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+    }
+
+    // 4. STEPPED GENERATION
+    function generateMarkerJS() {
+        const result = [];
+        for (let i = 0; i < rawMarkers.length; i += 3) {
+            const steps = rawMarkers.slice(i, i + 3);
+            if (steps.length === 3) {
+                result.push({
+                    p: (i / 3) + 1,
+                    steps: steps.map(s => [s.start, s.end]),
+                    full: [steps[0].start, steps[2].end],
+                    text: steps[0].text
+                });
+            }
+        }
+        ioJson.value = `'${currentFileName}' : ${JSON.stringify(result, null, 2)},`;
+    }
+
+    function importFromText() {
+        try {
+            const data = JSON.parse(ioJson.value.trim().split(': ')[1] || ioJson.value);
+            rawMarkers = [];
+            data.forEach(p => {
+                p.steps.forEach((s, idx) => {
+                    rawMarkers.push({ start: s[0], end: s[1], active: true, text: idx === 0 ? p.text : "" });
+                });
+            });
+            renderMarkers();
+        } catch (e) { alert("Format: Ensure you paste the valid JSON array."); }
+    }
+
     function setupSyncLoop() {
         const monitor = () => {
-            if (rawMarkers.length === 0) return;
             const time = isYouTube ? (ytPlayer?.getCurrentTime() || 0) : player.currentTime;
-            const isPaused = isYouTube ? (ytPlayer?.getPlayerState && ytPlayer.getPlayerState() !== 1) : player.paused;
-
-            if (isPaused) {
-                requestAnimationFrame(monitor);
-                return;
-            }
-
             const idx = rawMarkers.findIndex(m => time >= m.start && time < m.end);
-            if (idx !== -1) {
-                if (idx !== currentHighlightIndex) {
-                    currentHighlightIndex = idx;
-                    highlightMarker(idx);
-                }
-                if (!rawMarkers[idx].active) jumpToNextActive(idx + 1);
-            } else {
-                const nextIdx = rawMarkers.findIndex(m => m.start > time);
-                if (nextIdx !== -1) jumpToNextActive(nextIdx);
+            if (idx !== -1 && idx !== currentHighlightIndex) {
+                currentHighlightIndex = idx;
+                highlightMarker(idx);
             }
             requestAnimationFrame(monitor);
         };
         requestAnimationFrame(monitor);
     }
 
-    function jumpToNextActive(startIndex) {
-        for (let i = startIndex; i < rawMarkers.length; i++) {
-            if (rawMarkers[i].active) {
-                if (isYouTube) ytPlayer.seekTo(rawMarkers[i].start);
-                else player.currentTime = rawMarkers[i].start;
-                return;
-            }
-        }
-        isYouTube ? ytPlayer.pauseVideo() : player.pause();
-    }
-
-    // 3. CORE TOOLS (Import, Export, Add, Test)
-    function importFromText() {
-        try {
-            const data = JSON.parse(ioJson.value.trim());
-            if (!Array.isArray(data)) return;
-            rawMarkers = [];
-            let lastEnd = 0;
-            data.forEach(item => {
-                let start, end, text = "";
-                if (typeof item === 'object' && item !== null) {
-                    start = item.start; end = item.end; text = item.text || "";
-                } else {
-                    start = lastEnd; end = item;
-                }
-                rawMarkers.push({ start, end, active: true, text });
-                lastEnd = end;
-            });
-            renderMarkers();
-        } catch (e) { alert("Invalid JSON format."); }
-    }
-
-    function addMarker() {
-        const time = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
-        const formattedTime = parseFloat(time.toFixed(2));
-        const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
-        rawMarkers.push({ start: start, end: formattedTime, active: true, text: "" });
-        renderMarkers();
-    }
-
-    function renderMarkers() {
-        markerList.innerHTML = rawMarkers.map((m, i) => `
-            <div class="marker-item" id="item-${i}">
-                <div class="item-row">
-                    <input type="checkbox" ${m.active ? 'checked' : ''} onchange="rawMarkers[${i}].active = this.checked">
-                    <div style="flex-grow:1; margin-left:12px;"><strong>#${i+1}</strong>: ${m.start}s - ${m.end}s</div>
-                    <button class="btn-test" onclick="testOne(${m.start}, ${m.end}, ${i})">Test</button>
-                </div>
-                <textarea class="verse-text" placeholder="Pasuram text..." onchange="rawMarkers[${i}].text = this.value">${m.text}</textarea>
-            </div>
-        `).join('');
-    }
-
-    function testOne(start, end, index) {
-        highlightMarker(index);
-        if (isYouTube) {
-            ytPlayer.seekTo(start);
-            ytPlayer.playVideo();
-        } else {
-            player.currentTime = start;
-            player.play();
-        }
-        const checker = setInterval(() => {
-            const time = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
-            if (time >= end) {
-                isYouTube ? ytPlayer.pauseVideo() : player.pause();
-                clearInterval(checker);
-            }
-        }, 50);
-    }
-
-    function highlightMarker(index) {
-        document.querySelectorAll('.marker-item').forEach(el => el.classList.remove('playing-marker'));
-        const el = document.getElementById(`item-${index}`);
-        if (el) {
-            el.classList.add('playing-marker');
-            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    }
-
-    function generateMarkerJS() {
-        const result = [];
-        let runningEnd = 0;
-        rawMarkers.forEach(m => {
-            if (!m.active) return;
-            if (m.text.trim() !== "") result.push({ start: m.start, end: m.end, text: m.text.trim() });
-            else if (m.start === runningEnd) result.push(m.end);
-            else result.push({ start: m.start, end: m.end });
-            runningEnd = m.end;
-        });
-        ioJson.value = `'${currentFileName}' : ${JSON.stringify(result, null, 2)},`;
-    }
-
-    function rewind() {
-        if (isYouTube) ytPlayer.seekTo(ytPlayer.getCurrentTime() - 2);
-        else player.currentTime -= 2;
-    }
-
-    function clearMarkers() { if(confirm("Clear All?")) { rawMarkers = []; renderMarkers(); ioJson.value = ""; } }
-
-    window.addEventListener('keydown', (e) => {
-        if (e.key.toLowerCase() === 'm' && !document.getElementById('recordBtn').disabled) addMarker();
-    });
+    function rewind() { isYouTube ? ytPlayer.seekTo(ytPlayer.getCurrentTime() - 2) : player.currentTime -= 2; }
+    function clearMarkers() { if(confirm("Clear All?")) { rawMarkers = []; renderMarkers(); } }
+    window.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'm' && !document.getElementById('recordBtn').disabled) addMarker(); });
 </script>
 </body>
 </html>
