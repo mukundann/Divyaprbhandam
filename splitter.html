@@ -6,23 +6,26 @@
     <title>Marker Studio - Pro Edition</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 950px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 1050px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         h2 { text-align: center; font-size: 1.2rem; margin-top: 0; margin-bottom: 15px; grid-column: span 2; color: #1c1e21; }
         .left-panel, .right-panel { display: flex; flex-direction: column; min-width: 0; }
-        .upload-zone { border: 2px dashed #ccd0d5; padding: 20px; text-align: center; border-radius: 12px; cursor: pointer; margin-bottom: 10px; transition: 0.2s; }
-        .upload-zone:hover { border-color: #0070ba; background: #f9fafb; }
+        .upload-zone { border: 2px dashed #ccd0d5; padding: 15px; text-align: center; border-radius: 12px; margin-bottom: 10px; transition: 0.2s; }
+        .url-input-group { display: flex; gap: 5px; margin-bottom: 10px; }
+        input[type="text"] { flex-grow: 1; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 0.85rem; }
         audio { width: 100%; margin-bottom: 10px; }
+        #yt-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; margin-bottom: 10px; overflow: hidden; display: none; }
         .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem; transition: background 0.2s; }
+        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
         .btn-record { background: #fb7373; color: white; width: 100%; margin-bottom: 10px; }
         .btn-record:disabled { background: #ccd0d5; cursor: not-allowed; }
         .btn-import { background: #28a745; color: white; margin-top: 5px; }
         .btn-gen { background: #0070ba; color: white; margin-top: 15px; }
-        textarea { flex-grow: 1; font-family: 'Courier New', monospace; font-size: 0.8rem; padding: 12px; border: 1px solid #ccd0d5; border-radius: 8px; resize: none; min-height: 250px; }
-        #marker-list { background: #f9fafb; border: 1px solid #e4e6eb; border-radius: 8px; height: 550px; overflow-y: auto; }
-        .marker-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+        textarea { flex-grow: 1; font-family: 'Courier New', monospace; font-size: 0.8rem; padding: 12px; border: 1px solid #ccd0d5; border-radius: 8px; resize: none; min-height: 200px; }
+        #marker-list { background: #f9fafb; border: 1px solid #e4e6eb; border-radius: 8px; height: 600px; overflow-y: auto; }
+        .marker-item { display: flex; flex-direction: column; padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; background: white; }
         .playing-marker { border-left: 5px solid #0070ba; background: #e7f3ff !important; }
-        .item-info { flex-grow: 1; margin-left: 12px; }
+        .item-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+        .verse-text { width: 95%; margin-top: 8px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; }
         .btn-test { background: #6c757d; color: white; padding: 5px 12px; border-radius: 6px; font-size: 0.75rem; }
         label { font-size: 0.75rem; font-weight: bold; margin-bottom: 5px; color: #4b4f56; display: block; }
     </style>
@@ -30,96 +33,152 @@
 <body>
 
 <div class="container">
-    <h2>Marker Studio: Audio Learning Data Manager</h2>
+    <h2>Marker Studio: Universal Data Manager</h2>
 
     <div class="left-panel">
-        <div class="upload-zone" onclick="document.getElementById('audioInput').click()">
-            <p id="file-label">1. Upload MP3, M4A, or OGG File</p>
-            <input type="file" id="audioInput" accept="audio/*,.ogg" style="display:none" onchange="loadAudio(this)">
+        <div class="upload-zone">
+            <div class="url-input-group">
+                <input type="text" id="urlInput" placeholder="Paste YouTube Link or Audio URL">
+                <button onclick="handleURL()" style="background:#0070ba; color:white; border-radius:8px; padding:0 15px;">Load</button>
+            </div>
+            <p id="file-label" style="margin: 5px 0; font-size: 0.75rem; color: #666;">Load URL or Upload Local File</p>
+            <button style="width:100%; background:#f0f2f5; border:1px solid #ccd0d5" onclick="document.getElementById('audioInput').click()">Upload MP3 / M4A / OGG</button>
+            <input type="file" id="audioInput" accept="audio/*,.ogg" style="display:none" onchange="loadLocalFile(this)">
         </div>
+
         <audio id="player" controls></audio>
+        <div id="yt-container"><div id="yt-player"></div></div>
         
         <button class="btn-record" id="recordBtn" onclick="addMarker()" disabled>Record Marker (Press 'M')</button>
         
         <div class="controls">
             <button onclick="clearMarkers()" style="background:#e4e6eb">Clear All</button>
-            <button style="background:#6c757d; color:white" onclick="player.currentTime -= 2">Rewind 2s</button>
+            <button style="background:#6c757d; color:white" onclick="rewind()">Rewind 2s</button>
         </div>
 
-        <label style="margin-top: 15px;">Import/Export JSON (for MARKER_DATABASE):</label>
-        <textarea id="ioJson" placeholder='Paste markers here, e.g., [12.75, 56.1, ...]'></textarea>
+        <label style="margin-top: 15px;">Import/Export JSON (Test Bench IO):</label>
+        <textarea id="ioJson" placeholder="Paste markers here..."></textarea>
         <button class="btn-import" onclick="importFromText()">↑ Load into Test Bench</button>
         <button class="btn-gen" onclick="generateMarkerJS()">↓ Generate for marker.js</button>
     </div>
 
     <div class="right-panel">
-        <label>Verse Selection (Uncheck to Skip):</label>
+        <label>Verse Selection (Active Sync):</label>
         <div id="marker-list"></div>
     </div>
 </div>
 
+<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-    let rawMarkers = []; 
+    let rawMarkers = [];
     let currentHighlightIndex = -1;
-    let currentFileName = "audio_data"; // Default fallback
+    let currentFileName = "audio_data";
+    let ytPlayer = null;
+    let isYouTube = false;
     const player = document.getElementById('player');
     const markerList = document.getElementById('marker-list');
     const ioJson = document.getElementById('ioJson');
 
-    function loadAudio(input) {
+    // 1. DUAL-PLAYER LOADING
+    function handleURL() {
+        const url = document.getElementById('urlInput').value.trim();
+        if (!url) return;
+        if (url.includes('youtube.com') || url.includes('youtu.be')) setupYouTube(url);
+        else setupDirectAudio(url);
+    }
+
+    function setupYouTube(url) {
+        const videoId = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
+        isYouTube = true;
+        currentFileName = videoId;
+        player.style.display = 'none';
+        document.getElementById('yt-container').style.display = 'block';
+        document.getElementById('file-label').innerText = "YouTube ID: " + videoId;
+        if (ytPlayer) ytPlayer.loadVideoById(videoId);
+        else {
+            ytPlayer = new YT.Player('yt-player', {
+                height: '100%', width: '100%', videoId: videoId,
+                events: { 'onReady': () => {
+                    document.getElementById('recordBtn').disabled = false;
+                    setupSyncLoop();
+                }}
+            });
+        }
+    }
+
+    function setupDirectAudio(url) {
+        isYouTube = false;
+        currentFileName = url.split('/').pop().split('?')[0].split('.')[0] || "remote_audio";
+        document.getElementById('yt-container').style.display = 'none';
+        player.style.display = 'block';
+        player.src = url;
+        player.load();
+        document.getElementById('file-label').innerText = "File: " + currentFileName;
+        document.getElementById('recordBtn').disabled = false;
+        setupSyncLoop();
+    }
+
+    function loadLocalFile(input) {
         const file = input.files[0];
         if (!file) return;
-        
-        // Extract base filename (e.g., NAT.2.all) for exports
-        currentFileName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-        
-        document.getElementById('file-label').innerText = file.name;
-        player.src = URL.createObjectURL(file);
-        document.getElementById('recordBtn').disabled = false;
-        
-        player.ontimeupdate = () => {
-            if (player.paused || rawMarkers.length === 0) return;
-            const time = player.currentTime;
-            
+        setupDirectAudio(URL.createObjectURL(file));
+        currentFileName = file.name.split('.')[0];
+    }
+
+    // 2. THE SYNC MONITOR (Preserving your Test Bench Logic)
+    function setupSyncLoop() {
+        const monitor = () => {
+            if (rawMarkers.length === 0) return;
+            const time = isYouTube ? (ytPlayer?.getCurrentTime() || 0) : player.currentTime;
+            const isPaused = isYouTube ? (ytPlayer?.getPlayerState && ytPlayer.getPlayerState() !== 1) : player.paused;
+
+            if (isPaused) {
+                requestAnimationFrame(monitor);
+                return;
+            }
+
             const idx = rawMarkers.findIndex(m => time >= m.start && time < m.end);
             if (idx !== -1) {
                 if (idx !== currentHighlightIndex) {
                     currentHighlightIndex = idx;
                     highlightMarker(idx);
                 }
-                if (!rawMarkers[idx].active) { jumpToNextActive(idx + 1); }
+                if (!rawMarkers[idx].active) jumpToNextActive(idx + 1);
             } else {
                 const nextIdx = rawMarkers.findIndex(m => m.start > time);
                 if (nextIdx !== -1) jumpToNextActive(nextIdx);
             }
+            requestAnimationFrame(monitor);
         };
+        requestAnimationFrame(monitor);
     }
 
     function jumpToNextActive(startIndex) {
         for (let i = startIndex; i < rawMarkers.length; i++) {
             if (rawMarkers[i].active) {
-                player.currentTime = rawMarkers[i].start;
+                if (isYouTube) ytPlayer.seekTo(rawMarkers[i].start);
+                else player.currentTime = rawMarkers[i].start;
                 return;
             }
         }
-        player.pause(); 
+        isYouTube ? ytPlayer.pauseVideo() : player.pause();
     }
 
+    // 3. CORE TOOLS (Import, Export, Add, Test)
     function importFromText() {
         try {
             const data = JSON.parse(ioJson.value.trim());
             if (!Array.isArray(data)) return;
-            
             rawMarkers = [];
             let lastEnd = 0;
             data.forEach(item => {
-                let start, end;
+                let start, end, text = "";
                 if (typeof item === 'object' && item !== null) {
-                    start = item.start; end = item.end;
+                    start = item.start; end = item.end; text = item.text || "";
                 } else {
                     start = lastEnd; end = item;
                 }
-                rawMarkers.push({ start, end, active: true });
+                rawMarkers.push({ start, end, active: true, text });
                 lastEnd = end;
             });
             renderMarkers();
@@ -127,20 +186,42 @@
     }
 
     function addMarker() {
-        const time = parseFloat(player.currentTime.toFixed(2));
+        const time = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
+        const formattedTime = parseFloat(time.toFixed(2));
         const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
-        rawMarkers.push({ start: start, end: time, active: true });
+        rawMarkers.push({ start: start, end: formattedTime, active: true, text: "" });
         renderMarkers();
     }
 
     function renderMarkers() {
         markerList.innerHTML = rawMarkers.map((m, i) => `
             <div class="marker-item" id="item-${i}">
-                <input type="checkbox" ${m.active ? 'checked' : ''} onchange="rawMarkers[${i}].active = !rawMarkers[${i}].active">
-                <div class="item-info"><strong>#${i+1}</strong>: ${m.start}s - ${m.end}s</div>
-                <button class="btn-test" onclick="testOne(${m.start}, ${m.end}, ${i})">Test</button>
+                <div class="item-row">
+                    <input type="checkbox" ${m.active ? 'checked' : ''} onchange="rawMarkers[${i}].active = this.checked">
+                    <div style="flex-grow:1; margin-left:12px;"><strong>#${i+1}</strong>: ${m.start}s - ${m.end}s</div>
+                    <button class="btn-test" onclick="testOne(${m.start}, ${m.end}, ${i})">Test</button>
+                </div>
+                <textarea class="verse-text" placeholder="Pasuram text..." onchange="rawMarkers[${i}].text = this.value">${m.text}</textarea>
             </div>
         `).join('');
+    }
+
+    function testOne(start, end, index) {
+        highlightMarker(index);
+        if (isYouTube) {
+            ytPlayer.seekTo(start);
+            ytPlayer.playVideo();
+        } else {
+            player.currentTime = start;
+            player.play();
+        }
+        const checker = setInterval(() => {
+            const time = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
+            if (time >= end) {
+                isYouTube ? ytPlayer.pauseVideo() : player.pause();
+                clearInterval(checker);
+            }
+        }, 50);
     }
 
     function highlightMarker(index) {
@@ -152,36 +233,22 @@
         }
     }
 
-    function testOne(start, end, index) {
-        highlightMarker(index);
-        player.currentTime = start;
-        player.play();
-        const checker = setInterval(() => {
-            if (player.currentTime >= end || player.paused) {
-                player.pause();
-                clearInterval(checker);
-            }
-        }, 30);
-    }
-
     function generateMarkerJS() {
         const result = [];
         let runningEnd = 0;
         rawMarkers.forEach(m => {
             if (!m.active) return;
-            if (m.start === runningEnd) { result.push(m.end); } 
-            else { result.push({ start: m.start, end: m.end }); }
+            if (m.text.trim() !== "") result.push({ start: m.start, end: m.end, text: m.text.trim() });
+            else if (m.start === runningEnd) result.push(m.end);
+            else result.push({ start: m.start, end: m.end });
             runningEnd = m.end;
         });
+        ioJson.value = `'${currentFileName}' : ${JSON.stringify(result, null, 2)},`;
+    }
 
-        // WRAPPER: Generates the code snippet for your marker.js file
-    // 1. Generate a comma-separated list with 2 decimal places
-const markerList = result.map(n => n.toFixed(2)).join(', ');
-
-// 2. Format the final string as a single line entry for your database
-const finalJS = `'${currentFileName}' : [${markerList}],`;
-        
-        ioJson.value = finalJS;
+    function rewind() {
+        if (isYouTube) ytPlayer.seekTo(ytPlayer.getCurrentTime() - 2);
+        else player.currentTime -= 2;
     }
 
     function clearMarkers() { if(confirm("Clear All?")) { rawMarkers = []; renderMarkers(); ioJson.value = ""; } }
