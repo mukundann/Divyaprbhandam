@@ -1,220 +1,154 @@
 <!DOCTYPE html>
-<html lang="ta">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Divya Prabandham Learning Tool - PTM Canto 2</title>
-    <script src="marker.js"></script>
+    <title>Divya Prabandham Anusandhanam</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #fcfcfc;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .container {
-            max-width: 800px;
-            width: 100%;
-            background: #ffffff;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            border: 1px solid #eef0f2;
-        }
-        h2 {
-            color: #1a365d;
-            text-align: center;
-            margin-top: 0;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 10px;
-        }
-        .control-panel {
-            background-color: #f7fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 20px;
-            display: flex;
-            wrap: wrap;
-            gap: 15px;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .control-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        label {
-            font-weight: 600;
-            font-size: 14px;
-            color: #4a5568;
-        }
-        select, button {
-            padding: 8px 12px;
-            font-size: 14px;
-            border-radius: 4px;
-            border: 1px solid #cbd5e0;
-            background-color: #fff;
-            cursor: pointer;
-            outline: none;
-        }
-        select:focus, button:focus {
-            border-color: #3182ce;
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
-        }
-        button {
-            background-color: #3182ce;
-            color: white;
-            border: none;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-        button:hover {
-            background-color: #2b6cb0;
-        }
-        audio {
-            width: 100%;
-            margin-top: 10px;
-        }
-        .display-box {
-            background: #fffaf0;
-            border: 1px solid #feebc8;
-            border-radius: 6px;
-            padding: 20px;
-            min-height: 120px;
-            margin-top: 20px;
-            text-align: center;
-        }
-        .status-text {
-            font-size: 14px;
-            color: #718096;
-            margin-bottom: 8px;
-        }
-        .timeline-info {
-            font-family: monospace;
-            font-size: 13px;
-            color: #a0aec0;
-            margin-top: 15px;
-            word-break: break-all;
-        }
+        /* Keep your existing CSS here */
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
+        h2 { text-align: center; color: #1c1e21; margin-top: 0; font-size: 1.3rem; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.8rem; margin-bottom: 4px; color: #4b4f56; font-weight: 600; }
+        select, input { width: 100%; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .learning-controls { background: #f9fafb; border: 1px solid #e4e6eb; padding: 15px; border-radius: 12px; margin: 15px 0; }
+        .flex-row { display: flex; gap: 10px; align-items: center; }
+        .nav-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 15px; }
+        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-play { background-color: #0070ba; color: white; grid-column: span 3; }
+        .btn-nav { background-color: #e4e6eb; color: #050505; }
+        audio { width: 100%; margin-top: 15px; }
+        .status { margin-top: 10px; font-size: 0.7rem; color: #0070ba; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Perumal Thirumozhi - Decad 2 Practice</h2>
-
-    <div class="control-panel">
-        <div class="control-group">
-            <label for="learningStepDropdown">Learning Mode:</label>
-            <select id="learningStepDropdown" onchange="onLearningStepChange(this)">
-                <option value="1" selected>Step 1: Half-Line Segments</option>
-                <option value="2">Step 2: Full-Line Segments</option>
-                <option value="3">Step 3: Two-Line Segments</option>
-                <option value="4">Step 4: Full Pasuram Practice</option>
+<div class="card">
+    <h2>Divya Prabandham Anusandhanam</h2>
+    <div class="input-group">
+        <label>Select Prabandham</label>
+        <select id="prefix" onchange="resetToStart()">
+            <option value="TVM">Thiruvaimozhi (TVM)</option>
+            <option value="PT">Periya Thirumozhi (PT)</option>
+            <option value="PMT">Perumal Thirumozhi (PMT)</option>
+            <option value="NAT">Naachiyar Thirumozhi (NAT)</option>
+        </select>
+    </div>
+    <div class="input-group">
+        <label id="numLabel">Current Pasuram (Ch.Sub.Pas)</label>
+        <input type="text" id="number" value="1.1.1" inputmode="decimal">
+    </div>
+    <div class="learning-controls">
+        <label>Learning Settings</label>
+        <div class="flex-row">
+            <div style="flex: 1;"><label>Repeat</label><input type="number" id="repeatLimit" value="1" min="1"></div>
+            <div style="flex: 2;"><label>Auto-Advance</label>
+                <select id="autoNext"><option value="true">Yes</option><option value="false">No</option></select>
+            </div>
+        </div>
+        <div style="margin-top: 10px;">
+            <label>Learning Mode</label>
+            <select id="learningStep">
+                <option value="step1">Step 1: Half-Line Segments</option>
+                <option value="2" selected>Step 2: Full Line (Default)</option>
+                <option value="step3">Step 3: Two-Line Segments</option>
+                <option value="step4">Step 4: Full Pasuram Practice</option>
             </select>
         </div>
-
-        <div class="control-group">
-            <button onclick="synchronizePlaybackEngine()">Sync Track</button>
         </div>
+    <div class="nav-controls">
+        <button class="btn-play" onclick="startLearning()">START RECITATION</button>
+        <button class="btn-nav" onclick="navigate(-1)">Prev</button>
+        <button class="btn-nav" onclick="LearningEngine.stopAudio()">Stop</button> 
+        <button class="btn-nav" onclick="navigate(1)">Next</button>
     </div>
-
-    <audio id="audioPlayer" controls src="PTM2.mp3"></audio>
-
-    <div class="display-box">
-        <div class="status-text" id="statusDisplay">Initializing engine...</div>
-        <div id="timelineDump" class="timeline-info"></div>
-    </div>
+    <audio id="audioPlayer" controls></audio>
+    <div id="status" class="status">Ready</div>
 </div>
 
+<script src="marker.js"></script>
+<script src="markerProcessor.js"></script>
+<script src="config.js"></script>
+<script src="navigation.js"></script>
+<script src="learningEngine.js"></script>
+
 <script>
-// =========================================================
-// 1. GLOBAL TRACKING VARIABLES (Original Compatibility)
-// =========================================================
-let markers = [];              // Global layout marker array required by legacy loops
-let currentLearningStep = 1;   // Selected step type indicator (1 to 4)
-
-// Reference media element hooks
-const audioPlayer = document.getElementById('audioPlayer');
-const statusDisplay = document.getElementById('statusDisplay');
-const timelineDump = document.getElementById('timelineDump');
-
-// =========================================================
-// 2. RUNTIME TIMELINE FLATTENING ENGINE
-// =========================================================
-/**
- * Processes matrix chunks of the whole decad block into a combined linear 
- * chronological array that fits the legacy player requirements.
- */
-function compileDecadTimeline(fullCantoData, step) {
-    const combinedTimelineArray = [];
-    
-    fullCantoData.forEach((pasuramNode) => {
-        let sourcePool = [];
-        
-        switch (step) {
-            case 1: sourcePool = pasuramNode.step1; break;
-            case 2: sourcePool = pasuramNode.step2; break;
-            case 3: sourcePool = pasuramNode.step3; break;
-            case 4: sourcePool = pasuramNode.step4; break;
-            default: sourcePool = pasuramNode.step1;
+    document.addEventListener('DOMContentLoaded', () => {
+        const audioPlayer = document.getElementById('audioPlayer');
+        if (audioPlayer) {
+            LearningEngine.init(audioPlayer);
         }
-        
-        sourcePool.forEach((segment, sliceIndex) => {
-            combinedTimelineArray.push(segment[0]);
-            // Capture the absolute terminating boundary marker of this node block
-            if (sliceIndex === sourcePool.length - 1) {
-                combinedTimelineArray.push(segment[1]);
+
+        window.addEventListener('learning-track-ended', () => {
+            const limit = parseInt(document.getElementById('repeatLimit').value);
+            LearningEngine.state.currentRepeatCount++;
+            if (LearningEngine.state.currentRepeatCount < limit) {
+                startLearning();
+            } else {
+                LearningEngine.state.currentRepeatCount = 0;
+                if (document.getElementById('autoNext').value === "true") navigate(1);
             }
         });
     });
 
-    // De-duplicate any perfectly overlapping boundary seams (e.g. 18.77 trailing vs leading)
-    return [...new Set(combinedTimelineArray)].sort((a, b) => a - b);
-}
+    function startLearning() {
+        const pre = document.getElementById('prefix').value;
+        const numInput = document.getElementById('number').value;
+        const chosenStep = document.getElementById('learningStep').value; // Captured Dropdown Step Value
+        const c = CONFIG[pre];
+        const coords = Navigation.parseCoords(numInput, c.hasSub);
+        const isSingle = typeof c.isSingleFile === 'function' ? c.isSingleFile(numInput) : c.isSingleFile;
+        let bounds = null;
 
-/**
- * Reconfigures global marker arrays and alerts the tracking loops.
- */
-function synchronizePlaybackEngine() {
-    // Check if external data is ready
-    if (typeof PTM_2_DATA === 'undefined') {
-        statusDisplay.innerText = "Error: PTM_2_DATA missing from marker.js";
-        return;
+        if (isSingle) {
+            // Checks if data block is the new multi-step style or classic array
+            const masterDatabaseBlock = window.MARKER_DATABASE[`${pre}.${coords.ch}.all` || `${pre}.${coords.ch}`];
+            
+            if (masterDatabaseBlock && !Array.isArray(masterDatabaseBlock) && masterDatabaseBlock[coords.pas - 1]) {
+                // If it's a structural 4-step object lookup, fetch the specific user-selected segment bounds
+                const targetPasuram = masterDatabaseBlock[coords.pas - 1];
+                const activeSegments = targetPasuram[chosenStep] || targetPasuram["step2"];
+                
+                // Return start and stop time targets directly for the timeline loop
+                bounds = { start: activeSegments[0][0], end: activeSegments[activeSegments.length - 1][1] };
+            } else {
+                // Fallback safe path to original single line timeline array if using standard flat marker arrays
+                bounds = MarkerProcessor.getSegmentBounds(masterDatabaseBlock, coords.pas - 1);
+            }
+        }
+
+        LearningEngine.playSegment(c.getAudioSrc(numInput), bounds, () => {
+            window.dispatchEvent(new CustomEvent('learning-track-ended'));
+        });
     }
 
-    // Generate full contiguous map for the complete structural track
-    markers = compileDecadTimeline(PTM_2_DATA, currentLearningStep);
-    
-    // Update display metrics view
-    statusDisplay.innerText = `Active Learning Mode: Step ${currentLearningStep} (Contiguous Decad)`;
-    timelineDump.innerText = `Current Legacy Active Marker Array: [${markers.join(', ')}]`;
-    
-    // Safety check: reset playback to start if timeline initializes out-of-bounds
-    if (markers.length > 0 && audioPlayer.currentTime < markers[0]) {
-        audioPlayer.currentTime = markers[0];
+    function navigate(dir) {
+        const input = document.getElementById('number');
+        const pre = document.getElementById('prefix').value;
+        const c = CONFIG[pre];
+        let coords = Navigation.parseCoords(input.value, c.hasSub);
+        
+        coords.pas += dir;
+        const limit = Navigation.getLimit(pre, coords.ch, coords.sub);
+
+        if (dir === 1 && coords.pas > limit) {
+            coords.pas = 1;
+            if (c.hasSub) { coords.sub++; if (coords.sub > c.maxSub) { coords.sub = 1; coords.ch++; } }
+            else { coords.ch++; }
+        } else if (dir === -1 && coords.pas < 1) {
+            // Basic backward logic
+            coords.pas = 1; 
+        }
+
+        input.value = c.hasSub ? `${coords.ch}.${coords.sub}.${coords.pas}` : `${coords.ch}.${coords.pas}`;
+        startLearning();
     }
-}
 
-// =========================================================
-// 3. INTERFACE DOM EVENT HANDLERS
-// =========================================================
-function onLearningStepChange(selectNode) {
-    currentLearningStep = parseInt(selectNode.value, 10);
-    synchronizePlaybackEngine();
-}
-
-// Initialize complete structural timeline array boundaries when DOM renders safely
-window.addEventListener('DOMContentLoaded', () => {
-    synchronizePlaybackEngine();
-});
+    function resetToStart() {
+        const pre = document.getElementById('prefix').value;
+        document.getElementById('number').value = CONFIG[pre].hasSub ? "1.1.1" : "1.1";
+    }
 </script>
-
 </body>
 </html>
