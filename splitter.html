@@ -6,7 +6,7 @@
     <title>Marker Studio - Pro Precision</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 1200px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 1300px; display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; }
         h2 { text-align: center; font-size: 1.2rem; margin: 0 0 15px 0; grid-column: span 2; color: #1c1e21; }
         .left-panel, .right-panel { display: flex; flex-direction: column; min-width: 0; }
         .upload-zone { border: 2px dashed #ccd0d5; padding: 15px; text-align: center; border-radius: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
@@ -27,13 +27,19 @@
         .control-row { display: flex; gap: 10px; margin: 15px 0; align-items: center; }
         .right-panel { background: #f7f9fa; border-radius: 12px; padding: 15px; border: 1px solid #e4e6eb; max-height: 800px; overflow-y: auto; }
         .pasuram-group { background: white; border-radius: 10px; padding: 12px; margin-bottom: 15px; border: 1px solid #e4e6eb; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .segment-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; font-size: 0.8rem; }
+        .segment-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; font-size: 0.8rem; padding: 4px; border-radius: 6px; }
         .ts-input { width: 55px; text-align: center; padding: 4px; border-radius: 6px; }
-        .btn-small { padding: 4px 8px; font-size: 0.75rem; border: 1px solid #ccd0d5; border-radius: 6px; background: white; cursor: pointer; }
+        
+        /* Dynamic label system */
+        .text-label { display: none; flex-grow: 1; color: #606770; font-family: sans-serif; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px; }
+        .has-text .text-label { display: inline-block; }
+        
+        .btn-small { padding: 4px 8px; font-size: 0.75rem; border: 1px solid #ccd0d5; border-radius: 6px; background: white; cursor: pointer; flex-shrink: 0; }
         .btn-small:hover { background: #f0f2f5; }
         .btn-del { border-color: #f5c6cb; color: #721c24; background: #f8d7da; }
         .btn-del:hover { background: #f5c6cb; }
         .playing-segment { background: #e1f5fe !important; border-left: 4px solid #0288d1; padding-left: 2px; }
+        .playing-segment .text-label { color: #0070ba; font-weight: bold; }
         #status { font-weight: bold; color: #4b4f56; font-size: 0.85rem; margin-top: 10px; text-align: center; }
         .io-container { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
         textarea.io-box { width: 100%; height: 140px; font-family: monospace; font-size: 0.75rem; border: 1px solid #ccd0d5; border-radius: 8px; padding: 8px; box-sizing: border-box; resize: none; }
@@ -89,7 +95,7 @@
 
             <div id="textGuidedSettingsRow" style="display: none; flex-direction: column; gap: 6px;">
                 <label style="font-weight: 600; font-size: 0.8rem; color:#4b4f56;">Pasuram Text Grid:</label>
-                <textarea id="textGuidedContent" placeholder="Line 1 * Line 2 * Line 3 * Line 4 * Line 5 * Line 6 * Line 7 * Line 8 *" style="width:100%; height:80px; font-size:0.8rem; border:1px solid #ccd0d5; border-radius:8px; padding:6px; box-sizing:border-box; resize:vertical;"></textarea>
+                <textarea id="textGuidedContent" placeholder="Line 1 * Line 2 * Line 3 * Line 4 * Line 5 * Line 6 * Line 7 * Line 8 *" oninput="renderMarkers()" style="width:100%; height:80px; font-size:0.8rem; border:1px solid #ccd0d5; border-radius:8px; padding:6px; box-sizing:border-box; resize:vertical;"></textarea>
             </div>
 
             <div class="wizard-row" id="pauseSettingsRow" style="display: none; flex-wrap: wrap; gap: 8px;">
@@ -148,7 +154,7 @@
     let ytPlayer = null;
     let isYouTube = false;
     let detectedDuration = 0;
-    let cachedAudioArrayBuffer = null; // Persistent multi-pass safe data storage
+    let cachedAudioArrayBuffer = null; 
     
     const player = document.getElementById('player');
     const markerList = document.getElementById('marker-list');
@@ -261,6 +267,7 @@
                 document.getElementById('textGuidedContent').value = e.target.result;
                 document.getElementById('splitMethod').value = 'T';
                 toggleSplitLabel();
+                renderMarkers();
             };
             reader.readAsText(file);
         }
@@ -273,6 +280,18 @@
             detectedDuration = parseFloat(fallback);
         }
         initializeEqualSplits(detectedDuration);
+    }
+
+    function getParsedPhrases() {
+        let textRaw = document.getElementById('textGuidedContent').value.trim();
+        if (!textRaw.includes('*')) return [];
+        
+        textRaw = textRaw.replace(/\s+\d+\s*$/, ""); 
+        const cleanText = textRaw.replace(/\r?\n|\r/g, " ");
+        const segments = cleanText.split('*');
+        if (segments[segments.length - 1].trim() === "") segments.pop();
+        
+        return segments.map(s => s.trim()).filter(s => s !== "");
     }
 
     function initializeEqualSplits(totalDuration) {
@@ -311,6 +330,7 @@
 
         let targetStopsCount = 0;
         let textProportions = [];
+        let phrases = [];
         
         if (useTextGuide) {
             let textRaw = document.getElementById('textGuidedContent').value.trim();
@@ -319,13 +339,12 @@
                 return;
             }
             
-            // Clear tailing verse numbering flags
             textRaw = textRaw.replace(/\s+\d+\s*$/, "");
-            
             const cleanText = textRaw.replace(/\r?\n|\r/g, " ");
             const segments = cleanText.split('*');
             if (segments[segments.length - 1].trim() === "") segments.pop(); 
             
+            phrases = segments.map(s => s.trim());
             targetStopsCount = segments.length;
             
             let accumulatedChars = 0;
@@ -341,8 +360,6 @@
         btn.disabled = true;
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // CRITICAL FIX: Safe deep clone buffer allocation to preserve data integrity across multiple clicks
         const bufferCopy = cachedAudioArrayBuffer.slice(0);
 
         audioCtx.decodeAudioData(bufferCopy).then(audioBuffer => {
@@ -410,7 +427,11 @@
 
             rawMarkers = [];
             for (let k = 0; k < points.length - 1; k++) {
-                rawMarkers.push({ start: points[k], end: points[k+1], text: "" });
+                rawMarkers.push({ 
+                    start: points[k], 
+                    end: points[k+1], 
+                    text: useTextGuide && phrases[k] ? phrases[k] : "" 
+                });
             }
 
             renderMarkers();
@@ -419,7 +440,7 @@
             btn.innerText = originalText;
             btn.disabled = false;
         }).catch(err => {
-            alert("Audio stream decoding failure. Please make sure file format is standard MP3 or WAV.");
+            alert("Audio stream decoding failure.");
             btn.innerText = originalText;
             btn.disabled = false;
         });
@@ -428,7 +449,11 @@
     function addMarker() {
         const time = parseFloat((isYouTube ? ytPlayer.getCurrentTime() : player.currentTime).toFixed(2));
         const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
-        rawMarkers.push({ start, end: time, text: "" });
+        
+        const phrases = getParsedPhrases();
+        const fallbackText = phrases[rawMarkers.length] ? phrases[rawMarkers.length] : "";
+
+        rawMarkers.push({ start, end: time, text: fallbackText });
         renderMarkers();
     }
 
@@ -442,6 +467,10 @@
     }
 
     function updateMarker(index, field, value) {
+        if (field === 'text') {
+            rawMarkers[index].text = value;
+            return;
+        }
         const val = parseFloat(value);
         rawMarkers[index][field] = val;
         if (field === 'end' && rawMarkers[index+1]) rawMarkers[index+1].start = val;
@@ -456,16 +485,24 @@
 
     function renderMarkers() {
         let html = '';
+        const phrases = getParsedPhrases();
+        const textIsActive = phrases.length > 0;
+
         for (let i = 0; i < rawMarkers.length; i += 8) {
             const segments = rawMarkers.slice(i, i + 8);
-            html += `<div class="pasuram-group">
+            // Toggle active template flag class seamlessly
+            html += `<div class="pasuram-group ${textIsActive ? 'has-text' : ''}">
                 ${segments.map((s, sIdx) => {
                     const globalIdx = i + sIdx;
+                    const currentLabelText = s.text || (phrases[globalIdx] ? phrases[globalIdx] : "");
+                    if (s.text === "" && currentLabelText !== "") s.text = currentLabelText;
+
                     return `
                     <div class="segment-row" id="item-${globalIdx}">
-                        <span style="width:20px">H${sIdx+1}</span>
+                        <span style="font-weight:bold; color:#8d949e; width:22px; flex-shrink:0;">H${sIdx+1}</span>
                         <input type="number" step="0.01" class="ts-input" value="${s.start}" onchange="updateMarker(${globalIdx}, 'start', this.value)">
                         <input type="number" step="0.01" class="ts-input" value="${s.end}" onchange="updateMarker(${globalIdx}, 'end', this.value)">
+                        <span class="text-label" title="${currentLabelText}">${currentLabelText}</span>
                         <button class="btn-small" style="background:#0070ba; color:white" onclick="snapToCurrent(${globalIdx})">Snap</button>
                         <button class="btn-small" onclick="testSegment(${s.start}, ${s.end}, ${globalIdx})">▶</button>
                         <button class="btn-small btn-del" onclick="deleteMarker(${globalIdx})">✕</button>
@@ -521,7 +558,7 @@
             
             result.push({
                 p: pNum, 
-                text: "", 
+                text: seg[0].text ? seg.map(s => s.text).join(' * ') : "", 
                 step1: step1Pairs,
                 step2: step2Pairs,
                 step3: step3Pairs,
@@ -530,7 +567,7 @@
         }
 
         const customLines = result.map(entry => {
-            return `  { "p": ${entry.p}, "text": "", "step1": ${JSON.stringify(entry.step1)}, "step2": ${JSON.stringify(entry.step2)}, "step3": ${JSON.stringify(entry.step3)}, "step4": ${JSON.stringify(entry.step4)} }`;
+            return `  { "p": ${entry.p}, "text": ${JSON.stringify(entry.text)}, "step1": ${JSON.stringify(entry.step1)}, "step2": ${JSON.stringify(entry.step2)}, "step3": ${JSON.stringify(entry.step3)}, "step4": ${JSON.stringify(entry.step4)} }`;
         });
 
         ioJson.value = `'${currentFileName}' : [\n${customLines.join(",\n")}\n],`;
@@ -543,8 +580,13 @@
             const data = JSON.parse(jsonPart);
             rawMarkers = [];
             data.forEach(p => {
+                const step1Phrases = p.text ? p.text.split(' * ') : [];
                 p.step1.forEach((s, idx) => {
-                    rawMarkers.push({ start: s[0], end: s[1], text: "" });
+                    rawMarkers.push({ 
+                        start: s[0], 
+                        end: s[1], 
+                        text: step1Phrases[idx] ? step1Phrases[idx].trim() : "" 
+                    });
                 });
             });
             renderMarkers();
