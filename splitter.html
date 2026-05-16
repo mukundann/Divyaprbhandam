@@ -30,7 +30,6 @@
         .segment-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; font-size: 0.8rem; padding: 4px; border-radius: 6px; }
         .ts-input { width: 55px; text-align: center; padding: 4px; border-radius: 6px; }
         
-        /* Dynamic label system */
         .text-label { display: none; flex-grow: 1; color: #606770; font-family: sans-serif; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 4px; }
         .has-text .text-label { display: inline-block; }
         
@@ -84,21 +83,21 @@
                     <option value="P">Pasurams (Groups of 8)</option>
                     <option value="S">Individual Segments</option>
                     <option value="A">Intelligent Pause Detection</option>
-                    <option value="T">Text-Guided Intelligent Split (*)</option>
+                    <option value="T" selected>Text-Guided Intelligent Split (*)</option>
                 </select>
             </div>
             
-            <div class="wizard-row" id="countSettingsRow">
+            <div class="wizard-row" id="countSettingsRow" style="display: none;">
                 <label id="countLabel" style="font-weight: 600; flex-grow:1;">Target Pasurams Count:</label>
                 <input type="number" id="splitCount" value="1" min="1" style="width: 70px; text-align: center;">
             </div>
 
-            <div id="textGuidedSettingsRow" style="display: none; flex-direction: column; gap: 6px;">
+            <div id="textGuidedSettingsRow" style="display: flex; flex-direction: column; gap: 6px;">
                 <label style="font-weight: 600; font-size: 0.8rem; color:#4b4f56;">Pasuram Text Grid:</label>
                 <textarea id="textGuidedContent" placeholder="Line 1 * Line 2 * Line 3 * Line 4 * Line 5 * Line 6 * Line 7 * Line 8 *" oninput="renderMarkers()" style="width:100%; height:80px; font-size:0.8rem; border:1px solid #ccd0d5; border-radius:8px; padding:6px; box-sizing:border-box; resize:vertical;"></textarea>
             </div>
 
-            <div class="wizard-row" id="pauseSettingsRow" style="display: none; flex-wrap: wrap; gap: 8px;">
+            <div class="wizard-row" id="pauseSettingsRow" style="display: flex; flex-wrap: wrap; gap: 8px;">
                 <div>
                     <label style="font-weight: 600; font-size: 0.75rem; display:block; margin-bottom: 2px;">Volume Threshold:</label>
                     <input type="number" id="pauseThreshold" value="0.015" step="0.005" min="0.001" style="width: 75px; padding: 4px;">
@@ -320,11 +319,29 @@
     }
 
     function analyzeAudioPauses(totalDuration, useTextGuide = false) {
-        if (!cachedAudioArrayBuffer) {
-            alert("Waveform analyzer cache empty. Please select a local audio file (.mp3/.wav) first to use intelligent splitting.");
-            document.getElementById('splitMethod').value = 'S';
-            toggleSplitLabel();
-            initializeEqualSplits(totalDuration);
+        // Fallback gracefully if trying text-first split without audio data buffer access
+        if (useTextGuide && !cachedAudioArrayBuffer) {
+            let phrases = getParsedPhrases();
+            if (phrases.length === 0) {
+                alert("Please add text context first.");
+                return;
+            }
+            rawMarkers = [];
+            let segmentDuration = totalDuration / phrases.length;
+            for(let i=0; i<phrases.length; i++) {
+                rawMarkers.push({
+                    start: parseFloat((i * segmentDuration).toFixed(2)),
+                    end: i === phrases.length - 1 ? parseFloat(totalDuration.toFixed(2)) : parseFloat(((i+1) * segmentDuration).toFixed(2)),
+                    text: phrases[i]
+                });
+            }
+            renderMarkers();
+            generateMarkerJS();
+            return;
+        }
+
+        if (!useTextGuide && !cachedAudioArrayBuffer) {
+            alert("Local file required for audio-only pause tracking.");
             return;
         }
 
@@ -356,7 +373,7 @@
 
         const btn = document.getElementById('applySplitBtn');
         const originalText = btn.innerText;
-        btn.innerText = "Processing Waveform Matrix...";
+        btn.innerText = "Processing Text-Guided Vector Timeline...";
         btn.disabled = true;
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -394,16 +411,16 @@
                 textProportions.forEach((prop, index) => {
                     if (index === textProportions.length - 1) return; 
                     
+                    // Core fix: Establish exact text weight baseline anchor point
                     const textEstimate = totalDuration * prop;
-                    const uniformEstimate = totalDuration * ((index + 1) / targetStopsCount);
-                    const targetWeightCenter = (textEstimate * 0.7) + (uniformEstimate * 0.3);
                     
-                    let closestPause = targetWeightCenter;
+                    let closestPause = textEstimate; 
                     let bestDiff = 99999;
                     
+                    // Strict micro-window fence scan (Strict boundaries: +/- 2.5 seconds max drift allowed)
                     acousticSilences.forEach(pTime => {
-                        const diff = Math.abs(pTime - targetWeightCenter);
-                        if (diff < bestDiff && diff < 8.0) { 
+                        const diff = Math.abs(pTime - textEstimate);
+                        if (diff < bestDiff && diff < 2.5) { 
                             bestDiff = diff;
                             closestPause = pTime;
                         }
@@ -422,199 +439,4 @@
             if (points[points.length - 1] < totalDuration - 0.5) {
                 points.push(parseFloat(totalDuration.toFixed(2)));
             } else {
-                points[points.length - 1] = parseFloat(totalDuration.toFixed(2));
-            }
-
-            rawMarkers = [];
-            for (let k = 0; k < points.length - 1; k++) {
-                rawMarkers.push({ 
-                    start: points[k], 
-                    end: points[k+1], 
-                    text: useTextGuide && phrases[k] ? phrases[k] : "" 
-                });
-            }
-
-            renderMarkers();
-            generateMarkerJS();
-            
-            btn.innerText = originalText;
-            btn.disabled = false;
-        }).catch(err => {
-            alert("Audio stream decoding failure.");
-            btn.innerText = originalText;
-            btn.disabled = false;
-        });
-    }
-
-    function addMarker() {
-        const time = parseFloat((isYouTube ? ytPlayer.getCurrentTime() : player.currentTime).toFixed(2));
-        const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
-        
-        const phrases = getParsedPhrases();
-        const fallbackText = phrases[rawMarkers.length] ? phrases[rawMarkers.length] : "";
-
-        rawMarkers.push({ start, end: time, text: fallbackText });
-        renderMarkers();
-    }
-
-    function deleteMarker(index) {
-        if (!confirm("Remove this segment? Subsequent segments will shift up.")) return;
-        rawMarkers.splice(index, 1);
-        for (let i = 0; i < rawMarkers.length; i++) {
-            if (i > 0) rawMarkers[i].start = rawMarkers[i-1].end;
-        }
-        renderMarkers();
-    }
-
-    function updateMarker(index, field, value) {
-        if (field === 'text') {
-            rawMarkers[index].text = value;
-            return;
-        }
-        const val = parseFloat(value);
-        rawMarkers[index][field] = val;
-        if (field === 'end' && rawMarkers[index+1]) rawMarkers[index+1].start = val;
-        if (field === 'start' && rawMarkers[index-1]) rawMarkers[index-1].end = val;
-        renderMarkers();
-    }
-
-    function snapToCurrent(index) {
-        const time = parseFloat((isYouTube ? ytPlayer.getCurrentTime() : player.currentTime).toFixed(2));
-        updateMarker(index, 'end', time);
-    }
-
-    function renderMarkers() {
-        let html = '';
-        const phrases = getParsedPhrases();
-        const textIsActive = phrases.length > 0;
-
-        for (let i = 0; i < rawMarkers.length; i += 8) {
-            const segments = rawMarkers.slice(i, i + 8);
-            // Toggle active template flag class seamlessly
-            html += `<div class="pasuram-group ${textIsActive ? 'has-text' : ''}">
-                ${segments.map((s, sIdx) => {
-                    const globalIdx = i + sIdx;
-                    const currentLabelText = s.text || (phrases[globalIdx] ? phrases[globalIdx] : "");
-                    if (s.text === "" && currentLabelText !== "") s.text = currentLabelText;
-
-                    return `
-                    <div class="segment-row" id="item-${globalIdx}">
-                        <span style="font-weight:bold; color:#8d949e; width:22px; flex-shrink:0;">H${sIdx+1}</span>
-                        <input type="number" step="0.01" class="ts-input" value="${s.start}" onchange="updateMarker(${globalIdx}, 'start', this.value)">
-                        <input type="number" step="0.01" class="ts-input" value="${s.end}" onchange="updateMarker(${globalIdx}, 'end', this.value)">
-                        <span class="text-label" title="${currentLabelText}">${currentLabelText}</span>
-                        <button class="btn-small" style="background:#0070ba; color:white" onclick="snapToCurrent(${globalIdx})">Snap</button>
-                        <button class="btn-small" onclick="testSegment(${s.start}, ${s.end}, ${globalIdx})">▶</button>
-                        <button class="btn-small btn-del" onclick="deleteMarker(${globalIdx})">✕</button>
-                    </div>`;
-                }).join('')}
-            </div>`;
-        }
-        markerList.innerHTML = html;
-        document.getElementById('status').innerText = `Segments: ${rawMarkers.length} | Pasurams: ${Math.ceil(rawMarkers.length/8)}`;
-    }
-
-    function testSegment(start, end, highlightIdx) {
-        highlightMarker(highlightIdx);
-        if (isYouTube) { ytPlayer.seekTo(start); ytPlayer.playVideo(); }
-        else { player.currentTime = start; player.play(); }
-        const checker = setInterval(() => {
-            const curr = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
-            if (curr >= end) { isYouTube ? ytPlayer.pauseVideo() : player.pause(); clearInterval(checker); }
-        }, 30);
-    }
-
-    function highlightMarker(index) {
-        document.querySelectorAll('.segment-row').forEach(el => el.classList.remove('playing-segment'));
-        const el = document.getElementById(`item-${index}`);
-        if (el) el.classList.add('playing-segment');
-    }
-
-    function generateMarkerJS() {
-        const result = [];
-        for (let i = 0; i < rawMarkers.length; i += 8) {
-            const seg = rawMarkers.slice(i, i + 8);
-            const pNum = (i / 8) + 1;
-            
-            const step1Pairs = seg.map(s => [s.start, s.end]);
-            const step2Pairs = [];
-            const step3Pairs = [];
-            
-            for (let j = 0; j < step1Pairs.length; j += 2) {
-                if (step1Pairs[j+1]) {
-                    step2Pairs.push([step1Pairs[j][0], step1Pairs[j+1][1]]);
-                } else {
-                    step2Pairs.push([step1Pairs[j][0], step1Pairs[j][1]]);
-                }
-            }
-            
-            for (let k = 0; k < step2Pairs.length; k += 2) {
-                if (step2Pairs[k+1]) {
-                    step3Pairs.push([step2Pairs[k][0], step2Pairs[k+1][1]]);
-                } else {
-                    step3Pairs.push([step2Pairs[k][0], step2Pairs[k][1]]);
-                }
-            }
-            
-            result.push({
-                p: pNum, 
-                text: seg[0].text ? seg.map(s => s.text).join(' * ') : "", 
-                step1: step1Pairs,
-                step2: step2Pairs,
-                step3: step3Pairs,
-                step4: [seg[0].start, seg[seg.length - 1].end]
-            });
-        }
-
-        const customLines = result.map(entry => {
-            return `  { "p": ${entry.p}, "text": ${JSON.stringify(entry.text)}, "step1": ${JSON.stringify(entry.step1)}, "step2": ${JSON.stringify(entry.step2)}, "step3": ${JSON.stringify(entry.step3)}, "step4": ${JSON.stringify(entry.step4)} }`;
-        });
-
-        ioJson.value = `'${currentFileName}' : [\n${customLines.join(",\n")}\n],`;
-    }
-
-    function importFromText() {
-        try {
-            const raw = ioJson.value.trim();
-            const jsonPart = raw.includes(':') ? raw.split(': ')[1] : raw;
-            const data = JSON.parse(jsonPart);
-            rawMarkers = [];
-            data.forEach(p => {
-                const step1Phrases = p.text ? p.text.split(' * ') : [];
-                p.step1.forEach((s, idx) => {
-                    rawMarkers.push({ 
-                        start: s[0], 
-                        end: s[1], 
-                        text: step1Phrases[idx] ? step1Phrases[idx].trim() : "" 
-                    });
-                });
-            });
-            renderMarkers();
-        } catch (e) { alert("Import failed. Check JSON format."); }
-    }
-
-    function setupSyncLoop() {
-        const monitor = () => {
-            const time = isYouTube ? (ytPlayer?.getCurrentTime() || 0) : player.currentTime;
-            const idx = rawMarkers.findIndex(m => time >= m.start && time < m.end);
-            if (idx !== -1 && idx !== currentHighlightIndex) {
-                currentHighlightIndex = idx;
-                highlightMarker(idx);
-            }
-            requestAnimationFrame(monitor);
-        };
-        requestAnimationFrame(monitor);
-    }
-
-    function rewind() { isYouTube ? ytPlayer.seekTo(ytPlayer.getCurrentTime() - 2) : player.currentTime -= 2; }
-    function clearMarkers() { if(confirm("Clear all?")) { rawMarkers = []; renderMarkers(); }}
-    window.addEventListener('keydown', (e) => { 
-        if (e.key.toLowerCase() === 'm' && !document.getElementById('recordBtn').disabled) {
-            if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
-                addMarker(); 
-            }
-        }
-    });
-</script>
-</body>
-</html>
+                points[points.length - 1] = parseFloat
