@@ -88,7 +88,7 @@
             </div>
 
             <div id="textGuidedSettingsRow" style="display: none; flex-direction: column; gap: 6px;">
-                <label style="font-weight: 600; font-size: 0.8rem; color:#4b4f56;">Pasuram Text Grid (Auto-populated by file or manual entry):</label>
+                <label style="font-weight: 600; font-size: 0.8rem; color:#4b4f56;">Pasuram Text Grid:</label>
                 <textarea id="textGuidedContent" placeholder="Line 1 * Line 2 * Line 3 * Line 4 * Line 5 * Line 6 * Line 7 * Line 8 *" style="width:100%; height:80px; font-size:0.8rem; border:1px solid #ccd0d5; border-radius:8px; padding:6px; box-sizing:border-box; resize:vertical;"></textarea>
             </div>
 
@@ -148,7 +148,7 @@
     let ytPlayer = null;
     let isYouTube = false;
     let detectedDuration = 0;
-    let rawAudioArrayBuffer = null; 
+    let cachedAudioArrayBuffer = null; // Persistent multi-pass safe data storage
     
     const player = document.getElementById('player');
     const markerList = document.getElementById('marker-list');
@@ -191,7 +191,7 @@
     }
 
     function handleURL() {
-        rawAudioArrayBuffer = null;
+        cachedAudioArrayBuffer = null;
         const url = document.getElementById('urlInput').value.trim();
         if (url.includes('youtube.com') || url.includes('youtu.be')) setupYouTube(url);
         else setupDirectAudio(url);
@@ -245,7 +245,9 @@
         const file = input.files[0]; 
         if (file) {
             const reader = new FileReader();
-            reader.onload = function(e) { rawAudioArrayBuffer = e.target.result; };
+            reader.onload = function(e) { 
+                cachedAudioArrayBuffer = e.target.result; 
+            };
             reader.readAsArrayBuffer(file);
             setupDirectAudio(URL.createObjectURL(file));
         }
@@ -299,8 +301,8 @@
     }
 
     function analyzeAudioPauses(totalDuration, useTextGuide = false) {
-        if (!rawAudioArrayBuffer) {
-            alert("Intelligent splitting requires an uploaded local audio file. Falling back to simple structural math instead.");
+        if (!cachedAudioArrayBuffer) {
+            alert("Waveform analyzer cache empty. Please select a local audio file (.mp3/.wav) first to use intelligent splitting.");
             document.getElementById('splitMethod').value = 'S';
             toggleSplitLabel();
             initializeEqualSplits(totalDuration);
@@ -313,11 +315,11 @@
         if (useTextGuide) {
             let textRaw = document.getElementById('textGuidedContent').value.trim();
             if (!textRaw.includes('*')) {
-                alert("Please drop '*' anchors in your text input before utilizing this strategy.");
+                alert("Please add '*' anchors to your text or select a valid text file first.");
                 return;
             }
             
-            // Clean out explicit structural verse tracking tail tags (e.g., matching trailing "1" or "12" counts)
+            // Clear tailing verse numbering flags
             textRaw = textRaw.replace(/\s+\d+\s*$/, "");
             
             const cleanText = textRaw.replace(/\r?\n|\r/g, " ");
@@ -339,7 +341,9 @@
         btn.disabled = true;
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const bufferCopy = rawAudioArrayBuffer.slice(0);
+        
+        // CRITICAL FIX: Safe deep clone buffer allocation to preserve data integrity across multiple clicks
+        const bufferCopy = cachedAudioArrayBuffer.slice(0);
 
         audioCtx.decodeAudioData(bufferCopy).then(audioBuffer => {
             const pThreshold = parseFloat(document.getElementById('pauseThreshold').value) || 0.015;
@@ -415,7 +419,7 @@
             btn.innerText = originalText;
             btn.disabled = false;
         }).catch(err => {
-            alert("Audio decoding failure.");
+            alert("Audio stream decoding failure. Please make sure file format is standard MP3 or WAV.");
             btn.innerText = originalText;
             btn.disabled = false;
         });
@@ -477,3 +481,98 @@
         highlightMarker(highlightIdx);
         if (isYouTube) { ytPlayer.seekTo(start); ytPlayer.playVideo(); }
         else { player.currentTime = start; player.play(); }
+        const checker = setInterval(() => {
+            const curr = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
+            if (curr >= end) { isYouTube ? ytPlayer.pauseVideo() : player.pause(); clearInterval(checker); }
+        }, 30);
+    }
+
+    function highlightMarker(index) {
+        document.querySelectorAll('.segment-row').forEach(el => el.classList.remove('playing-segment'));
+        const el = document.getElementById(`item-${index}`);
+        if (el) el.classList.add('playing-segment');
+    }
+
+    function generateMarkerJS() {
+        const result = [];
+        for (let i = 0; i < rawMarkers.length; i += 8) {
+            const seg = rawMarkers.slice(i, i + 8);
+            const pNum = (i / 8) + 1;
+            
+            const step1Pairs = seg.map(s => [s.start, s.end]);
+            const step2Pairs = [];
+            const step3Pairs = [];
+            
+            for (let j = 0; j < step1Pairs.length; j += 2) {
+                if (step1Pairs[j+1]) {
+                    step2Pairs.push([step1Pairs[j][0], step1Pairs[j+1][1]]);
+                } else {
+                    step2Pairs.push([step1Pairs[j][0], step1Pairs[j][1]]);
+                }
+            }
+            
+            for (let k = 0; k < step2Pairs.length; k += 2) {
+                if (step2Pairs[k+1]) {
+                    step3Pairs.push([step2Pairs[k][0], step2Pairs[k+1][1]]);
+                } else {
+                    step3Pairs.push([step2Pairs[k][0], step2Pairs[k][1]]);
+                }
+            }
+            
+            result.push({
+                p: pNum, 
+                text: "", 
+                step1: step1Pairs,
+                step2: step2Pairs,
+                step3: step3Pairs,
+                step4: [seg[0].start, seg[seg.length - 1].end]
+            });
+        }
+
+        const customLines = result.map(entry => {
+            return `  { "p": ${entry.p}, "text": "", "step1": ${JSON.stringify(entry.step1)}, "step2": ${JSON.stringify(entry.step2)}, "step3": ${JSON.stringify(entry.step3)}, "step4": ${JSON.stringify(entry.step4)} }`;
+        });
+
+        ioJson.value = `'${currentFileName}' : [\n${customLines.join(",\n")}\n],`;
+    }
+
+    function importFromText() {
+        try {
+            const raw = ioJson.value.trim();
+            const jsonPart = raw.includes(':') ? raw.split(': ')[1] : raw;
+            const data = JSON.parse(jsonPart);
+            rawMarkers = [];
+            data.forEach(p => {
+                p.step1.forEach((s, idx) => {
+                    rawMarkers.push({ start: s[0], end: s[1], text: "" });
+                });
+            });
+            renderMarkers();
+        } catch (e) { alert("Import failed. Check JSON format."); }
+    }
+
+    function setupSyncLoop() {
+        const monitor = () => {
+            const time = isYouTube ? (ytPlayer?.getCurrentTime() || 0) : player.currentTime;
+            const idx = rawMarkers.findIndex(m => time >= m.start && time < m.end);
+            if (idx !== -1 && idx !== currentHighlightIndex) {
+                currentHighlightIndex = idx;
+                highlightMarker(idx);
+            }
+            requestAnimationFrame(monitor);
+        };
+        requestAnimationFrame(monitor);
+    }
+
+    function rewind() { isYouTube ? ytPlayer.seekTo(ytPlayer.getCurrentTime() - 2) : player.currentTime -= 2; }
+    function clearMarkers() { if(confirm("Clear all?")) { rawMarkers = []; renderMarkers(); }}
+    window.addEventListener('keydown', (e) => { 
+        if (e.key.toLowerCase() === 'm' && !document.getElementById('recordBtn').disabled) {
+            if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                addMarker(); 
+            }
+        }
+    });
+</script>
+</body>
+</html>
