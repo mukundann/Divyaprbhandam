@@ -9,7 +9,9 @@
         .container { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 1200px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         h2 { text-align: center; font-size: 1.2rem; margin: 0 0 15px 0; grid-column: span 2; color: #1c1e21; }
         .left-panel, .right-panel { display: flex; flex-direction: column; min-width: 0; }
-        .upload-zone { border: 2px dashed #ccd0d5; padding: 15px; text-align: center; border-radius: 12px; margin-bottom: 10px; }
+        .upload-zone { border: 2px dashed #ccd0d5; padding: 15px; text-align: center; border-radius: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .upload-item { border-bottom: 1px dashed #e4e6eb; padding-bottom: 10px; }
+        .upload-item:last-child { border-bottom: none; padding-bottom: 0; }
         .url-input-group { display: flex; gap: 5px; margin-bottom: 10px; }
         input[type="text"], input[type="number"], .ts-input, select { border: 1px solid #ccd0d5; border-radius: 8px; padding: 8px; font-size: 0.85rem; }
         input[type="text"] { flex-grow: 1; }
@@ -54,8 +56,14 @@
     
     <div class="left-panel">
         <div class="upload-zone">
-            <span style="font-size: 0.85rem; color:#4b4f56;">Upload Audio File:</span><br>
-            <input type="file" id="audioFileSelector" accept="audio/*" onchange="loadLocalFile(this)" style="margin-top:5px; font-size:0.8rem;">
+            <div class="upload-item">
+                <span style="font-size: 0.85rem; font-weight: 600; color:#4b4f56;">Upload Audio File:</span><br>
+                <input type="file" id="audioFileSelector" accept="audio/*" onchange="loadLocalFile(this)" style="margin-top:5px; font-size:0.8rem;">
+            </div>
+            <div class="upload-item">
+                <span style="font-size: 0.85rem; font-weight: 600; color:#4b4f56;">Upload Text File (.txt):</span><br>
+                <input type="file" id="textFileSelector" accept=".txt" onchange="loadTextFile(this)" style="margin-top:5px; font-size:0.8rem;">
+            </div>
         </div>
         
         <div class="url-input-group">
@@ -80,7 +88,7 @@
             </div>
 
             <div id="textGuidedSettingsRow" style="display: none; flex-direction: column; gap: 6px;">
-                <label style="font-weight: 600; font-size: 0.8rem; color:#4b4f56;">Paste Text with Stop Anchors (separate lines or phrases with *):</label>
+                <label style="font-weight: 600; font-size: 0.8rem; color:#4b4f56;">Pasuram Text Grid (Auto-populated by file or manual entry):</label>
                 <textarea id="textGuidedContent" placeholder="Line 1 * Line 2 * Line 3 * Line 4 * Line 5 * Line 6 * Line 7 * Line 8 *" style="width:100%; height:80px; font-size:0.8rem; border:1px solid #ccd0d5; border-radius:8px; padding:6px; box-sizing:border-box; resize:vertical;"></textarea>
             </div>
 
@@ -122,8 +130,8 @@
         <div class="docs-drawer">
             <div class="docs-trigger" onclick="toggleDocumentation()">📖 User Guide & Documentation</div>
             <div class="docs-content" id="docsContent">
-                <h3>Text-Guided Intelligent Split (*)</h3>
-                <p>Paste text inside the box containing star anchors (e.g. <code>Word word * Word word *</code>). The tool maps out the character length distributions to build proportional timestamp approximations, then searches the audio stream within a local window to lock each point to the nearest physical drop in voice amplitude.</p>
+                <h3>Text File Upload Workflow</h3>
+                <p>Select a local <code>.txt</code> file containing your text split up by <code>*</code> characters. The text will instantly populate the workspace context box. Change the Strategy type to <strong>Text-Guided Intelligent Split (*)</strong> to merge this text profile with active acoustic pause alignments.</p>
             </div>
         </div>
     </div>
@@ -176,9 +184,8 @@
             pauseRow.style.display = "flex";
             textGuidedRow.style.display = "none";
         } else if (method === 'T') {
-            // Text guided style toggles
             countRow.style.display = "none";
-            pauseRow.style.display = "flex"; // Keep threshold modifiers open for customization
+            pauseRow.style.display = "flex"; 
             textGuidedRow.style.display = "flex";
         }
     }
@@ -244,6 +251,19 @@
         }
     }
 
+    function loadTextFile(input) {
+        const file = input.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('textGuidedContent').value = e.target.result;
+                document.getElementById('splitMethod').value = 'T';
+                toggleSplitLabel();
+            };
+            reader.readAsText(file);
+        }
+    }
+
     function triggerManualSplit() {
         if (!detectedDuration || isNaN(detectedDuration)) {
             const fallback = prompt("Duration not yet detected. Please confirm total file duration in seconds:", "694");
@@ -291,13 +311,15 @@
         let textProportions = [];
         
         if (useTextGuide) {
-            const textRaw = document.getElementById('textGuidedContent').value.trim();
+            let textRaw = document.getElementById('textGuidedContent').value.trim();
             if (!textRaw.includes('*')) {
                 alert("Please drop '*' anchors in your text input before utilizing this strategy.");
                 return;
             }
             
-            // Clean out line breaks to compute clean string offsets
+            // Clean out explicit structural verse tracking tail tags (e.g., matching trailing "1" or "12" counts)
+            textRaw = textRaw.replace(/\s+\d+\s*$/, "");
+            
             const cleanText = textRaw.replace(/\r?\n|\r/g, " ");
             const segments = cleanText.split('*');
             if (segments[segments.length - 1].trim() === "") segments.pop(); 
@@ -306,7 +328,7 @@
             
             let accumulatedChars = 0;
             segments.forEach(part => {
-                accumulatedChars += part.length + 1; // account for splitter character spacing
+                accumulatedChars += part.length + 1; 
                 textProportions.push(accumulatedChars / cleanText.length);
             });
         }
@@ -326,9 +348,8 @@
             const sampleRate = audioBuffer.sampleRate;
             
             const minSamplesSilence = Math.floor(pDuration * sampleRate);
-            const stepSize = Math.floor(sampleRate * 0.01); // 10ms frame precision scanning
+            const stepSize = Math.floor(sampleRate * 0.01); 
             
-            // Generate full array map of all natural silence points
             let acousticSilences = [];
             let silenceLen = 0;
             
@@ -349,23 +370,19 @@
             let points = [0];
 
             if (useTextGuide) {
-                // HYBRID ALGORITHM LOOKUP PIPELINE
                 textProportions.forEach((prop, index) => {
-                    if (index === textProportions.length - 1) return; // let last index map to full track end
+                    if (index === textProportions.length - 1) return; 
                     
                     const textEstimate = totalDuration * prop;
                     const uniformEstimate = totalDuration * ((index + 1) / targetStopsCount);
-                    
-                    // Blend Layer 1 (Math) and Layer 2 (Text ratio) to compute a perfect weight baseline
                     const targetWeightCenter = (textEstimate * 0.7) + (uniformEstimate * 0.3);
                     
-                    // Layer 3: Find nearest structural pause inside a local look-ahead window
                     let closestPause = targetWeightCenter;
                     let bestDiff = 99999;
                     
                     acousticSilences.forEach(pTime => {
                         const diff = Math.abs(pTime - targetWeightCenter);
-                        if (diff < bestDiff && diff < 8.0) { // Constraint window to 8 seconds max variance
+                        if (diff < bestDiff && diff < 8.0) { 
                             bestDiff = diff;
                             closestPause = pTime;
                         }
@@ -374,7 +391,6 @@
                     points.push(parseFloat(closestPause.toFixed(2)));
                 });
             } else {
-                // Fallback to pure acoustic silence spacing
                 acousticSilences.forEach(time => {
                     if (time > points[points.length - 1] + 1.5) {
                         points.push(time);
@@ -382,7 +398,6 @@
                 });
             }
 
-            // Lock boundary tracking endpoints safely
             if (points[points.length - 1] < totalDuration - 0.5) {
                 points.push(parseFloat(totalDuration.toFixed(2)));
             } else {
@@ -462,98 +477,3 @@
         highlightMarker(highlightIdx);
         if (isYouTube) { ytPlayer.seekTo(start); ytPlayer.playVideo(); }
         else { player.currentTime = start; player.play(); }
-        const checker = setInterval(() => {
-            const curr = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
-            if (curr >= end) { isYouTube ? ytPlayer.pauseVideo() : player.pause(); clearInterval(checker); }
-        }, 30);
-    }
-
-    function highlightMarker(index) {
-        document.querySelectorAll('.segment-row').forEach(el => el.classList.remove('playing-segment'));
-        const el = document.getElementById(`item-${index}`);
-        if (el) el.classList.add('playing-segment');
-    }
-
-    function generateMarkerJS() {
-        const result = [];
-        for (let i = 0; i < rawMarkers.length; i += 8) {
-            const seg = rawMarkers.slice(i, i + 8);
-            const pNum = (i / 8) + 1;
-            
-            const step1Pairs = seg.map(s => [s.start, s.end]);
-            const step2Pairs = [];
-            const step3Pairs = [];
-            
-            for (let j = 0; j < step1Pairs.length; j += 2) {
-                if (step1Pairs[j+1]) {
-                    step2Pairs.push([step1Pairs[j][0], step1Pairs[j+1][1]]);
-                } else {
-                    step2Pairs.push([step1Pairs[j][0], step1Pairs[j][1]]);
-                }
-            }
-            
-            for (let k = 0; k < step2Pairs.length; k += 2) {
-                if (step2Pairs[k+1]) {
-                    step3Pairs.push([step2Pairs[k][0], step2Pairs[k+1][1]]);
-                } else {
-                    step3Pairs.push([step2Pairs[k][0], step2Pairs[k][1]]);
-                }
-            }
-            
-            result.push({
-                p: pNum, 
-                text: "", 
-                step1: step1Pairs,
-                step2: step2Pairs,
-                step3: step3Pairs,
-                step4: [seg[0].start, seg[seg.length - 1].end]
-            });
-        }
-
-        const customLines = result.map(entry => {
-            return `  { "p": ${entry.p}, "text": "", "step1": ${JSON.stringify(entry.step1)}, "step2": ${JSON.stringify(entry.step2)}, "step3": ${JSON.stringify(entry.step3)}, "step4": ${JSON.stringify(entry.step4)} }`;
-        });
-
-        ioJson.value = `'${currentFileName}' : [\n${customLines.join(",\n")}\n],`;
-    }
-
-    function importFromText() {
-        try {
-            const raw = ioJson.value.trim();
-            const jsonPart = raw.includes(':') ? raw.split(': ')[1] : raw;
-            const data = JSON.parse(jsonPart);
-            rawMarkers = [];
-            data.forEach(p => {
-                p.step1.forEach((s, idx) => {
-                    rawMarkers.push({ start: s[0], end: s[1], text: "" });
-                });
-            });
-            renderMarkers();
-        } catch (e) { alert("Import failed. Check JSON format."); }
-    }
-
-    function setupSyncLoop() {
-        const monitor = () => {
-            const time = isYouTube ? (ytPlayer?.getCurrentTime() || 0) : player.currentTime;
-            const idx = rawMarkers.findIndex(m => time >= m.start && time < m.end);
-            if (idx !== -1 && idx !== currentHighlightIndex) {
-                currentHighlightIndex = idx;
-                highlightMarker(idx);
-            }
-            requestAnimationFrame(monitor);
-        };
-        requestAnimationFrame(monitor);
-    }
-
-    function rewind() { isYouTube ? ytPlayer.seekTo(ytPlayer.getCurrentTime() - 2) : player.currentTime -= 2; }
-    function clearMarkers() { if(confirm("Clear all?")) { rawMarkers = []; renderMarkers(); }}
-    window.addEventListener('keydown', (e) => { 
-        if (e.key.toLowerCase() === 'm' && !document.getElementById('recordBtn').disabled) {
-            if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
-                addMarker(); 
-            }
-        }
-    });
-</script>
-</body>
-</html>
