@@ -11,7 +11,7 @@
         .left-panel, .right-panel { display: flex; flex-direction: column; min-width: 0; }
         .upload-zone { border: 2px dashed #ccd0d5; padding: 15px; text-align: center; border-radius: 12px; margin-bottom: 10px; }
         .url-input-group { display: flex; gap: 5px; margin-bottom: 10px; }
-        input[type="text"], input[type="number"], .ts-input { border: 1px solid #ccd0d5; border-radius: 8px; padding: 8px; font-size: 0.85rem; }
+        input[type="text"], input[type="number"], .ts-input, select { border: 1px solid #ccd0d5; border-radius: 8px; padding: 8px; font-size: 0.85rem; }
         input[type="text"] { flex-grow: 1; }
         audio { width: 100%; margin-top: 5px; border-radius: 8px; }
         #yt-container { width: 100%; aspect-ratio: 16/9; background: #000; display: none; border-radius: 12px; overflow: hidden; margin-top: 5px; }
@@ -23,7 +23,7 @@
         .btn-gray { background: #f0f2f5; color: #4b4f56; }
         .btn-gray:hover { background: #e4e6eb; }
         .control-row { display: flex; gap: 10px; margin: 15px 0; align-items: center; }
-        .right-panel { background: #f7f9fa; border-radius: 12px; padding: 15px; border: 1px solid #e4e6eb; max-height: 750px; overflow-y: auto; }
+        .right-panel { background: #f7f9fa; border-radius: 12px; padding: 15px; border: 1px solid #e4e6eb; max-height: 800px; overflow-y: auto; }
         .pasuram-group { background: white; border-radius: 10px; padding: 12px; margin-bottom: 15px; border: 1px solid #e4e6eb; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .segment-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; font-size: 0.8rem; }
         .ts-input { width: 55px; text-align: center; padding: 4px; border-radius: 6px; }
@@ -31,16 +31,22 @@
         .btn-small:hover { background: #f0f2f5; }
         .btn-del { border-color: #f5c6cb; color: #721c24; background: #f8d7da; }
         .btn-del:hover { background: #f5c6cb; }
-        .verse-text { display: none; }
         .playing-segment { background: #e1f5fe !important; border-left: 4px solid #0288d1; padding-left: 2px; }
         #status { font-weight: bold; color: #4b4f56; font-size: 0.85rem; margin-top: 10px; text-align: center; }
-        .io-container { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
-        textarea.io-box { width: 100%; height: 180px; font-family: monospace; font-size: 0.75rem; border: 1px solid #ccd0d5; border-radius: 8px; padding: 8px; box-sizing: border-box; resize: none; }
+        .io-container { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+        textarea.io-box { width: 100%; height: 140px; font-family: monospace; font-size: 0.75rem; border: 1px solid #ccd0d5; border-radius: 8px; padding: 8px; box-sizing: border-box; resize: none; }
         
-        /* New styling wrapper for internal split controls */
         .wizard-panel { background: #f7f9fa; border: 1px solid #e4e6eb; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
         .wizard-row { display: flex; gap: 10px; align-items: center; font-size: 0.85rem; color: #4b4f56; }
         .wizard-row select, .wizard-row input { padding: 6px; border: 1px solid #ccd0d5; border-radius: 6px; font-size: 0.85rem; }
+
+        .docs-drawer { border: 1px solid #e4e6eb; border-radius: 12px; margin-top: 15px; background: #f7f9fa; overflow: hidden; }
+        .docs-trigger { background: #e4e6eb; color: #1c1e21; font-size: 0.85rem; font-weight: bold; padding: 10px; text-align: center; cursor: pointer; user-select: none; transition: background 0.2s; }
+        .docs-trigger:hover { background: #ccd0d5; }
+        .docs-content { display: none; padding: 15px; background: white; font-size: 0.8rem; line-height: 1.45; color: #4b4f56; max-height: 350px; overflow-y: auto; border-top: 1px solid #e4e6eb; }
+        .docs-content h3 { margin-top: 12px; margin-bottom: 4px; font-size: 0.9rem; color: #0070ba; border-bottom: 1px solid #f0f2f5; padding-bottom: 2px; }
+        .docs-content ul { margin: 5px 0; padding-left: 18px; }
+        .docs-content code { background: #f0f2f5; padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 0.75rem; color: #1c1e21; }
     </style>
 </head>
 <body>
@@ -51,7 +57,7 @@
     <div class="left-panel">
         <div class="upload-zone">
             <span style="font-size: 0.85rem; color:#4b4f56;">Upload Audio File:</span><br>
-            <input type="file" accept="audio/*" onchange="loadLocalFile(this)" style="margin-top:5px; font-size:0.8rem;">
+            <input type="file" id="audioFileSelector" accept="audio/*" onchange="loadLocalFile(this)" style="margin-top:5px; font-size:0.8rem;">
         </div>
         
         <div class="url-input-group">
@@ -65,12 +71,25 @@
                 <select id="splitMethod" onchange="toggleSplitLabel()">
                     <option value="P">Pasurams (Groups of 8)</option>
                     <option value="S">Individual Segments</option>
+                    <option value="A">Intelligent Pause Detection</option>
                 </select>
             </div>
-            <div class="wizard-row">
+            <div class="wizard-row" id="countSettingsRow">
                 <label id="countLabel" style="font-weight: 600; flex-grow:1;">Target Pasurams Count:</label>
                 <input type="number" id="splitCount" value="12" min="1" style="width: 70px; text-align: center;">
-                <button class="btn btn-gray" onclick="triggerManualSplit()" style="padding: 6px 12px; border-radius: 8px;">Apply Split</button>
+            </div>
+            <div class="wizard-row" id="pauseSettingsRow" style="display: none; flex-wrap: wrap; gap: 8px;">
+                <div>
+                    <label style="font-weight: 600; font-size: 0.75rem; display:block; margin-bottom: 2px;">Volume Threshold:</label>
+                    <input type="number" id="pauseThreshold" value="0.015" step="0.005" min="0.001" style="width: 75px; padding: 4px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; font-size: 0.75rem; display:block; margin-bottom: 2px;">Min Duration (s):</label>
+                    <input type="number" id="pauseDuration" value="0.3" step="0.1" min="0.1" style="width: 60px; padding: 4px;">
+                </div>
+            </div>
+            <div class="wizard-row" style="justify-content: flex-end; margin-top: 4px;">
+                <button class="btn btn-gray" id="applySplitBtn" onclick="triggerManualSplit()" style="padding: 6px 12px; border-radius: 8px; width: 100%;">Apply Split</button>
             </div>
         </div>
 
@@ -92,6 +111,31 @@
         </div>
         
         <div id="status">Segments: 0 | Pasurams: 0</div>
+
+        <div class="docs-drawer">
+            <div class="docs-trigger" onclick="toggleDocumentation()">📖 User Guide & Documentation</div>
+            <div class="docs-content" id="docsContent">
+                <h3>1. Loading Media</h3>
+                <ul>
+                    <li><strong>Local Audio:</strong> Use the browser file selector zone to pick an audio file straight from disk.</li>
+                    <li><strong>Web Streaming:</strong> Paste clean <code>.mp3</code>/<code>.wav</code> addresses or standard YouTube link/IDs into the URL prompt and click <strong>Load Link</strong>.</li>
+                </ul>
+
+                <h3>2. Initializing Timelines (Splitting)</h3>
+                <ul>
+                    <li><strong>Pasurams Strategy:</strong> Compiles coordinates wrapped strictly into semantic matrices of 8 lines/nodes each.</li>
+                    <li><strong>Segments Strategy:</strong> Divides the detected timeline into a uniform distribution of independent, loose chunks.</li>
+                    <li><strong>Intelligent Pause Detection:</strong> Scans the raw binary PCM audio buffer of local files, tracking sustained volume valleys to deploy boundaries natively at pauses. Adjust <em>Volume Threshold</em> (lower numbers = quieter silences required) and <em>Min Duration</em> to tune accuracy.</li>
+                </ul>
+
+                <h3>3. Editing & Synchronization</h3>
+                <ul>
+                    <li><strong>Hotkeys:</strong> Press <code>M</code> on your keyboard to drop runtime segment locks dynamically while listening.</li>
+                    <li><strong>Continuity Locks:</strong> Adjusting the <code>End</code> timestamp of a node auto-shifts the <code>Start</code> of the consecutive row to prevent structural drifting.</li>
+                    <li><strong>Snap Button:</strong> Forces the target segment line boundary to tie itself instantly with the current media player playhead time.</li>
+                </ul>
+            </div>
+        </div>
     </div>
 
     <div class="right-panel" id="marker-list">
@@ -106,24 +150,43 @@
     let ytPlayer = null;
     let isYouTube = false;
     let detectedDuration = 0;
+    let rawAudioArrayBuffer = null; // Caches the local file data for Web Audio decoding pipelines
+    
     const player = document.getElementById('player');
     const markerList = document.getElementById('marker-list');
     const ioJson = document.getElementById('ioJson');
 
+    function toggleDocumentation() {
+        const content = document.getElementById('docsContent');
+        content.style.display = (content.style.display === 'block') ? 'none' : 'block';
+    }
+
     function toggleSplitLabel() {
         const method = document.getElementById('splitMethod').value;
+        const countRow = document.getElementById('countSettingsRow');
+        const pauseRow = document.getElementById('pauseSettingsRow');
         const label = document.getElementById('countLabel');
         const input = document.getElementById('splitCount');
+        
         if (method === 'P') {
+            countRow.style.display = "flex";
+            pauseRow.style.display = "none";
             label.innerText = "Target Pasurams Count:";
             input.value = "12";
-        } else {
+        } else if (method === 'S') {
+            countRow.style.display = "flex";
+            pauseRow.style.display = "none";
             label.innerText = "Total Segments Count:";
             input.value = "100";
+        } else {
+            // Intelligent Pause Selection Layout UI state
+            countRow.style.display = "none";
+            pauseRow.style.display = "flex";
         }
     }
 
     function handleURL() {
+        rawAudioArrayBuffer = null; // Clear array buffer caches since remote URLs can't be deep-decoded directly via Web Audio
         const url = document.getElementById('urlInput').value.trim();
         if (url.includes('youtube.com') || url.includes('youtu.be')) setupYouTube(url);
         else setupDirectAudio(url);
@@ -174,7 +237,17 @@
     }
 
     function loadLocalFile(input) {
-        const file = input.files[0]; if (file) setupDirectAudio(URL.createObjectURL(file));
+        const file = input.files[0]; 
+        if (file) {
+            // Read file into an ArrayBuffer concurrently so the programmatic Web Audio engine can decode it later
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                rawAudioArrayBuffer = e.target.result;
+            };
+            reader.readAsArrayBuffer(file);
+            
+            setupDirectAudio(URL.createObjectURL(file));
+        }
     }
 
     function triggerManualSplit() {
@@ -188,8 +261,13 @@
 
     function initializeEqualSplits(totalDuration) {
         const method = document.getElementById('splitMethod').value;
-        const countInput = parseInt(document.getElementById('splitCount').value, 10);
         
+        if (method === 'A') {
+            analyzeAudioPauses(totalDuration);
+            return;
+        }
+
+        const countInput = parseInt(document.getElementById('splitCount').value, 10);
         if (!countInput || isNaN(countInput) || countInput <= 0) return;
 
         let totalSegments = (method === 'P') ? countInput * 8 : countInput;
@@ -204,6 +282,84 @@
 
         renderMarkers();
         generateMarkerJS();
+    }
+
+    // New Client-Side Audio Analysis Algorithm Pipeline
+    function analyzeAudioPauses(totalDuration) {
+        if (!rawAudioArrayBuffer) {
+            alert("Pause detection requires an uploaded local audio file. Falling back to simple structural math instead.");
+            document.getElementById('splitMethod').value = 'S';
+            toggleSplitLabel();
+            initializeEqualSplits(totalDuration);
+            return;
+        }
+
+        const btn = document.getElementById('applySplitBtn');
+        const originalText = btn.innerText;
+        btn.innerText = "Analyzing PCM Waveform Grid...";
+        btn.disabled = true;
+
+        // Use standard non-blocking Web Audio contexts to safely process audio without freezing the page
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Clone raw ArrayBuffer data to bypass execution consumption behaviors
+        const bufferCopy = rawAudioArrayBuffer.slice(0);
+
+        audioCtx.decodeAudioData(bufferCopy).then(audioBuffer => {
+            const pThreshold = parseFloat(document.getElementById('pauseThreshold').value) || 0.015;
+            const pDuration = parseFloat(document.getElementById('pauseDuration').value) || 0.3;
+            
+            // Extract dominant channel data configurations
+            const pcmData = audioBuffer.getChannelData(0);
+            const sampleRate = audioBuffer.sampleRate;
+            
+            const minSamplesSilence = Math.floor(pDuration * sampleRate);
+            const stepSize = Math.floor(sampleRate * 0.02); // Check data at 20ms steps to maximize performance
+            
+            let points = [0]; // Baseline absolute track window starting edge
+            let silenceLen = 0;
+            let insideSilence = false;
+
+            for (let i = 0; i < pcmData.length; i += stepSize) {
+                // Read absolute audio frame volume height limits
+                if (Math.abs(pcmData[i]) < pThreshold) {
+                    silenceLen += stepSize;
+                    if (!insideSilence && silenceLen >= minSamplesSilence) {
+                        insideSilence = true;
+                        const markerTime = parseFloat((i / sampleRate).toFixed(2));
+                        if (markerTime > points[points.length - 1] + 1.0) { // Enforce a 1-second minimum block threshold
+                            points.push(markerTime);
+                        }
+                    }
+                } else {
+                    silenceLen = 0;
+                    insideSilence = false;
+                }
+            }
+            
+            // Append target window absolute end limits safely
+            if (points[points.length - 1] < totalDuration - 0.5) {
+                points.push(parseFloat(totalDuration.toFixed(2)));
+            } else {
+                points[points.length - 1] = parseFloat(totalDuration.toFixed(2));
+            }
+
+            // Map timeline coordinates into standard matrix objects
+            rawMarkers = [];
+            for (let k = 0; k < points.length - 1; k++) {
+                rawMarkers.push({ start: points[k], end: points[k+1], text: "" });
+            }
+
+            renderMarkers();
+            generateMarkerJS();
+            
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }).catch(err => {
+            alert("Waveform extraction failed. Check file types.");
+            btn.innerText = originalText;
+            btn.disabled = false;
+        });
     }
 
     function addMarker() {
