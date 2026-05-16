@@ -45,8 +45,6 @@
         .docs-trigger:hover { background: #ccd0d5; }
         .docs-content { display: none; padding: 15px; background: white; font-size: 0.8rem; line-height: 1.45; color: #4b4f56; max-height: 350px; overflow-y: auto; border-top: 1px solid #e4e6eb; }
         .docs-content h3 { margin-top: 12px; margin-bottom: 4px; font-size: 0.9rem; color: #0070ba; border-bottom: 1px solid #f0f2f5; padding-bottom: 2px; }
-        .docs-content ul { margin: 5px 0; padding-left: 18px; }
-        .docs-content code { background: #f0f2f5; padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 0.75rem; color: #1c1e21; }
     </style>
 </head>
 <body>
@@ -72,12 +70,20 @@
                     <option value="P">Pasurams (Groups of 8)</option>
                     <option value="S">Individual Segments</option>
                     <option value="A">Intelligent Pause Detection</option>
+                    <option value="T">Text-Guided Intelligent Split (*)</option>
                 </select>
             </div>
+            
             <div class="wizard-row" id="countSettingsRow">
                 <label id="countLabel" style="font-weight: 600; flex-grow:1;">Target Pasurams Count:</label>
-                <input type="number" id="splitCount" value="12" min="1" style="width: 70px; text-align: center;">
+                <input type="number" id="splitCount" value="1" min="1" style="width: 70px; text-align: center;">
             </div>
+
+            <div id="textGuidedSettingsRow" style="display: none; flex-direction: column; gap: 6px;">
+                <label style="font-weight: 600; font-size: 0.8rem; color:#4b4f56;">Paste Text with Stop Anchors (separate lines or phrases with *):</label>
+                <textarea id="textGuidedContent" placeholder="Line 1 * Line 2 * Line 3 * Line 4 * Line 5 * Line 6 * Line 7 * Line 8 *" style="width:100%; height:80px; font-size:0.8rem; border:1px solid #ccd0d5; border-radius:8px; padding:6px; box-sizing:border-box; resize:vertical;"></textarea>
+            </div>
+
             <div class="wizard-row" id="pauseSettingsRow" style="display: none; flex-wrap: wrap; gap: 8px;">
                 <div>
                     <label style="font-weight: 600; font-size: 0.75rem; display:block; margin-bottom: 2px;">Volume Threshold:</label>
@@ -88,6 +94,7 @@
                     <input type="number" id="pauseDuration" value="0.3" step="0.1" min="0.1" style="width: 60px; padding: 4px;">
                 </div>
             </div>
+            
             <div class="wizard-row" style="justify-content: flex-end; margin-top: 4px;">
                 <button class="btn btn-gray" id="applySplitBtn" onclick="triggerManualSplit()" style="padding: 6px 12px; border-radius: 8px; width: 100%;">Apply Split</button>
             </div>
@@ -115,25 +122,8 @@
         <div class="docs-drawer">
             <div class="docs-trigger" onclick="toggleDocumentation()">📖 User Guide & Documentation</div>
             <div class="docs-content" id="docsContent">
-                <h3>1. Loading Media</h3>
-                <ul>
-                    <li><strong>Local Audio:</strong> Use the browser file selector zone to pick an audio file straight from disk.</li>
-                    <li><strong>Web Streaming:</strong> Paste clean <code>.mp3</code>/<code>.wav</code> addresses or standard YouTube link/IDs into the URL prompt and click <strong>Load Link</strong>.</li>
-                </ul>
-
-                <h3>2. Initializing Timelines (Splitting)</h3>
-                <ul>
-                    <li><strong>Pasurams Strategy:</strong> Compiles coordinates wrapped strictly into semantic matrices of 8 lines/nodes each.</li>
-                    <li><strong>Segments Strategy:</strong> Divides the detected timeline into a uniform distribution of independent, loose chunks.</li>
-                    <li><strong>Intelligent Pause Detection:</strong> Scans the raw binary PCM audio buffer of local files, tracking sustained volume valleys to deploy boundaries natively at pauses. Adjust <em>Volume Threshold</em> (lower numbers = quieter silences required) and <em>Min Duration</em> to tune accuracy.</li>
-                </ul>
-
-                <h3>3. Editing & Synchronization</h3>
-                <ul>
-                    <li><strong>Hotkeys:</strong> Press <code>M</code> on your keyboard to drop runtime segment locks dynamically while listening.</li>
-                    <li><strong>Continuity Locks:</strong> Adjusting the <code>End</code> timestamp of a node auto-shifts the <code>Start</code> of the consecutive row to prevent structural drifting.</li>
-                    <li><strong>Snap Button:</strong> Forces the target segment line boundary to tie itself instantly with the current media player playhead time.</li>
-                </ul>
+                <h3>Text-Guided Intelligent Split (*)</h3>
+                <p>Paste text inside the box containing star anchors (e.g. <code>Word word * Word word *</code>). The tool maps out the character length distributions to build proportional timestamp approximations, then searches the audio stream within a local window to lock each point to the nearest physical drop in voice amplitude.</p>
             </div>
         </div>
     </div>
@@ -150,7 +140,7 @@
     let ytPlayer = null;
     let isYouTube = false;
     let detectedDuration = 0;
-    let rawAudioArrayBuffer = null; // Caches the local file data for Web Audio decoding pipelines
+    let rawAudioArrayBuffer = null; 
     
     const player = document.getElementById('player');
     const markerList = document.getElementById('marker-list');
@@ -165,28 +155,36 @@
         const method = document.getElementById('splitMethod').value;
         const countRow = document.getElementById('countSettingsRow');
         const pauseRow = document.getElementById('pauseSettingsRow');
+        const textGuidedRow = document.getElementById('textGuidedSettingsRow');
         const label = document.getElementById('countLabel');
         const input = document.getElementById('splitCount');
         
         if (method === 'P') {
             countRow.style.display = "flex";
             pauseRow.style.display = "none";
+            textGuidedRow.style.display = "none";
             label.innerText = "Target Pasurams Count:";
             input.value = "12";
         } else if (method === 'S') {
             countRow.style.display = "flex";
             pauseRow.style.display = "none";
+            textGuidedRow.style.display = "none";
             label.innerText = "Total Segments Count:";
             input.value = "100";
-        } else {
-            // Intelligent Pause Selection Layout UI state
+        } else if (method === 'A') {
             countRow.style.display = "none";
             pauseRow.style.display = "flex";
+            textGuidedRow.style.display = "none";
+        } else if (method === 'T') {
+            // Text guided style toggles
+            countRow.style.display = "none";
+            pauseRow.style.display = "flex"; // Keep threshold modifiers open for customization
+            textGuidedRow.style.display = "flex";
         }
     }
 
     function handleURL() {
-        rawAudioArrayBuffer = null; // Clear array buffer caches since remote URLs can't be deep-decoded directly via Web Audio
+        rawAudioArrayBuffer = null;
         const url = document.getElementById('urlInput').value.trim();
         if (url.includes('youtube.com') || url.includes('youtu.be')) setupYouTube(url);
         else setupDirectAudio(url);
@@ -239,13 +237,9 @@
     function loadLocalFile(input) {
         const file = input.files[0]; 
         if (file) {
-            // Read file into an ArrayBuffer concurrently so the programmatic Web Audio engine can decode it later
             const reader = new FileReader();
-            reader.onload = function(e) {
-                rawAudioArrayBuffer = e.target.result;
-            };
+            reader.onload = function(e) { rawAudioArrayBuffer = e.target.result; };
             reader.readAsArrayBuffer(file);
-            
             setupDirectAudio(URL.createObjectURL(file));
         }
     }
@@ -262,8 +256,8 @@
     function initializeEqualSplits(totalDuration) {
         const method = document.getElementById('splitMethod').value;
         
-        if (method === 'A') {
-            analyzeAudioPauses(totalDuration);
+        if (method === 'A' || method === 'T') {
+            analyzeAudioPauses(totalDuration, method === 'T');
             return;
         }
 
@@ -284,67 +278,117 @@
         generateMarkerJS();
     }
 
-    // New Client-Side Audio Analysis Algorithm Pipeline
-    function analyzeAudioPauses(totalDuration) {
+    function analyzeAudioPauses(totalDuration, useTextGuide = false) {
         if (!rawAudioArrayBuffer) {
-            alert("Pause detection requires an uploaded local audio file. Falling back to simple structural math instead.");
+            alert("Intelligent splitting requires an uploaded local audio file. Falling back to simple structural math instead.");
             document.getElementById('splitMethod').value = 'S';
             toggleSplitLabel();
             initializeEqualSplits(totalDuration);
             return;
         }
 
+        let targetStopsCount = 0;
+        let textProportions = [];
+        
+        if (useTextGuide) {
+            const textRaw = document.getElementById('textGuidedContent').value.trim();
+            if (!textRaw.includes('*')) {
+                alert("Please drop '*' anchors in your text input before utilizing this strategy.");
+                return;
+            }
+            
+            // Clean out line breaks to compute clean string offsets
+            const cleanText = textRaw.replace(/\r?\n|\r/g, " ");
+            const segments = cleanText.split('*');
+            if (segments[segments.length - 1].trim() === "") segments.pop(); 
+            
+            targetStopsCount = segments.length;
+            
+            let accumulatedChars = 0;
+            segments.forEach(part => {
+                accumulatedChars += part.length + 1; // account for splitter character spacing
+                textProportions.push(accumulatedChars / cleanText.length);
+            });
+        }
+
         const btn = document.getElementById('applySplitBtn');
         const originalText = btn.innerText;
-        btn.innerText = "Analyzing PCM Waveform Grid...";
+        btn.innerText = "Processing Waveform Matrix...";
         btn.disabled = true;
 
-        // Use standard non-blocking Web Audio contexts to safely process audio without freezing the page
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // Clone raw ArrayBuffer data to bypass execution consumption behaviors
         const bufferCopy = rawAudioArrayBuffer.slice(0);
 
         audioCtx.decodeAudioData(bufferCopy).then(audioBuffer => {
             const pThreshold = parseFloat(document.getElementById('pauseThreshold').value) || 0.015;
             const pDuration = parseFloat(document.getElementById('pauseDuration').value) || 0.3;
-            
-            // Extract dominant channel data configurations
             const pcmData = audioBuffer.getChannelData(0);
             const sampleRate = audioBuffer.sampleRate;
             
             const minSamplesSilence = Math.floor(pDuration * sampleRate);
-            const stepSize = Math.floor(sampleRate * 0.02); // Check data at 20ms steps to maximize performance
+            const stepSize = Math.floor(sampleRate * 0.01); // 10ms frame precision scanning
             
-            let points = [0]; // Baseline absolute track window starting edge
+            // Generate full array map of all natural silence points
+            let acousticSilences = [];
             let silenceLen = 0;
-            let insideSilence = false;
-
+            
             for (let i = 0; i < pcmData.length; i += stepSize) {
-                // Read absolute audio frame volume height limits
                 if (Math.abs(pcmData[i]) < pThreshold) {
                     silenceLen += stepSize;
-                    if (!insideSilence && silenceLen >= minSamplesSilence) {
-                        insideSilence = true;
-                        const markerTime = parseFloat((i / sampleRate).toFixed(2));
-                        if (markerTime > points[points.length - 1] + 1.0) { // Enforce a 1-second minimum block threshold
-                            points.push(markerTime);
+                    if (silenceLen >= minSamplesSilence) {
+                        const timeStamp = parseFloat((i / sampleRate).toFixed(2));
+                        if (acousticSilences.length === 0 || timeStamp > acousticSilences[acousticSilences.length - 1] + 0.1) {
+                            acousticSilences.push(timeStamp);
                         }
                     }
                 } else {
                     silenceLen = 0;
-                    insideSilence = false;
                 }
             }
-            
-            // Append target window absolute end limits safely
+
+            let points = [0];
+
+            if (useTextGuide) {
+                // HYBRID ALGORITHM LOOKUP PIPELINE
+                textProportions.forEach((prop, index) => {
+                    if (index === textProportions.length - 1) return; // let last index map to full track end
+                    
+                    const textEstimate = totalDuration * prop;
+                    const uniformEstimate = totalDuration * ((index + 1) / targetStopsCount);
+                    
+                    // Blend Layer 1 (Math) and Layer 2 (Text ratio) to compute a perfect weight baseline
+                    const targetWeightCenter = (textEstimate * 0.7) + (uniformEstimate * 0.3);
+                    
+                    // Layer 3: Find nearest structural pause inside a local look-ahead window
+                    let closestPause = targetWeightCenter;
+                    let bestDiff = 99999;
+                    
+                    acousticSilences.forEach(pTime => {
+                        const diff = Math.abs(pTime - targetWeightCenter);
+                        if (diff < bestDiff && diff < 8.0) { // Constraint window to 8 seconds max variance
+                            bestDiff = diff;
+                            closestPause = pTime;
+                        }
+                    });
+                    
+                    points.push(parseFloat(closestPause.toFixed(2)));
+                });
+            } else {
+                // Fallback to pure acoustic silence spacing
+                acousticSilences.forEach(time => {
+                    if (time > points[points.length - 1] + 1.5) {
+                        points.push(time);
+                    }
+                });
+            }
+
+            // Lock boundary tracking endpoints safely
             if (points[points.length - 1] < totalDuration - 0.5) {
                 points.push(parseFloat(totalDuration.toFixed(2)));
             } else {
                 points[points.length - 1] = parseFloat(totalDuration.toFixed(2));
             }
 
-            // Map timeline coordinates into standard matrix objects
             rawMarkers = [];
             for (let k = 0; k < points.length - 1; k++) {
                 rawMarkers.push({ start: points[k], end: points[k+1], text: "" });
@@ -356,7 +400,7 @@
             btn.innerText = originalText;
             btn.disabled = false;
         }).catch(err => {
-            alert("Waveform extraction failed. Check file types.");
+            alert("Audio decoding failure.");
             btn.innerText = originalText;
             btn.disabled = false;
         });
