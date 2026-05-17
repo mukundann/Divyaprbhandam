@@ -285,12 +285,24 @@
         let textRaw = document.getElementById('textGuidedContent').value.trim();
         if (!textRaw.includes('*')) return [];
         
-        textRaw = textRaw.replace(/\s+\d+\s*$/, ""); 
-        const cleanText = textRaw.replace(/\r?\n|\r/g, " ");
-        const segments = cleanText.split('*');
+        // 1. Remove formatting blocks globally
+        textRaw = textRaw.replace(/\/gi, "");
+        
+        // 2. Clear out trailing line-by-line digits/verse markings and process line breaks safely
+        let lines = textRaw.split('\n');
+        let cleanedLines = lines.map(line => {
+            return line.replace(/\s+\d+\s*$/, "").replace(/\t+/g, " ");
+        });
+        
+        let combinedString = cleanedLines.join(" ");
+        
+        // 3. Split cleanly across explicit character map boundaries
+        const segments = combinedString.split('*');
         if (segments[segments.length - 1].trim() === "") segments.pop();
         
-        return segments.map(s => s.trim()).filter(s => s !== "");
+        return segments.map(s => {
+            return s.replace(/\s+/g, " ").trim();
+        }).filter(s => s !== "");
     }
 
     function initializeEqualSplits(totalDuration) {
@@ -319,8 +331,9 @@
     }
 
     function analyzeAudioPauses(totalDuration, useTextGuide = false) {
+        let phrases = getParsedPhrases();
+
         if (useTextGuide && !cachedAudioArrayBuffer) {
-            let phrases = getParsedPhrases();
             if (phrases.length === 0) {
                 alert("Please add text context first.");
                 return;
@@ -344,29 +357,21 @@
             return;
         }
 
-        let targetStopsCount = 0;
+        let targetStopsCount = phrases.length;
         let textProportions = [];
-        let phrases = [];
         
         if (useTextGuide) {
-            let textRaw = document.getElementById('textGuidedContent').value.trim();
-            if (!textRaw.includes('*')) {
+            if (phrases.length === 0) {
                 alert("Please add '*' anchors to your text or select a valid text file first.");
                 return;
             }
             
-            textRaw = textRaw.replace(/\s+\d+\s*$/, "");
-            const cleanText = textRaw.replace(/\r?\n|\r/g, " ");
-            const segments = cleanText.split('*');
-            if (segments[segments.length - 1].trim() === "") segments.pop(); 
-            
-            phrases = segments.map(s => s.trim());
-            targetStopsCount = segments.length;
-            
+            let dynamicFullString = phrases.join(" * ");
             let accumulatedChars = 0;
-            segments.forEach(part => {
-                accumulatedChars += part.length + 1; 
-                textProportions.push(accumulatedChars / cleanText.length);
+            
+            phrases.forEach(part => {
+                accumulatedChars += part.length + 3; 
+                textProportions.push(accumulatedChars / dynamicFullString.length);
             });
         }
 
@@ -497,7 +502,6 @@
     }
 
     function renderMarkers() {
-        // Safe protection guard from parsing input updates before grid is created
         if (!rawMarkers || rawMarkers.length === 0) return;
 
         let html = '';
