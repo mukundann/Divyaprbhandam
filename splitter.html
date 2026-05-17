@@ -319,7 +319,6 @@
     }
 
     function analyzeAudioPauses(totalDuration, useTextGuide = false) {
-        // Fallback gracefully if trying text-first split without audio data buffer access
         if (useTextGuide && !cachedAudioArrayBuffer) {
             let phrases = getParsedPhrases();
             if (phrases.length === 0) {
@@ -411,13 +410,10 @@
                 textProportions.forEach((prop, index) => {
                     if (index === textProportions.length - 1) return; 
                     
-                    // Core fix: Establish exact text weight baseline anchor point
                     const textEstimate = totalDuration * prop;
-                    
                     let closestPause = textEstimate; 
                     let bestDiff = 99999;
                     
-                    // Strict micro-window fence scan (Strict boundaries: +/- 2.5 seconds max drift allowed)
                     acousticSilences.forEach(pTime => {
                         const diff = Math.abs(pTime - textEstimate);
                         if (diff < bestDiff && diff < 2.5) { 
@@ -439,4 +435,201 @@
             if (points[points.length - 1] < totalDuration - 0.5) {
                 points.push(parseFloat(totalDuration.toFixed(2)));
             } else {
-                points[points.length - 1] = parseFloat
+                points[points.length - 1] = parseFloat(totalDuration.toFixed(2));
+            }
+
+            rawMarkers = [];
+            for (let k = 0; k < points.length - 1; k++) {
+                rawMarkers.push({ 
+                    start: points[k], 
+                    end: points[k+1], 
+                    text: useTextGuide && phrases[k] ? phrases[k] : "" 
+                });
+            }
+
+            renderMarkers();
+            generateMarkerJS();
+            
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }).catch(err => {
+            alert("Audio stream decoding failure.");
+            btn.innerText = originalText;
+            btn.disabled = false;
+        });
+    }
+
+    function addMarker() {
+        const time = parseFloat((isYouTube ? ytPlayer.getCurrentTime() : player.currentTime).toFixed(2));
+        const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
+        
+        const phrases = getParsedPhrases();
+        const fallbackText = phrases[rawMarkers.length] ? phrases[rawMarkers.length] : "";
+
+        rawMarkers.push({ start, end: time, text: fallbackText });
+        renderMarkers();
+    }
+
+    function deleteMarker(index) {
+        if (!confirm("Remove this segment? Subsequent segments will shift up.")) return;
+        rawMarkers.splice(index, 1);
+        for (let i = 0; i < rawMarkers.length; i++) {
+            if (i > 0) rawMarkers[i].start = rawMarkers[i-1].end;
+        }
+        renderMarkers();
+    }
+
+    function updateMarker(index, field, value) {
+        if (field === 'text') {
+            rawMarkers[index].text = value;
+            return;
+        }
+        const val = parseFloat(value);
+        rawMarkers[index][field] = val;
+        if (field === 'end' && rawMarkers[index+1]) rawMarkers[index+1].start = val;
+        if (field === 'start' && rawMarkers[index-1]) rawMarkers[index-1].end = val;
+        renderMarkers();
+    }
+
+    function snapToCurrent(index) {
+        const time = parseFloat((isYouTube ? ytPlayer.getCurrentTime() : player.currentTime).toFixed(2));
+        updateMarker(index, 'end', time);
+    }
+
+    function renderMarkers() {
+        // Safe protection guard from parsing input updates before grid is created
+        if (!rawMarkers || rawMarkers.length === 0) return;
+
+        let html = '';
+        const phrases = getParsedPhrases();
+        const textIsActive = phrases.length > 0;
+
+        for (let i = 0; i < rawMarkers.length; i += 8) {
+            const segments = rawMarkers.slice(i, i + 8);
+            html += `<div class="pasuram-group ${textIsActive ? 'has-text' : ''}">
+                ${segments.map((s, sIdx) => {
+                    const globalIdx = i + sIdx;
+                    const currentLabelText = s.text || (phrases[globalIdx] ? phrases[globalIdx] : "");
+                    if (s.text === "" && currentLabelText !== "") s.text = currentLabelText;
+
+                    return `
+                    <div class="segment-row" id="item-${globalIdx}">
+                        <span style="font-weight:bold; color:#8d949e; width:22px; flex-shrink:0;">H${sIdx+1}</span>
+                        <input type="number" step="0.01" class="ts-input" value="${s.start}" onchange="updateMarker(${globalIdx}, 'start', this.value)">
+                        <input type="number" step="0.01" class="ts-input" value="${s.end}" onchange="updateMarker(${globalIdx}, 'end', this.value)">
+                        <span class="text-label" title="${currentLabelText}">${currentLabelText}</span>
+                        <button class="btn-small" style="background:#0070ba; color:white" onclick="snapToCurrent(${globalIdx})">Snap</button>
+                        <button class="btn-small" onclick="testSegment(${s.start}, ${s.end}, ${globalIdx})">▶</button>
+                        <button class="btn-small btn-del" onclick="deleteMarker(${globalIdx})">✕</button>
+                    </div>`;
+                }).join('')}
+            </div>`;
+        }
+        markerList.innerHTML = html;
+        document.getElementById('status').innerText = `Segments: ${rawMarkers.length} | Pasurams: ${Math.ceil(rawMarkers.length/8)}`;
+    }
+
+    function testSegment(start, end, highlightIdx) {
+        highlightMarker(highlightIdx);
+        if (isYouTube) { ytPlayer.seekTo(start); ytPlayer.playVideo(); }
+        else { player.currentTime = start; player.play(); }
+        const checker = setInterval(() => {
+            const curr = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
+            if (curr >= end) { isYouTube ? ytPlayer.pauseVideo() : player.pause(); clearInterval(checker); }
+        }, 30);
+    }
+
+    function highlightMarker(index) {
+        document.querySelectorAll('.segment-row').forEach(el => el.classList.remove('playing-segment'));
+        const el = document.getElementById(`item-${index}`);
+        if (el) el.classList.add('playing-segment');
+    }
+
+    function generateMarkerJS() {
+        const result = [];
+        for (let i = 0; i < rawMarkers.length; i += 8) {
+            const seg = rawMarkers.slice(i, i + 8);
+            const pNum = (i / 8) + 1;
+            
+            const step1Pairs = seg.map(s => [s.start, s.end]);
+            const step2Pairs = [];
+            const step3Pairs = [];
+            
+            for (let j = 0; j < step1Pairs.length; j += 2) {
+                if (step1Pairs[j+1]) {
+                    step2Pairs.push([step1Pairs[j][0], step1Pairs[j+1][1]]);
+                } else {
+                    step2Pairs.push([step1Pairs[j][0], step1Pairs[j][1]]);
+                }
+            }
+            
+            for (let k = 0; k < step2Pairs.length; k += 2) {
+                if (step2Pairs[k+1]) {
+                    step3Pairs.push([step2Pairs[k][0], step2Pairs[k+1][1]]);
+                } else {
+                    step3Pairs.push([step2Pairs[k][0], step2Pairs[k][1]]);
+                }
+            }
+            
+            result.push({
+                p: pNum, 
+                text: seg[0].text ? seg.map(s => s.text).join(' * ') : "", 
+                step1: step1Pairs,
+                step2: step2Pairs,
+                step3: step3Pairs,
+                step4: [seg[0].start, seg[seg.length - 1].end]
+            });
+        }
+
+        const customLines = result.map(entry => {
+            return `  { "p": ${entry.p}, "text": ${JSON.stringify(entry.text)}, "step1": ${JSON.stringify(entry.step1)}, "step2": ${JSON.stringify(entry.step2)}, "step3": ${JSON.stringify(entry.step3)}, "step4": ${JSON.stringify(entry.step4)} }`;
+        });
+
+        ioJson.value = `'${currentFileName}' : [\n${customLines.join(",\n")}\n],`;
+    }
+
+    function importFromText() {
+        try {
+            const raw = ioJson.value.trim();
+            const jsonPart = raw.includes(':') ? raw.split(': ')[1] : raw;
+            const data = JSON.parse(jsonPart);
+            rawMarkers = [];
+            data.forEach(p => {
+                const step1Phrases = p.text ? p.text.split(' * ') : [];
+                p.step1.forEach((s, idx) => {
+                    rawMarkers.push({ 
+                        start: s[0], 
+                        end: s[1], 
+                        text: step1Phrases[idx] ? step1Phrases[idx].trim() : "" 
+                    });
+                });
+            });
+            renderMarkers();
+        } catch (e) { alert("Import failed. Check JSON format."); }
+    }
+
+    function setupSyncLoop() {
+        const monitor = () => {
+            const time = isYouTube ? (ytPlayer?.getCurrentTime() || 0) : player.currentTime;
+            const idx = rawMarkers.findIndex(m => time >= m.start && time < m.end);
+            if (idx !== -1 && idx !== currentHighlightIndex) {
+                currentHighlightIndex = idx;
+                highlightMarker(idx);
+            }
+            requestAnimationFrame(monitor);
+        };
+        requestAnimationFrame(monitor);
+    }
+
+    function rewind() { isYouTube ? ytPlayer.seekTo(ytPlayer.getCurrentTime() - 2) : player.currentTime -= 2; }
+    function clearMarkers() { if(confirm("Clear all?")) { rawMarkers = []; renderMarkers(); }}
+    window.addEventListener('keydown', (e) => { 
+        if (e.key.toLowerCase() === 'm' && !document.getElementById('recordBtn').disabled) {
+            if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                addMarker(); 
+            }
+        }
+    });
+</script>
+</body>
+</html>
