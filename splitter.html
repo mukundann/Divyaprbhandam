@@ -27,6 +27,7 @@
         .control-row { display: flex; gap: 10px; margin: 15px 0; align-items: center; }
         .right-panel { background: #f7f9fa; border-radius: 12px; padding: 15px; border: 1px solid #e4e6eb; max-height: 800px; overflow-y: auto; }
         .pasuram-group { background: white; border-radius: 10px; padding: 12px; margin-bottom: 15px; border: 1px solid #e4e6eb; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .pasuram-header { font-size: 0.85rem; font-weight: bold; color: #0070ba; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #f0f2f5; }
         .segment-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; font-size: 0.8rem; padding: 4px; border-radius: 6px; }
         .ts-input { width: 55px; text-align: center; padding: 4px; border-radius: 6px; }
         
@@ -80,7 +81,7 @@
             <div class="wizard-row">
                 <label style="font-weight: 600;">Split Strategy:</label>
                 <select id="splitMethod" onchange="toggleSplitLabel()">
-                    <option value="P">Pasurams (Groups of 8)</option>
+                    <option value="P">Fixed Groups (Blocks of 8)</option>
                     <option value="S">Individual Segments</option>
                     <option value="A">Intelligent Pause Detection</option>
                     <option value="T" selected>Text-Guided Intelligent Split (*)</option>
@@ -94,7 +95,7 @@
 
             <div id="textGuidedSettingsRow" style="display: flex; flex-direction: column; gap: 6px;">
                 <label style="font-weight: 600; font-size: 0.8rem; color:#4b4f56;">Pasuram Text Grid:</label>
-                <textarea id="textGuidedContent" placeholder="Line 1 * Line 2 * Line 3 * Line 4 * Line 5 * Line 6 * Line 7 * Line 8 *" oninput="renderMarkers()" style="width:100%; height:80px; font-size:0.8rem; border:1px solid #ccd0d5; border-radius:8px; padding:6px; box-sizing:border-box; resize:vertical;"></textarea>
+                <textarea id="textGuidedContent" placeholder="Line 1 * Line 2 * Line 3 * Line 4 * Line 5 * Line 6 * Line 7 * Line 8 1*" oninput="renderMarkers()" style="width:100%; height:80px; font-size:0.8rem; border:1px solid #ccd0d5; border-radius:8px; padding:6px; box-sizing:border-box; resize:vertical;"></textarea>
             </div>
 
             <div class="wizard-row" id="pauseSettingsRow" style="display: flex; flex-wrap: wrap; gap: 8px;">
@@ -135,8 +136,8 @@
         <div class="docs-drawer">
             <div class="docs-trigger" onclick="toggleDocumentation()">📖 User Guide & Documentation</div>
             <div class="docs-content" id="docsContent">
-                <h3>Text File Upload Workflow</h3>
-                <p>Select a local <code>.txt</code> file containing your text split up by <code>*</code> characters. The text will instantly populate the workspace context box. Change the Strategy type to <strong>Text-Guided Intelligent Split (*)</strong> to merge this text profile with active acoustic pause alignments.</p>
+                <h3>Text File Boundary Workflow</h3>
+                <p>When using <strong>Text-Guided Intelligent Split (*)</strong>, the system handles mixed patterns seamlessly. Intermediate spaces, custom line endings, or metadata like <code></code> are stripped out cleanly while retaining the correct sequence breakdown.</p>
             </div>
         </div>
     </div>
@@ -147,8 +148,8 @@
 
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
-    // Global State
-    let rawMarkers = [];
+    // Global State Declarations
+    window.rawMarkers = [];
     let currentHighlightIndex = -1;
     let currentFileName = "audio_data";
     let ytPlayer = null;
@@ -156,19 +157,53 @@
     let detectedDuration = 0;
     let cachedAudioArrayBuffer = null; 
     
-    // DOM Elements
+    // Core DOM Element Pointers
     let player, markerList, ioJson;
+
+    window.loadLocalFile = function(input) {
+        if (!input || !input.files || input.files.length === 0) return;
+        const file = input.files[0]; 
+        const reader = new FileReader();
+        reader.onload = function(e) { 
+            cachedAudioArrayBuffer = e.target.result; 
+        };
+        reader.readAsArrayBuffer(file);
+        setupDirectAudio(URL.createObjectURL(file));
+    };
+
+    window.loadTextFile = function(input) {
+        if (!input || !input.files || input.files.length === 0) return;
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const contentBox = document.getElementById('textGuidedContent');
+            if (contentBox) {
+                contentBox.value = e.target.result;
+                const splitMethodSelect = document.getElementById('splitMethod');
+                if (splitMethodSelect) {
+                    splitMethodSelect.value = 'T';
+                    toggleSplitLabel();
+                }
+                renderMarkers();
+            }
+        };
+        reader.readAsText(file);
+    };
 
     window.addEventListener('DOMContentLoaded', () => {
         player = document.getElementById('player');
         markerList = document.getElementById('marker-list');
         ioJson = document.getElementById('ioJson');
-        setupSyncLoop();
+        if (player && markerList && ioJson) {
+            setupSyncLoop();
+        }
     });
 
     function toggleDocumentation() {
         const content = document.getElementById('docsContent');
-        content.style.display = (content.style.display === 'block') ? 'none' : 'block';
+        if (content) {
+            content.style.display = (content.style.display === 'block') ? 'none' : 'block';
+        }
     }
 
     function toggleSplitLabel() {
@@ -262,32 +297,6 @@
         };
     }
 
-    function loadLocalFile(input) {
-        const file = input.files[0]; 
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) { 
-                cachedAudioArrayBuffer = e.target.result; 
-            };
-            reader.readAsArrayBuffer(file);
-            setupDirectAudio(URL.createObjectURL(file));
-        }
-    }
-
-    function loadTextFile(input) {
-        const file = input.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('textGuidedContent').value = e.target.result;
-                document.getElementById('splitMethod').value = 'T';
-                toggleSplitLabel();
-                renderMarkers();
-            };
-            reader.readAsText(file);
-        }
-    }
-
     function triggerManualSplit() {
         if (!detectedDuration || isNaN(detectedDuration)) {
             const fallback = prompt("Duration not yet detected. Confirm total file duration in seconds:", "694");
@@ -297,28 +306,61 @@
         initializeEqualSplits(detectedDuration);
     }
 
+    // Re-architected parser using clean string token verification rather than regular expression blocks
     function getParsedPhrases() {
         const contentBox = document.getElementById('textGuidedContent');
         if (!contentBox) return [];
         
         let textRaw = contentBox.value.trim();
-        if (!textRaw || !textRaw.includes('*')) return [];
+        if (!textRaw) return [];
         
-        // Clean bracketed markers globally
-        textRaw = textRaw.replace(/\/gi, "");
+        // Clean metadata blocks via safe string methods rather than manual parsing literals
+        let cleanText = "";
+        let insideTag = false;
+        for (let idx = 0; idx < textRaw.length; idx++) {
+            let character = textRaw.charAt(idx);
+            if (character === '[') { insideTag = true; continue; }
+            if (character === ']') { insideTag = false; continue; }
+            if (!insideTag) { cleanText += character; }
+        }
         
-        let lines = textRaw.split('\n');
-        let cleanedLines = lines.map(line => {
-            return line.replace(/\s+\d+\s*$/, "").replace(/\t+/g, " ");
-        });
+        // Split globally by asterisks
+        let chunks = cleanText.split('*');
+        let rawSegments = [];
         
-        let combinedString = cleanedLines.join(" ");
-        const segments = combinedString.split('*');
-        if (segments[segments.length - 1].trim() === "") segments.pop();
+        // Array of string match targets for valid verses
+        const standardVerseTokens = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
         
-        return segments.map(s => {
-            return s.replace(/\s+/g, " ").trim();
-        }).filter(s => s !== "");
+        for (let i = 0; i < chunks.length; i++) {
+            let itemText = chunks[i].replace(/[\r\n]+/g, ' ').trim();
+            if (!itemText) continue;
+            
+            let isVerseBoundary = false;
+            let words = itemText.split(/\s+/);
+            let cleanedWordsArray = [];
+            
+            for (let w = 0; w < words.length; w++) {
+                let currentWord = words[w].trim();
+                if (standardVerseTokens.indexOf(currentWord) !== -1) {
+                    isVerseBoundary = true;
+                } else if (currentWord.length > 0) {
+                    cleanedWordsArray.push(currentWord);
+                }
+            }
+            
+            itemText = cleanedWordsArray.join(' ').trim();
+            
+            if (itemText.length > 0) {
+                rawSegments.push({
+                    text: itemText,
+                    forceNewGroupAfter: isVerseBoundary
+                });
+            } else if (isVerseBoundary && rawSegments.length > 0) {
+                // If text evaluates to empty but hit a boundary, chain it backward
+                rawSegments[rawSegments.length - 1].forceNewGroupAfter = true;
+            }
+        }
+        return rawSegments;
     }
 
     function initializeEqualSplits(totalDuration) {
@@ -339,7 +381,7 @@
         for (let i = 0; i < totalSegments; i++) {
             const start = parseFloat((i * segmentDuration).toFixed(2));
             const end = (i === totalSegments - 1) ? parseFloat(totalDuration.toFixed(2)) : parseFloat((start + segmentDuration).toFixed(2));
-            rawMarkers.push({ start, end, text: "" });
+            rawMarkers.push({ start, end, text: "", forceNewGroupAfter: ((i + 1) % 8 === 0) });
         }
 
         renderMarkers();
@@ -360,7 +402,8 @@
                 rawMarkers.push({
                     start: parseFloat((i * segmentDuration).toFixed(2)),
                     end: i === phrases.length - 1 ? parseFloat(totalDuration.toFixed(2)) : parseFloat(((i+1) * segmentDuration).toFixed(2)),
-                    text: phrases[i]
+                    text: phrases[i].text,
+                    forceNewGroupAfter: phrases[i].forceNewGroupAfter
                 });
             }
             renderMarkers();
@@ -380,13 +423,13 @@
                 return;
             }
             
-            let dynamicFullString = phrases.join(" * ");
+            let dynamicFullString = phrases.map(p => p.text).join(" ");
             let accumulatedChars = 0;
             
-            phrases.forEach(part => {
-                accumulatedChars += part.length + 3; 
+            for (let x = 0; x < phrases.length; x++) {
+                accumulatedChars += phrases[x].text.length + 1;
                 textProportions.push(accumulatedChars / dynamicFullString.length);
-            });
+            }
         }
 
         const btn = document.getElementById('applySplitBtn');
@@ -426,29 +469,30 @@
             let points = [0];
 
             if (useTextGuide) {
-                textProportions.forEach((prop, index) => {
-                    if (index === textProportions.length - 1) return; 
+                for (let propIdx = 0; propIdx < textProportions.length; propIdx++) {
+                    if (propIdx === textProportions.length - 1) continue;
                     
-                    const textEstimate = totalDuration * prop;
+                    const textEstimate = totalDuration * textProportions[propIdx];
                     let closestPause = textEstimate; 
                     let bestDiff = 99999;
                     
-                    acousticSilences.forEach(pTime => {
+                    for (let sIdx = 0; sIdx < acousticSilences.length; sIdx++) {
+                        const pTime = acousticSilences[sIdx];
                         const diff = Math.abs(pTime - textEstimate);
                         if (diff < bestDiff && diff < 2.5) { 
                             bestDiff = diff;
                             closestPause = pTime;
                         }
-                    });
-                    
+                    }
                     points.push(parseFloat(closestPause.toFixed(2)));
-                });
+                }
             } else {
-                acousticSilences.forEach(time => {
+                for (let aIdx = 0; aIdx < acousticSilences.length; aIdx++) {
+                    let time = acousticSilences[aIdx];
                     if (time > points[points.length - 1] + 1.5) {
                         points.push(time);
                     }
-                });
+                }
             }
 
             if (points[points.length - 1] < totalDuration - 0.5) {
@@ -462,7 +506,8 @@
                 rawMarkers.push({ 
                     start: points[k], 
                     end: points[k+1], 
-                    text: useTextGuide && phrases[k] ? phrases[k] : "" 
+                    text: (useTextGuide && phrases[k]) ? phrases[k].text : "",
+                    forceNewGroupAfter: (useTextGuide && phrases[k]) ? phrases[k].forceNewGroupAfter : false
                 });
             }
 
@@ -484,9 +529,10 @@
         const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
         
         const phrases = getParsedPhrases();
-        const fallbackText = phrases[rawMarkers.length] ? phrases[rawMarkers.length] : "";
+        const fallbackText = phrases[rawMarkers.length] ? phrases[rawMarkers.length].text : "";
+        const fallbackForce = phrases[rawMarkers.length] ? phrases[rawMarkers.length].forceNewGroupAfter : false;
 
-        rawMarkers.push({ start, end: time, text: fallbackText });
+        rawMarkers.push({ start, end: time, text: fallbackText, forceNewGroupAfter: fallbackForce });
         renderMarkers();
     }
 
@@ -529,34 +575,53 @@
         const phrases = getParsedPhrases();
         const textIsActive = phrases.length > 0;
 
-        for (let i = 0; i < rawMarkers.length; i += 8) {
-            const segments = rawMarkers.slice(i, i + 8);
-            html += `<div class="pasuram-group ${textIsActive ? 'has-text' : ''}">
-                ${segments.map((s, sIdx) => {
-                    const globalIdx = i + sIdx;
-                    const currentLabelText = s.text || (phrases[globalIdx] ? phrases[globalIdx] : "");
-                    if (s.text === "" && currentLabelText !== "") s.text = currentLabelText;
+        let trackingGroupIndex = 1;
+        let activeGroupSegments = [];
 
-                    const safeLabelAttribute = currentLabelText.replace(/"/g, '&quot;');
+        for (let i = 0; i < rawMarkers.length; i++) {
+            const s = rawMarkers[i];
+            const currentLabelText = s.text || (phrases[i] ? phrases[i].text : "");
+            const forceSplit = s.forceNewGroupAfter || (phrases[i] ? phrases[i].forceNewGroupAfter : false);
+            
+            if (s.text === "" && currentLabelText !== "") s.text = currentLabelText;
+            
+            activeGroupSegments.push({
+                globalIdx: i,
+                start: s.start,
+                end: s.end,
+                text: currentLabelText
+            });
 
+            if (forceSplit || i === rawMarkers.length - 1 || activeGroupSegments.length === 8) {
+                const innerHTMLRows = activeGroupSegments.map((item, segmentSubIdx) => {
+                    const safeLabelAttribute = item.text.replace(/"/g, '&quot;');
                     return `
-                    <div class="segment-row" id="item-${globalIdx}">
-                        <span style="font-weight:bold; color:#8d949e; width:22px; flex-shrink:0;">H${sIdx+1}</span>
-                        <input type="number" step="0.01" class="ts-input" value="${s.start}" onchange="updateMarker(${globalIdx}, 'start', this.value)">
-                        <input type="number" step="0.01" class="ts-input" value="${s.end}" onchange="updateMarker(${globalIdx}, 'end', this.value)">
-                        <span class="text-label" title="${safeLabelAttribute}">${currentLabelText}</span>
-                        <button class="btn-small" style="background:#0070ba; color:white" onclick="snapToCurrent(${globalIdx})">Snap</button>
-                        <button class="btn-small" onclick="testSegment(${s.start}, ${s.end}, ${globalIdx})">▶</button>
-                        <button class="btn-small btn-del" onclick="deleteMarker(${globalIdx})">✕</button>
+                    <div class="segment-row" id="item-${item.globalIdx}">
+                        <span style="font-weight:bold; color:#8d949e; width:22px; flex-shrink:0;">H${segmentSubIdx+1}</span>
+                        <input type="number" step="0.01" class="ts-input" value="${item.start}" onchange="updateMarker(${item.globalIdx}, 'start', this.value)">
+                        <input type="number" step="0.01" class="ts-input" value="${item.end}" onchange="updateMarker(${item.globalIdx}, 'end', this.value)">
+                        <span class="text-label" title="${safeLabelAttribute}">${item.text}</span>
+                        <button class="btn-small" style="background:#0070ba; color:white" onclick="snapToCurrent(${item.globalIdx})">Snap</button>
+                        <button class="btn-small" onclick="testSegment(${item.start}, ${item.end}, ${item.globalIdx})">▶</button>
+                        <button class="btn-small btn-del" onclick="deleteMarker(${item.globalIdx})">✕</button>
                     </div>`;
-                }).join('')}
-            </div>`;
+                }).join('');
+
+                html += `<div class="pasuram-group ${textIsActive ? 'has-text' : ''}">
+                    <div class="pasuram-header">Pasuram ${trackingGroupIndex} (${activeGroupSegments.length} Segments)</div>
+                    ${innerHTMLRows}
+                </div>`;
+
+                trackingGroupIndex++;
+                activeGroupSegments = [];
+            }
         }
+        
         markerList.innerHTML = html;
         
         const statusEl = document.getElementById('status');
         if (statusEl) {
-            statusEl.innerText = `Segments: ${rawMarkers.length} | Pasurams: ${Math.ceil(rawMarkers.length/8)}`;
+            statusEl.innerText = `Segments: ${rawMarkers.length} | Pasurams: ${trackingGroupIndex - 1}`;
         }
     }
 
@@ -568,7 +633,7 @@
         const checker = setInterval(() => {
             const curr = isYouTube ? (ytPlayer ? ytPlayer.getCurrentTime() : 0) : player.currentTime;
             if (curr >= end) { 
-                isYouTube ? (ytPlayer && ytPlayer.pauseVideo()) : player.pause(); 
+                if (isYouTube) { if (ytPlayer) ytPlayer.pauseVideo(); } else { player.pause(); }
                 clearInterval(checker); 
             }
         }, 30);
@@ -582,39 +647,51 @@
 
     function generateMarkerJS() {
         if (!ioJson) return;
+        
         const result = [];
-        for (let i = 0; i < rawMarkers.length; i += 8) {
-            const seg = rawMarkers.slice(i, i + 8);
-            const pNum = (i / 8) + 1;
+        const phrases = getParsedPhrases();
+        let currentPasuramIndex = 1;
+        let currentGroupSegments = [];
+
+        for (let i = 0; i < rawMarkers.length; i++) {
+            const s = rawMarkers[i];
+            const forceSplit = s.forceNewGroupAfter || (phrases[i] ? phrases[i].forceNewGroupAfter : false);
             
-            const step1Pairs = seg.map(s => [s.start, s.end]);
-            const step2Pairs = [];
-            const step3Pairs = [];
-            
-            for (let j = 0; j < step1Pairs.length; j += 2) {
-                if (step1Pairs[j+1]) {
-                    step2Pairs.push([step1Pairs[j][0], step1Pairs[j+1][1]]);
-                } else {
-                    step2Pairs.push([step1Pairs[j][0], step1Pairs[j][1]]);
+            currentGroupSegments.push(s);
+
+            if (forceSplit || i === rawMarkers.length - 1 || currentGroupSegments.length === 8) {
+                const step1Pairs = currentGroupSegments.map(seg => [seg.start, seg.end]);
+                const step2Pairs = [];
+                const step3Pairs = [];
+                
+                for (let j = 0; j < step1Pairs.length; j += 2) {
+                    if (step1Pairs[j+1]) {
+                        step2Pairs.push([step1Pairs[j][0], step1Pairs[j+1][1]]);
+                    } else {
+                        step2Pairs.push([step1Pairs[j][0], step1Pairs[j][1]]);
+                    }
                 }
-            }
-            
-            for (let k = 0; k < step2Pairs.length; k += 2) {
-                if (step2Pairs[k+1]) {
-                    step3Pairs.push([step2Pairs[k][0], step2Pairs[k+1][1]]);
-                } else {
-                    step3Pairs.push([step2Pairs[k][0], step2Pairs[k][1]]);
+                
+                for (let k = 0; k < step2Pairs.length; k += 2) {
+                    if (step2Pairs[k+1]) {
+                        step3Pairs.push([step2Pairs[k][0], step2Pairs[k+1][1]]);
+                    } else {
+                        step3Pairs.push([step2Pairs[k][0], step2Pairs[k][1]]);
+                    }
                 }
+                
+                result.push({
+                    p: currentPasuramIndex, 
+                    text: currentGroupSegments[0].text ? currentGroupSegments.map(seg => seg.text).join(' * ') : "", 
+                    step1: step1Pairs,
+                    step2: step2Pairs,
+                    step3: step3Pairs,
+                    step4: [currentGroupSegments[0].start, currentGroupSegments[currentGroupSegments.length - 1].end]
+                });
+
+                currentPasuramIndex++;
+                currentGroupSegments = [];
             }
-            
-            result.push({
-                p: pNum, 
-                text: seg[0].text ? seg.map(s => s.text).join(' * ') : "", 
-                step1: step1Pairs,
-                step2: step2Pairs,
-                step3: step3Pairs,
-                step4: [seg[0].start, seg[seg.length - 1].end]
-            });
         }
 
         const customLines = result.map(entry => {
@@ -628,7 +705,7 @@
         if (!ioJson) return;
         try {
             const raw = ioJson.value.trim();
-            const jsonPart = raw.includes(':') ? raw.split(': ')[1] : raw;
+            const jsonPart = (raw.indexOf(': ') !== -1) ? raw.split(': ')[1] : raw;
             const data = JSON.parse(jsonPart);
             rawMarkers = [];
             data.forEach(p => {
@@ -637,7 +714,8 @@
                     rawMarkers.push({ 
                         start: s[0], 
                         end: s[1], 
-                        text: step1Phrases[idx] ? step1Phrases[idx].trim() : "" 
+                        text: step1Phrases[idx] ? step1Phrases[idx].trim() : "",
+                        forceNewGroupAfter: (idx === p.step1.length - 1)
                     });
                 });
             });
@@ -659,7 +737,7 @@
     }
 
     function rewind() { 
-        if (isYouTube && ytPlayer) ytPlayer.seekTo(ytPlayer.getCurrentTime() - 2); 
+        if (isYouTube) { if (ytPlayer) ytPlayer.seekTo(ytPlayer.getCurrentTime() - 2); }
         else if (player) player.currentTime -= 2; 
     }
     
