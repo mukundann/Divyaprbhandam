@@ -147,6 +147,7 @@
 
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
+    // Global State
     let rawMarkers = [];
     let currentHighlightIndex = -1;
     let currentFileName = "audio_data";
@@ -155,9 +156,15 @@
     let detectedDuration = 0;
     let cachedAudioArrayBuffer = null; 
     
-    const player = document.getElementById('player');
-    const markerList = document.getElementById('marker-list');
-    const ioJson = document.getElementById('ioJson');
+    // DOM Elements
+    let player, markerList, ioJson;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        player = document.getElementById('player');
+        markerList = document.getElementById('marker-list');
+        ioJson = document.getElementById('ioJson');
+        setupSyncLoop();
+    });
 
     function toggleDocumentation() {
         const content = document.getElementById('docsContent');
@@ -204,23 +211,31 @@
 
     function setupYouTube(url) {
         const videoId = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
-        isYouTube = true; currentFileName = videoId;
-        player.style.display = 'none'; document.getElementById('yt-container').style.display = 'block';
+        isYouTube = true; 
+        currentFileName = videoId;
+        player.style.display = 'none'; 
+        document.getElementById('yt-container').style.display = 'block';
+        
         if (ytPlayer) {
             ytPlayer.loadVideoById(videoId);
             setTimeout(() => { checkYTDurationAndPrompt(); }, 1500);
         } else {
-            ytPlayer = new YT.Player('yt-player', { height: '100%', width: '100%', videoId,
-                events: { 'onReady': () => { 
-                    document.getElementById('recordBtn').disabled = false; 
-                    setupSyncLoop(); 
-                    setTimeout(() => { checkYTDurationAndPrompt(); }, 1500);
-                }}
+            ytPlayer = new YT.Player('yt-player', { 
+                height: '100%', 
+                width: '100%', 
+                videoId: videoId,
+                events: { 
+                    'onReady': () => { 
+                        document.getElementById('recordBtn').disabled = false; 
+                        setTimeout(() => { checkYTDurationAndPrompt(); }, 1500);
+                    }
+                }
             });
         }
     }
 
     function checkYTDurationAndPrompt() {
+        if (!ytPlayer) return;
         detectedDuration = ytPlayer.getDuration();
         if (detectedDuration > 0) {
             initializeEqualSplits(detectedDuration);
@@ -233,12 +248,13 @@
     }
 
     function setupDirectAudio(url) {
-        isYouTube = false; currentFileName = url.split('/').pop().split('.')[0];
-        document.getElementById('yt-container').style.display = 'none'; player.style.display = 'block';
+        isYouTube = false; 
+        currentFileName = url.split('/').pop().split('.')[0] || "audio_track";
+        document.getElementById('yt-container').style.display = 'none'; 
+        player.style.display = 'block';
         player.src = url; 
         player.load(); 
         document.getElementById('recordBtn').disabled = false;
-        setupSyncLoop();
 
         player.onloadedmetadata = function() {
             detectedDuration = player.duration;
@@ -274,7 +290,7 @@
 
     function triggerManualSplit() {
         if (!detectedDuration || isNaN(detectedDuration)) {
-            const fallback = prompt("Duration not yet detected. Please confirm total file duration in seconds:", "694");
+            const fallback = prompt("Duration not yet detected. Confirm total file duration in seconds:", "694");
             if (!fallback) return;
             detectedDuration = parseFloat(fallback);
         }
@@ -282,21 +298,21 @@
     }
 
     function getParsedPhrases() {
-        let textRaw = document.getElementById('textGuidedContent').value.trim();
-        if (!textRaw.includes('*')) return [];
+        const contentBox = document.getElementById('textGuidedContent');
+        if (!contentBox) return [];
         
-        // 1. Remove formatting blocks globally
+        let textRaw = contentBox.value.trim();
+        if (!textRaw || !textRaw.includes('*')) return [];
+        
+        // Clean bracketed markers globally
         textRaw = textRaw.replace(/\/gi, "");
         
-        // 2. Clear out trailing line-by-line digits/verse markings and process line breaks safely
         let lines = textRaw.split('\n');
         let cleanedLines = lines.map(line => {
             return line.replace(/\s+\d+\s*$/, "").replace(/\t+/g, " ");
         });
         
         let combinedString = cleanedLines.join(" ");
-        
-        // 3. Split cleanly across explicit character map boundaries
         const segments = combinedString.split('*');
         if (segments[segments.length - 1].trim() === "") segments.pop();
         
@@ -353,16 +369,14 @@
         }
 
         if (!useTextGuide && !cachedAudioArrayBuffer) {
-            alert("Local file required for audio-only pause tracking.");
+            alert("Local file decoding access required for native acoustic pause tracking.");
             return;
         }
 
-        let targetStopsCount = phrases.length;
         let textProportions = [];
-        
         if (useTextGuide) {
             if (phrases.length === 0) {
-                alert("Please add '*' anchors to your text or select a valid text file first.");
+                alert("Please verify your text syntax before analyzing audio vectors.");
                 return;
             }
             
@@ -465,7 +479,8 @@
     }
 
     function addMarker() {
-        const time = parseFloat((isYouTube ? ytPlayer.getCurrentTime() : player.currentTime).toFixed(2));
+        const currentPlaybackTime = isYouTube ? (ytPlayer ? ytPlayer.getCurrentTime() : 0) : player.currentTime;
+        const time = parseFloat(currentPlaybackTime.toFixed(2));
         const start = rawMarkers.length === 0 ? 0 : rawMarkers[rawMarkers.length - 1].end;
         
         const phrases = getParsedPhrases();
@@ -485,6 +500,7 @@
     }
 
     function updateMarker(index, field, value) {
+        if (!rawMarkers[index]) return;
         if (field === 'text') {
             rawMarkers[index].text = value;
             return;
@@ -497,12 +513,17 @@
     }
 
     function snapToCurrent(index) {
-        const time = parseFloat((isYouTube ? ytPlayer.getCurrentTime() : player.currentTime).toFixed(2));
+        const currentPlaybackTime = isYouTube ? (ytPlayer ? ytPlayer.getCurrentTime() : 0) : player.currentTime;
+        const time = parseFloat(currentPlaybackTime.toFixed(2));
         updateMarker(index, 'end', time);
     }
 
     function renderMarkers() {
-        if (!rawMarkers || rawMarkers.length === 0) return;
+        if (!markerList) return;
+        if (!rawMarkers || rawMarkers.length === 0) {
+            markerList.innerHTML = '';
+            return;
+        }
 
         let html = '';
         const phrases = getParsedPhrases();
@@ -516,12 +537,14 @@
                     const currentLabelText = s.text || (phrases[globalIdx] ? phrases[globalIdx] : "");
                     if (s.text === "" && currentLabelText !== "") s.text = currentLabelText;
 
+                    const safeLabelAttribute = currentLabelText.replace(/"/g, '&quot;');
+
                     return `
                     <div class="segment-row" id="item-${globalIdx}">
                         <span style="font-weight:bold; color:#8d949e; width:22px; flex-shrink:0;">H${sIdx+1}</span>
                         <input type="number" step="0.01" class="ts-input" value="${s.start}" onchange="updateMarker(${globalIdx}, 'start', this.value)">
                         <input type="number" step="0.01" class="ts-input" value="${s.end}" onchange="updateMarker(${globalIdx}, 'end', this.value)">
-                        <span class="text-label" title="${currentLabelText}">${currentLabelText}</span>
+                        <span class="text-label" title="${safeLabelAttribute}">${currentLabelText}</span>
                         <button class="btn-small" style="background:#0070ba; color:white" onclick="snapToCurrent(${globalIdx})">Snap</button>
                         <button class="btn-small" onclick="testSegment(${s.start}, ${s.end}, ${globalIdx})">▶</button>
                         <button class="btn-small btn-del" onclick="deleteMarker(${globalIdx})">✕</button>
@@ -530,16 +553,24 @@
             </div>`;
         }
         markerList.innerHTML = html;
-        document.getElementById('status').innerText = `Segments: ${rawMarkers.length} | Pasurams: ${Math.ceil(rawMarkers.length/8)}`;
+        
+        const statusEl = document.getElementById('status');
+        if (statusEl) {
+            statusEl.innerText = `Segments: ${rawMarkers.length} | Pasurams: ${Math.ceil(rawMarkers.length/8)}`;
+        }
     }
 
     function testSegment(start, end, highlightIdx) {
         highlightMarker(highlightIdx);
-        if (isYouTube) { ytPlayer.seekTo(start); ytPlayer.playVideo(); }
-        else { player.currentTime = start; player.play(); }
+        if (isYouTube && ytPlayer) { ytPlayer.seekTo(start); ytPlayer.playVideo(); }
+        else if (player) { player.currentTime = start; player.play(); }
+        
         const checker = setInterval(() => {
-            const curr = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
-            if (curr >= end) { isYouTube ? ytPlayer.pauseVideo() : player.pause(); clearInterval(checker); }
+            const curr = isYouTube ? (ytPlayer ? ytPlayer.getCurrentTime() : 0) : player.currentTime;
+            if (curr >= end) { 
+                isYouTube ? (ytPlayer && ytPlayer.pauseVideo()) : player.pause(); 
+                clearInterval(checker); 
+            }
         }, 30);
     }
 
@@ -550,6 +581,7 @@
     }
 
     function generateMarkerJS() {
+        if (!ioJson) return;
         const result = [];
         for (let i = 0; i < rawMarkers.length; i += 8) {
             const seg = rawMarkers.slice(i, i + 8);
@@ -593,6 +625,7 @@
     }
 
     function importFromText() {
+        if (!ioJson) return;
         try {
             const raw = ioJson.value.trim();
             const jsonPart = raw.includes(':') ? raw.split(': ')[1] : raw;
@@ -614,8 +647,8 @@
 
     function setupSyncLoop() {
         const monitor = () => {
-            const time = isYouTube ? (ytPlayer?.getCurrentTime() || 0) : player.currentTime;
-            const idx = rawMarkers.findIndex(m => time >= m.start && time < m.end);
+            const currentPlaybackTime = isYouTube ? (ytPlayer ? ytPlayer.getCurrentTime() : 0) : (player ? player.currentTime : 0);
+            const idx = rawMarkers.findIndex(m => currentPlaybackTime >= m.start && currentPlaybackTime < m.end);
             if (idx !== -1 && idx !== currentHighlightIndex) {
                 currentHighlightIndex = idx;
                 highlightMarker(idx);
@@ -625,8 +658,18 @@
         requestAnimationFrame(monitor);
     }
 
-    function rewind() { isYouTube ? ytPlayer.seekTo(ytPlayer.getCurrentTime() - 2) : player.currentTime -= 2; }
-    function clearMarkers() { if(confirm("Clear all?")) { rawMarkers = []; renderMarkers(); }}
+    function rewind() { 
+        if (isYouTube && ytPlayer) ytPlayer.seekTo(ytPlayer.getCurrentTime() - 2); 
+        else if (player) player.currentTime -= 2; 
+    }
+    
+    function clearMarkers() { 
+        if(confirm("Clear all segments?")) { 
+            rawMarkers = []; 
+            renderMarkers(); 
+        }
+    }
+    
     window.addEventListener('keydown', (e) => { 
         if (e.key.toLowerCase() === 'm' && !document.getElementById('recordBtn').disabled) {
             if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
