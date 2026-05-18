@@ -20,6 +20,31 @@
         .btn-nav { background-color: #e4e6eb; color: #050505; }
         audio { width: 100%; margin-top: 15px; }
         .status { margin-top: 10px; font-size: 0.7rem; color: #0070ba; text-align: center; font-weight: bold; }
+        
+        /* New dynamic inline text rendering styles */
+        .pasuram-text-panel {
+            background: #fffdf2;
+            border: 1px solid #f6e58d;
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 12px;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #2c3e50;
+            text-align: center;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .pasuram-text-panel span.active-segment {
+            font-weight: bold;
+            color: #000000;
+            background-color: #fbe251;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .pasuram-text-panel span.normal-segment {
+            font-weight: normal;
+        }
     </style>
 </head>
 <body>
@@ -65,6 +90,11 @@
             </select>
         </div>
     </div>
+
+    <div id="pasuramDisplay" class="pasuram-text-panel">
+        <em>Select a file or press start to view pasuram lines...</em>
+    </div>
+
     <div class="nav-controls">
         <button class="btn-play" onclick="startLearning()">START RECITATION</button>
         <button class="btn-nav" onclick="navigate(-1)">Prev</button>
@@ -90,6 +120,9 @@
         if (audioPlayer) {
             LearningEngine.init(audioPlayer);
         }
+
+        // Continually align text highlighting along running frame cycles
+        setupLiveTextSyncLoop();
 
         window.addEventListener('learning-track-ended', () => {
             const limit = parseInt(document.getElementById('repeatLimit').value, 10);
@@ -141,6 +174,72 @@
             }
         });
     });
+
+    // Calculates real-time time offsets to highlight specific text blocks synchronously
+    function setupLiveTextSyncLoop() {
+        const monitorPlaybackTime = () => {
+            const playerEl = document.getElementById('audioPlayer');
+            const displayPanel = document.getElementById('pasuramDisplay');
+            
+            if (playerEl && displayPanel && window.MARKER_DATABASE) {
+                const pre = document.getElementById('prefix').value;
+                const numInput = document.getElementById('number').value;
+                const chosenStep = document.getElementById('learningStep').value;
+                
+                if (CONFIG[pre]) {
+                    const coords = Navigation.parseCoords(numInput, CONFIG[pre].hasSub);
+                    const stepsKey = `${pre}.${coords.ch}.steps`;
+                    const stepsDatabaseBlock = window.MARKER_DATABASE[stepsKey] || window.MARKER_DATABASE['PTM_2_DATA'];
+                    
+                    if (stepsDatabaseBlock && stepsDatabaseBlock[coords.pas - 1]) {
+                        const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
+                        const rawTextString = targetPasuram.text || "";
+                        
+                        if (rawTextString) {
+                            // Extract separate segment strings
+                            let textPhrases = rawTextString.split(' *');
+                            if (textPhrases[textPhrases.length - 1].trim() === "") textPhrases.pop();
+                            
+                            const step1Timeline = targetPasuram["step1"] || [];
+                            const currentTime = playerEl.currentTime;
+                            
+                            // Track matching step1 element indices using active player runtime
+                            let matchIndex = -1;
+                            for (let i = 0; i < step1Timeline.length; i++) {
+                                if (currentTime >= step1Timeline[i][0] && currentTime <= step1Timeline[i][1]) {
+                                    matchIndex = i;
+                                    break;
+                                }
+                            }
+                            
+                            // Rebuild inner layout structures applying bold styles to current text pieces
+                            let innerHTMLString = [];
+                            for (let j = 0; j < textPhrases.length; j++) {
+                                const cleanPhrase = textPhrases[j].trim();
+                                if (j === matchIndex) {
+                                    innerHTMLString.push(`<span class="active-segment">${cleanPhrase}</span>`);
+                                } else {
+                                    innerHTMLString.push(`<span class="normal-segment">${cleanPhrase}</span>`);
+                                }
+                                
+                                if (j < textPhrases.length - 1) {
+                                    innerHTMLString.push(` <span style="color:#ccbf99;">*</span> `);
+                                }
+                            }
+                            
+                            // Render if content has changed to prevent infinite DOM layout flashing
+                            if (displayPanel.dataset.lastSignature !== `${matchIndex}_${coords.pas}_${pre}`) {
+                                displayPanel.innerHTML = innerHTMLString.join('');
+                                displayPanel.dataset.lastSignature = `${matchIndex}_${coords.pas}_${pre}`;
+                            }
+                        }
+                    }
+                }
+            }
+            requestAnimationFrame(monitorPlaybackTime);
+        };
+        requestAnimationFrame(monitorPlaybackTime);
+    }
 
     function startLearning() {
         if (pauseTimeoutHandle) clearTimeout(pauseTimeoutHandle);
