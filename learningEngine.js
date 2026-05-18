@@ -19,23 +19,34 @@ const LearningEngine = {
         if (this.state.volumeInterval) clearInterval(this.state.volumeInterval);
         this.state.monitorInterval = null;
         this.state.volumeInterval = null;
-        if (this.state.player) this.state.player.volume = 1.0; // Clear masking states safely
+        if (this.state.player) {
+            this.state.player.volume = 1.0; // Clear masking states safely
+        }
     },
 
-    // Extension wrapper built on top of your original signature loop to parse runtime rules
     playSegment: function(src, bounds, onSegmentEnd, lineWindows = null, chosenStep = "step2", focusMode = "both") {
         this.stopMonitor();
         const p = this.state.player;
         
+        if (!p) return;
+
+        p.volume = 1.0;
+
         if (p.src.indexOf(src) === -1) {
             p.src = src;
             p.load();
         }
 
         if (bounds) {
-            p.currentTime = bounds.start;
+            // Mobile Guard: Validate bounding data numbers to eliminate "non-finite double value" TypeErrors
+            const startTime = (bounds && typeof bounds.start === 'number' && isFinite(bounds.start)) ? bounds.start : 0;
+            const endTime = (bounds && typeof bounds.end === 'number' && isFinite(bounds.end)) ? bounds.end : p.duration || 0;
+
+            p.currentTime = startTime;
+            
             this.state.monitorInterval = setInterval(() => {
-                if (p.currentTime >= bounds.end) {
+                // Safety protection layer if endTime hasn't completely parsed yet
+                if (endTime > 0 && p.currentTime >= endTime) {
                     p.pause();
                     this.stopMonitor();
                     onSegmentEnd();
@@ -65,13 +76,24 @@ const LearningEngine = {
                             p.volume = (activeLineIdx >= 2) ? 1.0 : 0.0;
                         }
                     } else {
-                        // Fallback fallback rule handling if playhead transitions through an unmapped space gap
-                        p.volume = 1.0;
+                        // Fallback handling if playhead transitions through an unmapped space gap
+                        if (lineWindows.length >= 2) {
+                            const splitTime = lineWindows[1][1];
+                            if (focusMode === "munnadi") {
+                                p.volume = (currentTime <= splitTime) ? 1.0 : 0.0;
+                            } else if (focusMode === "pinnadi") {
+                                p.volume = (currentTime >= splitTime) ? 1.0 : 0.0;
+                            }
+                        } else {
+                            p.volume = 1.0;
+                        }
                     }
-                }, 40); // Rapid sampling frequency ensures immediate line-mute cutting
+                }, 25);
             }
         }
-        p.play();
+        
+        // Mobile browsers require a genuine user gesture thread to let audio stream seamlessly
+        p.play().catch(err => console.warn("Audio context engagement deferred until gesture input:", err));
     },
 
     handleTrackEnded: function() {
