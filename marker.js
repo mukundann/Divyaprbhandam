@@ -23,83 +23,16 @@ window.MARKER_DATABASE = {
 
 // Add or append this block to your existing marker.js file
 'PMT.2.steps' : [
-  {
-    "p": 1,
-    "step1": [[0, 2.24], [2.24, 3.65], [3.65, 7.15], [7.15, 8.8], [8.8, 11.63], [11.63, 14.08], [14.08, 16.42], [16.42, 18.77]],
-    "step2": [[0, 3.65], [3.65, 8.8], [8.8, 14.08], [14.08, 18.77]],
-    "step3": [[0, 8.8], [8.8, 18.77]],
-    "step4": [[0, 18.77]]
-  },
-  {
-    "p": 2,
-    "step1": [[18.77, 21.43], [21.43, 23.37], [23.37, 25.67], [25.67, 28.06], [28.06, 31.55], [31.55, 33.92], [33.92, 36.51], [36.51, 37.54]],
-    "step2": [[18.77, 23.37], [23.37, 28.06], [28.06, 33.92], [33.92, 37.54]],
-    "step3": [[18.77, 28.06], [28.06, 37.54]],
-    "step4": [[18.77, 37.54]]
-  },
-  {
-    "p": 3,
-    "step1": [[37.54, 39.61], [39.61, 42.41], [42.41, 45.11], [45.11, 46.65], [46.65, 50.71], [50.71, 53.19], [53.19, 55.76], [55.76, 57.99]],
-    "step2": [[37.54, 42.41], [42.41, 46.65], [46.65, 53.19], [53.19, 57.99]],
-    "step3": [[37.54, 46.65], [46.65, 57.99]],
-    "step4": [[37.54, 57.99]]
-  },
-  {
-    "p": 4,
-    "step1": [[57.99, 61.24], [61.24, 63.34], [63.34, 65.67], [65.67, 67.63], [67.63, 71.24], [71.24, 73.4], [73.4, 75.53], [75.53, 77.42]],
-    "step2": [[57.99, 63.34], [63.34, 67.63], [67.63, 73.4], [73.4, 77.42]],
-    "step3": [[57.99, 67.63], [67.63, 77.42]],
-    "step4": [[57.99, 77.42]]
-  },
-  {
-    "p": 5,
-    "step1": [[77.42, 80.7], [80.7, 82.59], [82.59, 84.16], [84.16, 87], [87, 89.3], [89.3, 92], [92, 94.3], [94.3, 96.89]],
-    "step2": [[77.42, 82.59], [82.59, 87], [87, 92], [92, 96.89]],
-    "step3": [[77.42, 87], [87, 96.89]],
-    "step4": [[77.42, 96.89]]
-  },
-  {
-    "p": 6,
-    "step1": [[96.89, 100.18], [100.18, 102.05], [102.05, 104.94], [104.94, 106.66], [106.66, 108.86], [108.86, 111.93], [111.93, 114.69], [114.69, 116.93]],
-    "step2": [[96.89, 102.05], [102.05, 106.66], [106.66, 111.93], [111.93, 116.93]],
-    "step3": [[96.89, 106.66], [106.66, 116.93]],
-    "step4": [[96.89, 116.93]]
-  },
-  {
-    "p": 7,
-    "step1": [[116.93, 119.5], [119.5, 122.01], [122.01, 124.19], [124.19, 126.05], [126.05, 128.52], [128.52, 131.19], [131.19, 133.52], [133.52, 135.56]],
-    "step2": [[116.93, 122.01], [122.01, 126.05], [126.05, 131.19], [131.19, 135.56]],
-    "step3": [[116.93, 126.05], [126.05, 135.56]],
-    "step4": [[116.93, 135.56]]
-  },
-  {
-    "p": 8,
-    "step1": [[135.56, 138.11], [138.11, 139.99], [139.99, 142.58], [142.58, 143.96], [143.96, 146.87], [146.87, 148.75], [148.75, 151.84], [151.84, 153.91]],
-    "step2": [[135.56, 139.99], [139.99, 143.96], [143.96, 148.75], [148.75, 153.91]],
-    "step3": [[135.56, 143.96], [143.96, 153.91]],
-    "step4": [[135.56, 153.91]]
-  },
-  {
-    "p": 9,
-    "step1": [[153.91, 157.27], [157.27, 159.51], [159.51, 162.12], [162.12, 163.78], [163.78, 168.23], [168.23, 170.04], [170.04, 171.72], [171.72, 173.7]],
-    "step2": [[153.91, 159.51], [159.51, 163.78], [163.78, 170.04], [170.04, 173.7]],
-    "step3": [[153.91, 163.78], [163.78, 173.7]],
-    "step4": [[153.91, 173.7]]
-  },
-  {
-    "p": 10,
-    "step1": [[173.7, 176.99], [176.99, 179.09], [179.09, 181.69], [181.69, 183.31], [183.31, 186.4], [186.4, 188.78], [188.78, 191], [191, 195]],
-    "step2": [[173.7, 179.09], [179.09, 183.31], [183.31, 188.78], [188.78, 195]],
-    "step3": [[173.7, 183.31], [183.31, 195]],
-    "step4": [[173.7, 195]]
-  },
-  {
-    "p": 11,
-    "step1": [[195.0, 197.3], [197.3, 199.1], [199.1, 201.5], [201.5, 203.2], [203.2, 206.1], [206.1, 208.4], [208.4, 210.8], [210.8, 213.5]],
-    "step2": [[195.0, 199.1], [199.1, 203.2], [203.2, 208.4], [208.4, 213.5]],
-    "step3": [[195.0, 203.2], [203.2, 213.5]],
-    "step4": [[195.0, 213.5]]
-  }
+  { "p": 1, "text": "thEttarum thiRal thEninaith * thennaranganai * thirumAdhu vAzh vAttamil vanamAlai mArvanai vAzhththi * mAlkoL sindhaiyarAy * AttamEvi alandhazhaiththu * ayarveydhum meyyadiyArgaL tham * Ittam kaNdidak kUdumEl * adhu kANum kaN payan AvadhE *", "step1": [[0,2.4],[2.4,3.5],[3.5,7.2],[7.2,9],[9,11.5],[11.5,14.32],[14.32,16.5],[16.5,19.03]], "step2": [[0,3.5],[3.5,9],[9,14.32],[14.32,19.03]], "step3": [[0,9],[9,19.03]], "step4": [0,19.03] },
+  { "p": 2, "text": "thOdulA malarmangai thOLiNai thOyndhadhum * sudar vALiyAl * nIdu mAmaram seRRadhum nirai mEyththadhum * ivaiyE ninaindhu * AdippAdi arangavO! enRazhaikkum * thoNdaradippodi Ada nAm peRil * gangai nIr kudainthAdum * vEtkai ennAvadhE? *", "step1": [[19.03,22.35],[22.35,23.9],[23.9,26.85],[26.85,29],[29,31.68],[31.68,34.21],[34.21,36.5],[36.5,38.5]], "step2": [[19.03,23.9],[23.9,29],[29,34.21],[34.21,38.5]], "step3": [[19.03,29],[29,38.5]], "step4": [19.03,38.5] },
+  { "p": 3, "text": "ERadarththadhum EnamAy nilam kINdadhum * mun irAmanAy * mARadarththadhum maNNaLandhadhum * sollip pAdi * vaNponnippE rARu pOl varum kaNNanIr koNdu * arangan kOyil thirumuRRam * sERu sey thoNdar sEvadich * chezhunjERu en sennikku aNivanE *", "step1": [[38.5,41.3],[41.3,42.77],[42.77,45],[45,46.6],[46.6,50.7],[50.7,53.23],[53.23,55.45],[55.45,57.98]], "step2": [[38.5,42.77],[42.77,46.6],[46.6,53.23],[53.23,57.98]], "step3": [[38.5,46.6],[46.6,57.98]], "step4": [38.5,57.98] },
+  { "p": 4, "text": "thOyththa thaN thayir veNNey pAludan uNdalum * udanRAychchi kaNdu * Arththa thOLudai empirAn * en aranganukku adiyArgaLAy * nAththazhumbezha nAraNA enRazhaiththu * mey thazhumbath thozhudhu Eththi * inbuRum thoNdar sEvadi * Eththi vAzhththum en nenjamE *", "step1": [[57.98,61.5],[61.5,63.4],[63.4,65.34],[65.34,68],[68,71],[71,73.53],[73.53,75.5],[75.5,78.02]], "step2": [[57.98,63.4],[63.4,68],[68,73.53],[73.53,78.02]], "step3": [[57.98,68],[68,78.02]], "step4": [57.98,78.02] },
+  { "p": 5, "text": "poysilaik kuralERReruththam iRuththup * pOraravIrththa kOn * seysilaich chudar sUzhoLith * thiNNa mAmadhiL thennaranganAm * meysilaik karumEgam onRu * tham nenjil ninRu thigazhap pOy * meysilirppavar thammaiyE ninaindhu * en manam mey silirkkumE *", "step1": [[78.02,80.55],[80.55,82.5],[82.5,84.3],[84.3,86.83],[86.83,89.36],[89.36,91.89],[91.89,94.41],[94.41,96.94]], "step2": [[78.02,82.5],[82.5,86.83],[86.83,91.89],[91.89,96.94]], "step3": [[78.02,86.83],[86.83,96.94]], "step4": [78.02,96.94] },
+  { "p": 6, "text": "Adhi andham anandham aRpudhamAna * vAnavar tham pirAn * pAdha mAmalar sUdum paththi ilAdha * pAvigaL uyndhida * thIdhil nanneRi kAtti * engum thirindhu arangan emmAnukkE * kAdhal sey thoNdarkku eppiRappilum * kAdhal seyyum en nenjamE *", "step1": [[96.94,100],[100,102],[102,104.7],[104.7,106.73],[106.73,109],[109,111.72],[111.72,114.45],[114.45,116.98]], "step2": [[96.94,102],[102,106.73],[106.73,111.72],[111.72,116.98]], "step3": [[96.94,106.73],[106.73,116.98]], "step4": [96.94,116.98] },
+  { "p": 7, "text": "kArinam purai mEni naRkadhir * muththa veNNagaich cheyya vAy * AramArvan arangan ennum * arumperum sudar onRinai * sErum nenjinarAgich * chErndhu kasindhizhindha kaNNIrgaLAl * vAra niRpavar thALiNaikku * oru vAramAgum en nenjamE *", "step1": [[116.98,119.51],[119.51,121.8],[121.8,124],[124,126.53],[126.53,128.2],[128.2,131],[131,133.3],[133.3,135.83]], "step2": [[116.98,121.8],[121.8,126.53],[126.53,131],[131,135.83]], "step3": [[116.98,126.53],[126.53,135.83]], "step4": [116.98,135.83] },
+  { "p": 8, "text": "mAlaiyuRRa kadal kidandhavan * vaNdukiNdu naRundhuzhAy * mAlaiyuRRa varaipperum thirumArvanai * malarkkaNNanai * mAlaiyuRRu ezhundhu AdippAdith * thirindhu arangan emmAnukkE * mAlaiyuRRidum thoNdar vAzhvukku * mAlaiyuRRadhu en nenjamE *", "step1": [[135.83,138.06],[138.06,140.2],[140.2,142.73],[142.73,144.5],[144.5,146.8],[146.8,149.33],[149.33,151.95],[151.95,154.48]], "step2": [[135.83,140.2],[140.2,144.5],[144.5,149.33],[149.33,154.48]], "step3": [[135.83,144.5],[144.5,154.48]], "step4": [135.83,154.48] },
+  { "p": 9, "text": "moyththuk kaNpani sOra meygaL silirppa * Engi iLaiththu ninRu * eyththuk kumbidu nattam ittezhundhu * AdippAdi iRainji * en aththan achchan aranganukku adiyArgaLAgi * avanukkE piththarAm avar * piththar allargaL * maRRaiyAr muRRum piththarE *", "step1": [[154.48,157.3],[157.3,159.83],[159.83,162.35],[162.35,164.8],[164.8,168.4],[168.4,170.63],[170.63,172],[172,174.53]], "step2": [[154.48,159.83],[159.83,164.8],[164.8,170.63],[170.63,174.53]], "step3": [[154.48,164.8],[164.8,174.53]], "step4": [154.48,174.53] },
+  { "p": 10, "text": "alli mAmalar mangai nAdhan * arangan meyyadiyArgaL tham * ellaiyil adimaith thiRaththinil * enRum mEvu manaththanAm * kollikAvalan kUdalnAyagan * kOzhikkOn kulasEkaran * sollin inthamizh mAlai vallavar * thoNdar thoNdargaL AvarE *", "step1": [[174.53,177.06],[177.06,179.59],[179.59,181.5],[181.5,184.03],[184.03,186.56],[186.56,188.6],[188.6,190.7],[190.7,193]], "step2": [[174.53,179.59],[179.59,184.03],[184.03,188.6],[188.6,193]], "step3": [[174.53,184.03],[184.03,193]], "step4": [174.53,193] }
 ],
 'PMT.5.steps' : [
   { "p": 1, "text": "tharuthuyaram thadAyEl * un saraN allAl saraN illai * virai kuzhuvum malarppozhil sUzh * viththuvakkOttammAnE! * arisinaththAl InRa thAy agaRRidinum * maRRavaL than aruL ninaindhE azhum kuzhavi * adhuvE pOnRirundhEnE *", "step1": [[0,2],[2,4.23],[4.23,6.16],[6.16,8.39],[8.39,12],[12,15.11],[15.11,17.27]], "step2": [[0,4.23],[4.23,8.39],[8.39,15.11],[15.11,17.27]], "step3": [[0,8.39],[8.39,17.27]], "step4": [0,17.27] },
