@@ -84,6 +84,7 @@
                 <option value="PT">Periya Thirumozhi (PT)</option>
                 <option value="PMT" selected>Perumal Thirumozhi (PMT)</option>
                 <option value="NAT">Naachiyar Thirumozhi (NAT)</option>
+                <option value="RN">Ramanusa Nootrandhadhi (RN)</option> 
             </select>
         </div>
         
@@ -373,14 +374,30 @@
         const limit = Navigation.getLimit(pre, coords.ch, coords.sub);
 
         if (dir === 1 && coords.pas > limit) {
-            coords.pas = 1;
-            if (c.hasSub) { coords.sub++; if (coords.sub > c.maxSub) { coords.sub = 1; coords.ch++; } }
-            else { coords.ch++; }
-        } else if (dir === -1 && coords.pas < 1) {
-            coords.pas = 1;
-        }
+    // Check if it's a flat book like RN to loop completely back to 1
+    if (!c.hasSub && c.maxPas && coords.pas > c.maxPas) {
+        coords.pas = 1;
+    } else if (c.hasSub) { 
+        coords.pas = 1;
+        coords.sub++; 
+        if (coords.sub > c.maxSub) { coords.sub = 1; coords.ch++; } 
+    } else { 
+        coords.pas = 1;
+        coords.ch++; 
+    }
+} else if (dir === -1 && coords.pas < 1) {
+    // Lower bound reverse protection
+    if (!c.hasSub && c.maxPas) {
+        coords.pas = c.maxPas;
+    } else {
+        coords.pas = 1;
+    }
+}
 
-        input.value = c.hasSub ? `${coords.ch}.${coords.sub}.${coords.pas}` : `${coords.ch}.${coords.pas}`;
+// Make sure output displays correctly without chapter prefixes for single flat chains
+input.value = c.hasSub ? `${coords.ch}.${coords.sub}.${coords.pas}` : `${coords.pas}`;
+
+      //  input.value = c.hasSub ? `${coords.ch}.${coords.sub}.${coords.pas}` : `${coords.ch}.${coords.pas}`;
         const displayPanel = document.getElementById('pasuramDisplay');
         if (displayPanel) displayPanel.dataset.lastSignature = "";
 
@@ -399,7 +416,10 @@
         
         if (pre === "PMT") {
             document.getElementById('number').value = "5.1";
-        } else {
+        } else if (pre === "RN") {
+        document.getElementById('number').value = "1"; // Flat value placeholder
+    }
+        else {
             document.getElementById('number').value = CONFIG[pre].hasSub ? "1.1.1" : "1.1";
         }
         
