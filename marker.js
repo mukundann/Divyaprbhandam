@@ -110,7 +110,7 @@ window.MARKER_DATABASE = {
   { "p": 8, "text": "varuththum puRa iruL mARRa * em poygaippirAn maRaiyin kuruththin poruLaiyum * sendhamizh thanniyum kUtti * onRath thiriththu anRu eriththa thiruviLakkaith than thiru uLLaththE * iruththm paraman * irAmAnusan em iRaiyavanE *", "step1": [[156.2,159],[159,163.1],[163.1,166.8],[166.8,172.1],[172.1,174.1],[174.1,176.8]], "step2": [[156.2,163.1],[163.1,172.1],[172.1,176.8]], "step3": [[156.2,166.8],[166.8,176.8]], "step4": [156.2,176.8] },
   { "p": 9, "text": "iRaivanaik kANum idhayaththu iruL keda * gyAnam ennum niRai viLakku ERRiya * bhUdhath thiruvadi thALgaL * nenjaththu uRaiya vaiththu ALum irAmAnusan * pugazh Odhum nallOr maRaiyinaik kAththu * indha maNNagaththE mannavaippavarE *", "step1": [[176.8,180.8],[180.8,184.5],[184.5,187.5],[187.5,190.7],[190.7,194.6],[194.6,198.4]], "step2": [[176.8,184.5],[184.5,190.7],[190.7,198.4]], "step3": [[176.8,187.5],[187.5,198.4]], "step4": [176.8,198.4] },
   { "p": 10, "text": "manniya pEr iruL mANdapin * kOvaluL mAmalarAL thannodum Ayanaik * kaNdamai kAttum * thamizhth thalaivan pon adi pORRum irAmAnusaRku anbu pUNdavar thAL * senniyil sUdum * thiruvudaiyAr enRum sIriyarE *", "step1": [[198.4,201.5],[201.5,205.5],[205.5,207.5],[207.5,213.8],[213.8,215.9],[215.9,219.59]], "step2": [[198.4,205.5],[205.5,213.8],[213.8,219.59]], "step3": [[198.4,207.5],[207.5,219.59]], "step4": [198.4,219.59] }
-];
+],
     
     // Add new markers here
 };
