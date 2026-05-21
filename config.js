@@ -69,6 +69,25 @@ const CONFIG = {
                 ? `audiofiles/NAT.2.all.m4a` 
                 : `https://www.uveda.org/media/recitation/NAT.${num}.mp3`;
         }
-    }
+    },
+    "RN": {
+    hasSub: false,       // Stays a flat sequence of 108 pasurams
+    maxPas: 108,
+    getAudioSrc: function(numInput) {
+        const pasNum = parseInt(numInput, 10);
+        
+        // Math to group pasurams: 1-10 -> start 1, 11-20 -> start 11, etc.
+        let startGroup = Math.floor((pasNum - 1) / 10) * 10 + 1;
+        let endGroup = startGroup + 9;
+        
+        // Cap the final group safely at the maximum limit of 108
+        if (endGroup > 108) endGroup = 108;
+        
+        // Returns paths like: audio/rn/rn_1_10.mp3, audio/rn/rn_11_20.mp3
+        return `audio/rn/rn_${startGroup}_${endGroup}.ogg`;
+    },
+    isSingleFile: true   // Instructs player components to locate data blocks locally
+}
+    
 };
 window.CONFIG = CONFIG;
