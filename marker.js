@@ -96,7 +96,7 @@ window.MARKER_DATABASE = {
         { "start": 532, "end": 546.12 }
     ],
 
-    'RN.0.steps' :[
+    'RN.steps' :[
   { "p": 1, "text": "pU mannu mAdhu porundhiya mArban * pugazh malindha pA mannu mARan * adi paNindhu uyndhavan * pal kalaiyOr thAm manna vandha irAmAnusan * saraNAravindham nAm manni vAzha * nenjE solluvOm avan nAmangLE *", "step1": [[0,3.7],[3.7,7.4],[7.4,9.8],[9.8,14.1],[14.1,18.1],[18.1,22]], "step2": [[0,7.4],[7.4,14.1],[14.1,22]], "step3": [[0,14.1],[14.1,22]], "step4": [0,22] },
   { "p": 2, "text": "kaL Ar pozhil thennarangan * kamalap padhangaL nenjil koLLA * manisarai nIngi * kuRaiyal pirAn adikkIzh viLLadha anban irAmAnusan * mikka seelam allAl uLLAdhu en nenju * onRu aRIyEn enakkuRRa pEriyalvE *", "step1": [[22,26.1],[26.1,29.8],[29.8,32.7],[32.7,37.4],[37.4,41.4],[41.4,45.1]], "step2": [[22,29.8],[29.8,37.4],[37.4,45.1]], "step3": [[22,37.4],[37.4,45.1]], "step4": [22,45.1] },
   { "p": 3, "text": "pEr iyal nenjE! * adi paNindhEn unnai * pEyp piRavip pUriyarOdu uLLa * suRRam pularththi * poruvu arum sIr Ariyan semmai irAmAnusa munikku anbu seyyum * sIRiya pERu udaiyAr * adikkIzh ennaich chErththadhaRkE *", "step1": [[45.1,48],[48,50.3],[50.3,53.3],[53.3,56],[56,61.8],[61.8,64.1],[64.1,67.8]], "step2": [[45.1,50.3],[50.3,56],[56,64.1],[64.1,67.8]], "step3": [[45.1,56],[56,67.8]], "step4": [45.1,67.8] },
