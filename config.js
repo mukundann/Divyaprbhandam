@@ -25,7 +25,7 @@ const CONFIG = {
         
         // Routing logic based on chapter availability
         if (chapter === 1) {
-            return `audiofiles/PMT.1.all.m4a`; 
+            return `audiofiles/PMT.1.all.ogg`; 
         } 
         if (chapter === 2) {
             // Using the OGG version for Chapter 2
