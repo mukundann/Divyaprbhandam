@@ -84,7 +84,7 @@ const CONFIG = {
         if (endGroup > 108) endGroup = 108;
         
         // Returns paths like: audio/rn/rn_1_10.mp3, audio/rn/rn_11_20.mp3
-        return `audio/rn/rn_${startGroup}_${endGroup}.ogg`;
+        return `audiofiles/rn_${startGroup}_${endGroup}.ogg`;
     },
     isSingleFile: true   // Instructs player components to locate data blocks locally
 }
