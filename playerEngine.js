@@ -1,0 +1,280 @@
+
+   let activeLineIndex = 0;
+    let pauseTimeoutHandle = null;
+
+    function updateEngineSpeed() {
+        const speedSelect = document.getElementById('playbackSpeed');
+        if (speedSelect && window.LearningEngine) {
+            window.LearningEngine.setPlaybackRate(speedSelect.value);
+        }
+    }
+
+    function startLearningAndFocus() {
+    	console.log("line 173");
+        if (window.LearningEngine && typeof window.LearningEngine.unlockAudio === 'function') { 
+            window.LearningEngine.unlockAudio(); 
+        }
+        updateEngineSpeed();
+        startLearning();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+    	console.log("line 182");
+        const audioPlayer = document.getElementById('audioPlayer');
+        if (audioPlayer) {
+            LearningEngine.init(audioPlayer);
+        }
+    	console.log("line 187");
+        window.addEventListener('learning-track-ended', () => {
+            const limit = parseInt(document.getElementById('repeatLimit').value, 10);
+            console.log(limit);
+            LearningEngine.state.currentRepeatCount = (LearningEngine.state.currentRepeatCount || 0) + 1;
+        	console.log("line 191");
+            const chosenStep = document.getElementById('learningStep').value;
+//console.log(LearningEngine.state.currentRepeatCount);
+            if (LearningEngine.state.currentRepeatCount < limit) {
+            	
+                startLearning();
+            } else {
+                LearningEngine.state.currentRepeatCount = 0;
+                
+                const pre = document.getElementById('prefix').value;
+                const numInput = document.getElementById('number').value;
+                const c = CONFIG[pre];
+                const coords = Navigation.parseCoords(numInput, c.hasSub);
+                
+                const stepsKey = `${pre}.${coords.ch}.steps`;
+                const alternativeKey = `${pre}.steps`;
+                const stepsDatabaseBlock = window.MARKER_DATABASE[stepsKey] || 
+                                           window.MARKER_DATABASE[alternativeKey] || 
+                                           window.MARKER_DATABASE['PTM_2_DATA'];
+
+                if (stepsDatabaseBlock && stepsDatabaseBlock[coords.pas - 1]) {
+                    const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
+                    const activeSegments = targetPasuram[chosenStep] || targetPasuram["step2"];
+                    
+                    if (chosenStep !== "step4" && activeLineIndex < activeSegments.length - 1) {
+                        activeLineIndex++;
+                        startLearning();
+                        return;
+                    }
+                }
+
+                activeLineIndex = 0;
+                if (document.getElementById('autoNext').value === "true") {
+                    navigate(1);
+                } else {
+                    safeStopAudio();
+                }
+            }
+        });
+    });
+
+    function syncTextToAudioTimeline() {
+        const playerEl = document.getElementById('audioPlayer');
+        const displayPanel = document.getElementById('pasuramDisplay');
+        
+        if (!playerEl || !displayPanel || !window.MARKER_DATABASE) return;
+
+        const pre = document.getElementById('prefix').value;
+        const numInput = document.getElementById('number').value;
+        //console.log(pre);
+        if (!CONFIG[pre]) return;
+        
+        const coords = Navigation.parseCoords(numInput, CONFIG[pre].hasSub);
+        
+        const stepsKey = `${pre}.${coords.ch}.steps`;
+        const alternativeKey = `${pre}.steps`;
+        const stepsDatabaseBlock = window.MARKER_DATABASE[stepsKey] || 
+                                   window.MARKER_DATABASE[alternativeKey] || 
+                                   window.MARKER_DATABASE['PTM_2_DATA'];
+        
+        if (!stepsDatabaseBlock || !stepsDatabaseBlock[coords.pas - 1]) {
+            displayPanel.innerHTML = `<div style="color:#65676b; font-size:1.1rem; font-style:italic;">Pasuram ${numInput} (Audio-Only Mode)</div>`;
+            return;
+        }
+        
+        const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
+        const rawTextString = targetPasuram.text || "";
+        if (!rawTextString) return;
+        
+        const step1Timeline = targetPasuram["step1"] || [];
+        //console.log(step1Timeline);
+        const currentTime = playerEl.currentTime || 0;
+        
+        let matchIndex = -1;
+        for (let i = 0; i < step1Timeline.length; i++) {
+            if (currentTime >= step1Timeline[i][0] && currentTime <= step1Timeline[i][1]) {
+                matchIndex = i;
+                break;
+            }
+        }
+        
+        const currentSignature = `${matchIndex}_${coords.pas}_${pre}`;
+        if (displayPanel.dataset.lastSignature !== currentSignature) {
+            let textPhrases = rawTextString.split(' *');
+            if (textPhrases[textPhrases.length - 1].trim() === "") textPhrases.pop();
+            
+            let innerHTMLString = [];
+            for (let j = 0; j < textPhrases.length; j++) {
+                const cleanPhrase = textPhrases[j].trim();
+                if (j === matchIndex) {
+                    innerHTMLString.push(`<span class="active-segment">${cleanPhrase}</span>`);
+                } else {
+                    innerHTMLString.push(`<span class="normal-segment">${cleanPhrase}</span>`);
+                }
+                if (j < textPhrases.length - 1) {
+                    innerHTMLString.push(` <span style="color:#ccbf99;">*</span> `);
+                }
+            }
+            displayPanel.innerHTML = innerHTMLString.join('');
+            displayPanel.dataset.lastSignature = currentSignature;
+        }
+    }
+
+    function startLearning() {
+        if (pauseTimeoutHandle) clearTimeout(pauseTimeoutHandle);
+
+        const pre = document.getElementById('prefix').value;
+        const numInput = document.getElementById('number').value;
+        const chosenStep = document.getElementById('learningStep').value;
+        const focusMode = document.getElementById('recitationFocus').value;
+        const c = CONFIG[pre];
+        const coords = Navigation.parseCoords(numInput, c.hasSub);
+        const isSingle = typeof c.isSingleFile === 'function' ? c.isSingleFile(numInput) : c.isSingleFile;
+        
+        let bounds = null;
+        let lineWindows = null;
+        let markersFound = false;
+
+        if (isSingle) {
+            const stepsKey = `${pre}.${coords.ch}.steps`;
+            const alternativeKey = `${pre}.steps`;
+            const stepsDatabaseBlock = window.MARKER_DATABASE[stepsKey] || 
+                                       window.MARKER_DATABASE[alternativeKey] || 
+                                       window.MARKER_DATABASE['PTM_2_DATA'];
+            
+            if (stepsDatabaseBlock && stepsDatabaseBlock[coords.pas - 1]) {
+                markersFound = true;
+                const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
+                lineWindows = targetPasuram["step2"] || null;
+                
+                if (chosenStep === "step4") {
+                    const fullBounds = targetPasuram["step4"] ? targetPasuram["step4"][0] : null;
+                    if (fullBounds) {
+                        bounds = { start: fullBounds[0], end: fullBounds[1] };
+                    } else if (lineWindows && lineWindows.length > 0) {
+                        bounds = { start: lineWindows[0][0], end: lineWindows[lineWindows.length - 1][1] };
+                    }
+                    document.getElementById('status').innerText = `Full Pasuram Recitation`;
+                } else {
+                    const activeSegments = targetPasuram[chosenStep] || targetPasuram["step2"];
+                    if (activeSegments && activeSegments.length > 0) {
+                        if (activeLineIndex >= activeSegments.length) activeLineIndex = 0;
+                        const targetPair = activeSegments[activeLineIndex];
+                        bounds = { start: targetPair[0], end: targetPair[1] };
+                        document.getElementById('status').innerText = `Playing Phrase ${activeLineIndex + 1} of ${activeSegments.length}`;
+                    }
+                }
+            }
+        }
+
+        if (!markersFound) {
+            bounds = { start: 0, end: 9999 }; 
+            document.getElementById('status').innerText = `Playing Full Pasuram...`;
+        }
+
+        let audioSrc = "";
+        try {
+            audioSrc = c.getAudioSrc(numInput);
+        } catch (err) {
+            console.error("Audio source path mapping error:", err);
+            document.getElementById('status').innerText = "Audio track path missing";
+            return;
+        }
+
+        syncTextToAudioTimeline();
+
+        LearningEngine.playSegment(audioSrc, bounds, () => {
+            window.dispatchEvent(new CustomEvent('learning-track-ended'));
+        }, lineWindows, chosenStep, focusMode);
+    }
+
+    function safeStopAudio() {
+        if (pauseTimeoutHandle) clearTimeout(pauseTimeoutHandle);
+        if (window.LearningEngine) {
+            LearningEngine.stopMonitor();
+        }
+        document.getElementById('status').innerText = "Ready";
+    }
+
+    function navigate(dir) {
+        if (pauseTimeoutHandle) clearTimeout(pauseTimeoutHandle);
+        safeStopAudio(); 
+        resetLineTracking();
+
+        const input = document.getElementById('number');
+        const pre = document.getElementById('prefix').value;
+        const c = CONFIG[pre];
+        let coords = Navigation.parseCoords(input.value, c.hasSub);
+        
+        coords.pas += dir;
+        const limit = Navigation.getLimit(pre, coords.ch, coords.sub);
+
+        if (dir === 1 && coords.pas > limit) {
+    // Check if it's a flat book like RN to loop completely back to 1
+    if (!c.hasSub && c.maxPas && coords.pas > c.maxPas) {
+        coords.pas = 1;
+    } else if (c.hasSub) { 
+        coords.pas = 1;
+        coords.sub++; 
+        if (coords.sub > c.maxSub) { coords.sub = 1; coords.ch++; } 
+    } else { 
+        coords.pas = 1;
+        coords.ch++; 
+    }
+} else if (dir === -1 && coords.pas < 1) {
+    // Lower bound reverse protection
+    if (!c.hasSub && c.maxPas) {
+        coords.pas = c.maxPas;
+    } else {
+        coords.pas = 1;
+    }
+}
+    
+
+// Make sure output displays correctly without chapter prefixes for single flat chains
+input.value = c.hasSub ? `${coords.ch}.${coords.sub}.${coords.pas}` : `${coords.pas}`;
+
+      //  input.value = c.hasSub ? `${coords.ch}.${coords.sub}.${coords.pas}` : `${coords.ch}.${coords.pas}`;
+        const displayPanel = document.getElementById('pasuramDisplay');
+        if (displayPanel) displayPanel.dataset.lastSignature = "";
+
+        startLearning();
+    }
+
+    function resetLineTracking() {
+        activeLineIndex = 0;
+        if (window.LearningEngine && LearningEngine.state) { LearningEngine.state.currentRepeatCount = 0; }
+    }
+
+    function resetToStart() {
+        safeStopAudio();
+        resetLineTracking();
+        const pre = document.getElementById('prefix').value;
+        
+        if (pre === "PMT") {
+            document.getElementById('number').value = "5.1";
+        } else if (pre === "RN") {
+        document.getElementById('number').value = "1"; // Flat value placeholder
+    }
+        else {
+            document.getElementById('number').value = CONFIG[pre].hasSub ? "1.1.1" : "1.1";
+        }
+        
+        const displayPanel = document.getElementById('pasuramDisplay');
+        if (displayPanel) {
+            displayPanel.dataset.lastSignature = "";
+            displayPanel.innerHTML = "<em>Select a file or press start to view pasuram lines...</em>";
+        }
+    }

@@ -262,7 +262,13 @@ const LearningEngine = {
         if (!this.state.isMonitoring) return;
 
         const player = this.state.playerElement;
+        
         const ctx = this.state.audioContext;
+        // --- ADD LOG: Check if player exists and if it thinks it's ended ---
+        if (!player) {
+            console.error("Engine Error: Player element is null.");
+            return;
+        }
 
         if (this.state.pipelineMode === "ram") {
             if (this.state.isPlaying && ctx && this.state.audioBuffer) {

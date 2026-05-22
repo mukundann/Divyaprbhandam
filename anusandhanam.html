@@ -4,7 +4,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Divya Prabandham Anusandhanam</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #f0f2f5; 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; margin: 0; padding: 12px; box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .card { 
+            background: white; padding: 20px; border-radius: 16px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06); width: 100%; max-width: 680px; 
+            box-sizing: border-box; position: relative;
+        }
+        h2 { text-align: center; color: #1c1e21; margin-top: 0; margin-bottom: 12px; font-size: 1.35rem; font-weight: 700; }
+        .input-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.75rem; margin-bottom: 4px; color: #4b4f56; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+        select, input { 
+            width: 100%; padding: 10px; border: 1px solid #ccd0d5; border-radius: 10px; 
+            font-size: 15px; box-sizing: border-box; background-color: #fff; color: #1c1e21; height: 42px;
+        }
+        select:focus, input:focus {
+            border-color: #0070ba; outline: none; box-shadow: 0 0 0 3px rgba(0, 112, 186, 0.15);
+        }
+        
+        /* READJUSTED COMPACT SELECTION & CONFIGURATION GRID */
+        .config-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); 
+            gap: 10px; 
+            margin-bottom: 12px;
+        }
+        
+        .flex-row { display: flex; gap: 10px; align-items: center; }
+        .nav-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 16px; }
+        
+        button { 
+            display: inline-flex; align-items: center; justify-content: center; height: 46px; border: none; 
+            border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.15s; 
+            user-select: none; touch-action: manipulation;
+        }
+        button:active { transform: scale(0.98); }
+        .btn-play { background-color: #0070ba; color: white; font-size: 1rem; height: 48px; width: 100%; margin-top: 4px; }
+        .btn-play:hover { background-color: #005a96; }
+        .btn-nav { background-color: #e4e6eb; color: #050505; }
+        .status { margin-top: 12px; font-size: 0.75rem; color: #0070ba; text-align: center; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+        
+        /* EXPANDED PASURAM DISPLAY TEXT AREA */
+        .pasuram-text-panel {
+            background: #fffdf2; border: 1px solid #f6e58d; padding: 20px 16px; border-radius: 12px; margin-top: 14px;
+            font-size: clamp(1.3rem, 5vw, 1.65rem); line-height: 1.7; color: #2c3e50; text-align: center; box-sizing: border-box;
+            white-space: normal; word-break: break-word; overflow-wrap: break-word; 
+            min-height: 280px; 
+            max-height: calc(100vh - 340px); 
+            overflow-y: auto;
+        }
+        
+        .pasuram-text-panel span.active-segment { font-weight: 700; color: #000000; background-color: #fbe251; padding: 2px 6px; border-radius: 4px; display: inline; margin: 0 2px; }
+        .pasuram-text-panel span.normal-segment { font-weight: 400; display: inline; margin: 0 2px; }
+
+        #audioPlayer { display: none; }
+
+        @media (min-width: 580px) {
+            .card { padding: 24px; }
+            .pasuram-text-panel { min-height: 340px; }
+        }
+    </style>
 </head>
 <body>
 
@@ -14,6 +79,7 @@
     <div class="config-grid">
         <div class="input-group">
             <label>Prabandham</label>
+            
             <select id="prefix" onchange="resetToStart()">
                 <option value="TVM">Thiruvaimozhi (TVM)</option>
                 <option value="PT">Periya Thirumozhi (PT)</option>
@@ -85,286 +151,15 @@
     <div id="status" class="status">Ready</div>
 </div>
 
-<script src="marker.js"></script>
-<script src="markerProcessor.js"></script>
 <script src="config.js"></script>
 <script src="navigation.js"></script>
+<script src="markerProcessor.js"></script>
+
+<script src="markers/marker_rn.js"></script>
+<script src="markers/marker_pmt.js"></script>
+<script src="playerEngine.js"></script>
 <script src="learningEngine.js"></script>
 
-<script>
-    let activeLineIndex = 0;
-    let pauseTimeoutHandle = null;
 
-    function updateEngineSpeed() {
-        const speedSelect = document.getElementById('playbackSpeed');
-        if (speedSelect && window.LearningEngine) {
-            window.LearningEngine.setPlaybackRate(speedSelect.value);
-        }
-    }
-
-    function startLearningAndFocus() {
-        if (window.LearningEngine && typeof window.LearningEngine.unlockAudio === 'function') { 
-            window.LearningEngine.unlockAudio(); 
-        }
-        updateEngineSpeed();
-        startLearning();
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const audioPlayer = document.getElementById('audioPlayer');
-        if (audioPlayer) {
-            LearningEngine.init(audioPlayer);
-        }
-
-        window.addEventListener('learning-track-ended', () => {
-            const limit = parseInt(document.getElementById('repeatLimit').value, 10);
-            LearningEngine.state.currentRepeatCount = (LearningEngine.state.currentRepeatCount || 0) + 1;
-            
-            const chosenStep = document.getElementById('learningStep').value;
-
-            if (LearningEngine.state.currentRepeatCount < limit) {
-                startLearning();
-            } else {
-                LearningEngine.state.currentRepeatCount = 0;
-                
-                const pre = document.getElementById('prefix').value;
-                const numInput = document.getElementById('number').value;
-                const c = CONFIG[pre];
-                const coords = Navigation.parseCoords(numInput, c.hasSub);
-                
-                const stepsKey = `${pre}.${coords.ch}.steps`;
-                const alternativeKey = `${pre}.steps`;
-                const stepsDatabaseBlock = window.MARKER_DATABASE[stepsKey] || 
-                                           window.MARKER_DATABASE[alternativeKey] || 
-                                           window.MARKER_DATABASE['PTM_2_DATA'];
-
-                if (stepsDatabaseBlock && stepsDatabaseBlock[coords.pas - 1]) {
-                    const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
-                    const activeSegments = targetPasuram[chosenStep] || targetPasuram["step2"];
-                    
-                    if (chosenStep !== "step4" && activeLineIndex < activeSegments.length - 1) {
-                        activeLineIndex++;
-                        startLearning();
-                        return;
-                    }
-                }
-
-                activeLineIndex = 0;
-                if (document.getElementById('autoNext').value === "true") {
-                    navigate(1);
-                } else {
-                    safeStopAudio();
-                }
-            }
-        });
-    });
-
-    function syncTextToAudioTimeline() {
-        const playerEl = document.getElementById('audioPlayer');
-        const displayPanel = document.getElementById('pasuramDisplay');
-        
-        if (!playerEl || !displayPanel || !window.MARKER_DATABASE) return;
-
-        const pre = document.getElementById('prefix').value;
-        const numInput = document.getElementById('number').value;
-        if (!CONFIG[pre]) return;
-        
-        const coords = Navigation.parseCoords(numInput, CONFIG[pre].hasSub);
-        
-        const stepsKey = `${pre}.${coords.ch}.steps`;
-        const alternativeKey = `${pre}.steps`;
-        const stepsDatabaseBlock = window.MARKER_DATABASE[stepsKey] || 
-                                   window.MARKER_DATABASE[alternativeKey] || 
-                                   window.MARKER_DATABASE['PTM_2_DATA'];
-        
-        if (!stepsDatabaseBlock || !stepsDatabaseBlock[coords.pas - 1]) {
-            displayPanel.innerHTML = `<div style="color:#65676b; font-size:1.1rem; font-style:italic;">Pasuram ${numInput} (Audio-Only Mode)</div>`;
-            return;
-        }
-        
-        const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
-        const rawTextString = targetPasuram.text || "";
-        if (!rawTextString) return;
-        
-        const step1Timeline = targetPasuram["step1"] || [];
-        const currentTime = playerEl.currentTime || 0;
-        
-        let matchIndex = -1;
-        for (let i = 0; i < step1Timeline.length; i++) {
-            if (currentTime >= step1Timeline[i][0] && currentTime <= step1Timeline[i][1]) {
-                matchIndex = i;
-                break;
-            }
-        }
-        
-        const currentSignature = `${matchIndex}_${coords.pas}_${pre}`;
-        if (displayPanel.dataset.lastSignature !== currentSignature) {
-            let textPhrases = rawTextString.split(' *');
-            if (textPhrases[textPhrases.length - 1].trim() === "") textPhrases.pop();
-            
-            let innerHTMLString = [];
-            for (let j = 0; j < textPhrases.length; j++) {
-                const cleanPhrase = textPhrases[j].trim();
-                if (j === matchIndex) {
-                    innerHTMLString.push(`<span class="active-segment">${cleanPhrase}</span>`);
-                } else {
-                    innerHTMLString.push(`<span class="normal-segment">${cleanPhrase}</span>`);
-                }
-                if (j < textPhrases.length - 1) {
-                    innerHTMLString.push(` <span style="color:#ccbf99;">*</span> `);
-                }
-            }
-            displayPanel.innerHTML = innerHTMLString.join('');
-            displayPanel.dataset.lastSignature = currentSignature;
-        }
-    }
-
-    function startLearning() {
-        if (pauseTimeoutHandle) clearTimeout(pauseTimeoutHandle);
-
-        const pre = document.getElementById('prefix').value;
-        const numInput = document.getElementById('number').value;
-        const chosenStep = document.getElementById('learningStep').value;
-        const focusMode = document.getElementById('recitationFocus').value;
-        const c = CONFIG[pre];
-        const coords = Navigation.parseCoords(numInput, c.hasSub);
-        const isSingle = typeof c.isSingleFile === 'function' ? c.isSingleFile(numInput) : c.isSingleFile;
-        
-        let bounds = null;
-        let lineWindows = null;
-        let markersFound = false;
-
-        if (isSingle) {
-            const stepsKey = `${pre}.${coords.ch}.steps`;
-            const alternativeKey = `${pre}.steps`;
-            const stepsDatabaseBlock = window.MARKER_DATABASE[stepsKey] || 
-                                       window.MARKER_DATABASE[alternativeKey] || 
-                                       window.MARKER_DATABASE['PTM_2_DATA'];
-            
-            if (stepsDatabaseBlock && stepsDatabaseBlock[coords.pas - 1]) {
-                markersFound = true;
-                const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
-                lineWindows = targetPasuram["step2"] || null;
-                
-                if (chosenStep === "step4") {
-                    const fullBounds = targetPasuram["step4"] ? targetPasuram["step4"][0] : null;
-                    if (fullBounds) {
-                        bounds = { start: fullBounds[0], end: fullBounds[1] };
-                    } else if (lineWindows && lineWindows.length > 0) {
-                        bounds = { start: lineWindows[0][0], end: lineWindows[lineWindows.length - 1][1] };
-                    }
-                    document.getElementById('status').innerText = `Full Pasuram Recitation`;
-                } else {
-                    const activeSegments = targetPasuram[chosenStep] || targetPasuram["step2"];
-                    if (activeSegments && activeSegments.length > 0) {
-                        if (activeLineIndex >= activeSegments.length) activeLineIndex = 0;
-                        const targetPair = activeSegments[activeLineIndex];
-                        bounds = { start: targetPair[0], end: targetPair[1] };
-                        document.getElementById('status').innerText = `Playing Phrase ${activeLineIndex + 1} of ${activeSegments.length}`;
-                    }
-                }
-            }
-        }
-
-        if (!markersFound) {
-            bounds = { start: 0, end: 9999 }; 
-            document.getElementById('status').innerText = `Playing Full Pasuram...`;
-        }
-
-        let audioSrc = "";
-        try {
-            audioSrc = c.getAudioSrc(numInput);
-        } catch (err) {
-            console.error("Audio source path mapping error:", err);
-            document.getElementById('status').innerText = "Audio track path missing";
-            return;
-        }
-
-        syncTextToAudioTimeline();
-
-        LearningEngine.playSegment(audioSrc, bounds, () => {
-            window.dispatchEvent(new CustomEvent('learning-track-ended'));
-        }, lineWindows, chosenStep, focusMode);
-    }
-
-    function safeStopAudio() {
-        if (pauseTimeoutHandle) clearTimeout(pauseTimeoutHandle);
-        if (window.LearningEngine) {
-            LearningEngine.stopMonitor();
-        }
-        document.getElementById('status').innerText = "Ready";
-    }
-
-    function navigate(dir) {
-        if (pauseTimeoutHandle) clearTimeout(pauseTimeoutHandle);
-        safeStopAudio(); 
-        resetLineTracking();
-
-        const input = document.getElementById('number');
-        const pre = document.getElementById('prefix').value;
-        const c = CONFIG[pre];
-        let coords = Navigation.parseCoords(input.value, c.hasSub);
-        
-        coords.pas += dir;
-        const limit = Navigation.getLimit(pre, coords.ch, coords.sub);
-
-        if (dir === 1 && coords.pas > limit) {
-    // Check if it's a flat book like RN to loop completely back to 1
-    if (!c.hasSub && c.maxPas && coords.pas > c.maxPas) {
-        coords.pas = 1;
-    } else if (c.hasSub) { 
-        coords.pas = 1;
-        coords.sub++; 
-        if (coords.sub > c.maxSub) { coords.sub = 1; coords.ch++; } 
-    } else { 
-        coords.pas = 1;
-        coords.ch++; 
-    }
-} else if (dir === -1 && coords.pas < 1) {
-    // Lower bound reverse protection
-    if (!c.hasSub && c.maxPas) {
-        coords.pas = c.maxPas;
-    } else {
-        coords.pas = 1;
-    }
-}
-    
-
-// Make sure output displays correctly without chapter prefixes for single flat chains
-input.value = c.hasSub ? `${coords.ch}.${coords.sub}.${coords.pas}` : `${coords.pas}`;
-
-      //  input.value = c.hasSub ? `${coords.ch}.${coords.sub}.${coords.pas}` : `${coords.ch}.${coords.pas}`;
-        const displayPanel = document.getElementById('pasuramDisplay');
-        if (displayPanel) displayPanel.dataset.lastSignature = "";
-
-        startLearning();
-    }
-
-    function resetLineTracking() {
-        activeLineIndex = 0;
-        if (window.LearningEngine && LearningEngine.state) { LearningEngine.state.currentRepeatCount = 0; }
-    }
-
-    function resetToStart() {
-        safeStopAudio();
-        resetLineTracking();
-        const pre = document.getElementById('prefix').value;
-        
-        if (pre === "PMT") {
-            document.getElementById('number').value = "5.1";
-        } else if (pre === "RN") {
-        document.getElementById('number').value = "1"; // Flat value placeholder
-    }
-        else {
-            document.getElementById('number').value = CONFIG[pre].hasSub ? "1.1.1" : "1.1";
-        }
-        
-        const displayPanel = document.getElementById('pasuramDisplay');
-        if (displayPanel) {
-            displayPanel.dataset.lastSignature = "";
-            displayPanel.innerHTML = "<em>Select a file or press start to view pasuram lines...</em>";
-        }
-    }
-</script>
 </body>
 </html>
