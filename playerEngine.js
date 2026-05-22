@@ -27,9 +27,9 @@
     	console.log("line 187");
         window.addEventListener('learning-track-ended', () => {
             const limit = parseInt(document.getElementById('repeatLimit').value, 10);
-            console.log(limit);
+           
             LearningEngine.state.currentRepeatCount = (LearningEngine.state.currentRepeatCount || 0) + 1;
-        	console.log("line 191");
+        	
             const chosenStep = document.getElementById('learningStep').value;
 //console.log(LearningEngine.state.currentRepeatCount);
             if (LearningEngine.state.currentRepeatCount < limit) {
@@ -160,7 +160,7 @@
                 lineWindows = targetPasuram["step2"] || null;
                 
                 if (chosenStep === "step4") {
-                    const fullBounds = targetPasuram["step4"] ? targetPasuram["step4"][0] : null;
+                    const fullBounds = targetPasuram["step4"] ? targetPasuram["step4"] : null;
                     if (fullBounds) {
                         bounds = { start: fullBounds[0], end: fullBounds[1] };
                     } else if (lineWindows && lineWindows.length > 0) {
@@ -209,49 +209,57 @@
     }
 
     function navigate(dir) {
-        if (pauseTimeoutHandle) clearTimeout(pauseTimeoutHandle);
-        safeStopAudio(); 
-        resetLineTracking();
-
-        const input = document.getElementById('number');
-        const pre = document.getElementById('prefix').value;
-        const c = CONFIG[pre];
-        let coords = Navigation.parseCoords(input.value, c.hasSub);
-        
-        coords.pas += dir;
-        const limit = Navigation.getLimit(pre, coords.ch, coords.sub);
-
-        if (dir === 1 && coords.pas > limit) {
-    // Check if it's a flat book like RN to loop completely back to 1
-    if (!c.hasSub && c.maxPas && coords.pas > c.maxPas) {
-        coords.pas = 1;
-    } else if (c.hasSub) { 
-        coords.pas = 1;
-        coords.sub++; 
-        if (coords.sub > c.maxSub) { coords.sub = 1; coords.ch++; } 
-    } else { 
-        coords.pas = 1;
-        coords.ch++; 
-    }
-} else if (dir === -1 && coords.pas < 1) {
-    // Lower bound reverse protection
-    if (!c.hasSub && c.maxPas) {
-        coords.pas = c.maxPas;
-    } else {
-        coords.pas = 1;
-    }
-}
+    safeStopAudio();
+    resetLineTracking();
     
+    const input = document.getElementById('number');
+    const pre = document.getElementById('prefix').value;
+    const c = CONFIG[pre];
+    let coords = Navigation.parseCoords(input.value, c.hasSub);
+    
+    coords.pas += dir;
+    
+    switch (c.structure) {
+        case 'flat_pasuram': // Variant 1: RN
+            if (coords.pas > c.maxPas) coords.pas = 1;
+            else if (coords.pas < 1) coords.pas = c.maxPas;
+            input.value = `${coords.pas}`;
+            break;
 
-// Make sure output displays correctly without chapter prefixes for single flat chains
-input.value = c.hasSub ? `${coords.ch}.${coords.sub}.${coords.pas}` : `${coords.pas}`;
+        case 'chapter_pasuram': // Variant 2: PMT
+            let chLimit = Navigation.getLimit(pre, coords.ch, 0);
+            if (coords.pas > chLimit) {
+                coords.ch = (coords.ch >= c.maxCh) ? 1 : coords.ch + 1;
+                coords.pas = 1;
+            } else if (coords.pas < 1) {
+                coords.ch = (coords.ch <= 1) ? c.maxCh : coords.ch - 1;
+                coords.pas = Navigation.getLimit(pre, coords.ch, 0);
+            }
+            input.value = `${coords.ch}.${coords.pas}`;
+            break;
 
-      //  input.value = c.hasSub ? `${coords.ch}.${coords.sub}.${coords.pas}` : `${coords.ch}.${coords.pas}`;
-        const displayPanel = document.getElementById('pasuramDisplay');
-        if (displayPanel) displayPanel.dataset.lastSignature = "";
-
-        startLearning();
+        case 'chapter_sub_pasuram': // Variant 3: TVM
+            let subLimit = Navigation.getLimit(pre, coords.ch, coords.sub);
+            if (coords.pas > subLimit) {
+                coords.pas = 1;
+                coords.sub++;
+                if (coords.sub > c.maxSub) {
+                    coords.sub = 1;
+                    coords.ch = (coords.ch >= c.maxCh) ? 1 : coords.ch + 1;
+                }
+            } else if (coords.pas < 1) {
+                coords.sub--;
+                if (coords.sub < 1) {
+                    coords.ch = (coords.ch <= 1) ? c.maxCh : coords.ch - 1;
+                    coords.sub = c.maxSub;
+                }
+                coords.pas = Navigation.getLimit(pre, coords.ch, coords.sub);
+            }
+            input.value = `${coords.ch}.${coords.sub}.${coords.pas}`;
+            break;
     }
+    startLearning();
+}
 
     function resetLineTracking() {
         activeLineIndex = 0;

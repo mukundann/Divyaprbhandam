@@ -40,25 +40,28 @@ const Navigation = {
     /**
      * Returns the total maximum pasuram limit for the current active section boundary.
      */
-    getLimit: function(pre, ch, sub) {
-        const c = CONFIG[pre];
-        if (!c) return 10;
-        
-        // If it's a completely flat book structure like RN, check maxPas constraints
-        if (!c.hasSub && c.maxPas) {
-            return c.maxPas; // Returns 108 for RN
+   getLimit: function(pre, ch, sub) {
+        if (!window.MARKER_DATABASE) return 0;
+
+        // 1. Construct the precise database lookup keys
+        const subKey = `${pre}.${ch}.${sub}.steps`; // e.g., "TVM.1.1.steps"
+        const chKey = `${pre}.${ch}.steps`;        // e.g., "PMT.1.steps"
+        const flatKey = `${pre}.steps`;             // Fallback for flat books like "RN.steps"
+        const directKey = pre;                      // Alternative fallback "RN"
+
+        // 2. Resolve the active array from the database
+        const dbArray = window.MARKER_DATABASE[subKey] || 
+                        window.MARKER_DATABASE[chKey]  || 
+                        window.MARKER_DATABASE[flatKey] || 
+                        window.MARKER_DATABASE[directKey];
+
+        // 3. Return the array length (total pasurams available for this segment)
+        if (Array.isArray(dbArray)) {
+            return dbArray.length;
         }
 
-        // Fallback multi-chapter bounds verification matrix rules
-        try {
-            if (c.hasSub) {
-                return c.structure[ch][sub];
-            } else {
-                return c.structure[ch];
-            }
-        } catch (e) {
-            // Safe operational fallback if lookup mapping configuration misses a line key
-            return c.maxPas || 10;
-        }
+        // Fallback to config rules if marker data isn't loaded or structured as an array
+        const c = CONFIG[pre];
+        return c ? (c.defPas || 10) : 0;
     }
 };

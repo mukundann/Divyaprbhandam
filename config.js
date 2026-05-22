@@ -13,18 +13,21 @@ window.PASURAM_STRUCTURE = {
 
 const CONFIG = {
     'TVM': { 
+		structure: 'chapter_sub_pasuram', // Variant 3
         hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, ex: {'2.7': 13},
         markerPath: 'markers/marker_tvm.js',
         // Fall back to uVeda remote recitation server
         getAudioSrc: (num) => `https://www.uveda.org/media/recitation/TVM.${num}.mp3`
     },
     'PT':  { 
+		structure: 'chapter_sub_pasuram', // Variant 3
         hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, ex: {},
         markerPath: 'markers/marker_pt.js',
         // Fall back to uVeda remote recitation server
         getAudioSrc: (num) => `https://www.uveda.org/media/recitation/PT.${num}.mp3`
     },
     'PMT': { 
+		structure: 'chapter_pasuram',
         hasSub: false, maxCh: 10, defPas: 10, ex: {},
         markerPath: 'markers/marker_pmt.js',
         isSingleFile: (num) => {
@@ -43,6 +46,7 @@ const CONFIG = {
         }
     },
     'NAT': { 
+		structure: 'chapter_pasuram',
         hasSub: false, maxCh: 14, defPas: 10, ex: {},
         markerPath: 'markers/marker_nat.js',
         isSingleFile: (num) => parseInt(num.split('.')[0], 10) === 2,
@@ -55,6 +59,7 @@ const CONFIG = {
         }
     },
      'RN': {
+		 structure: 'flat_pasuram',        // Variant 1
     hasSub: false,       // Stays a flat sequence of 108 pasurams
     maxPas: 108,
     getAudioSrc: function(numInput) {
