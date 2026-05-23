@@ -31,7 +31,6 @@
             LearningEngine.state.currentRepeatCount = (LearningEngine.state.currentRepeatCount || 0) + 1;
         	
             const chosenStep = document.getElementById('learningStep').value;
-//console.log(LearningEngine.state.currentRepeatCount);
             if (LearningEngine.state.currentRepeatCount < limit) {
             	
                 startLearning();
@@ -124,7 +123,9 @@
                     innerHTMLString.push(`<span class="normal-segment">${cleanPhrase}</span>`);
                 }
                 if (j < textPhrases.length - 1) {
-                    innerHTMLString.push(` <span style="color:#ccbf99;">*</span> `);
+                    //innerHTMLString.push(` <span style="color:#ccbf99;">*</span> `);
+                    innerHTMLString.push(` <span style="color:#000000;">*</span><br> `);
+
                 }
             }
             displayPanel.innerHTML = innerHTMLString.join('');
