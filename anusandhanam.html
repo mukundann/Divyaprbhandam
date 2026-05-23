@@ -92,7 +92,7 @@
         
         <div class="input-group">
             <label id="numLabel">Pasuram (Ch.Sub.Pas)</label>
-            <input type="text" id="number" value="5.1" inputmode="decimal">
+            <input type="text" id="number" value="1.1" inputmode="decimal">
         </div>
 
         <div class="input-group">
@@ -118,7 +118,14 @@
 
         <div class="input-group">
             <label>Repeat</label>
-            <input type="number" id="repeatLimit" value="1" min="1">
+            <input type="number" id="repeatLimit" value="2" min="1">
+        </div>
+        <div class="input-group">
+            <label>Language</label>
+            <select id="textLanguage" onchange="renderCurrentPasuramText()">
+            <option value="ta" selected>தமிழ் (Tamil)</option>
+            <option value="en">Romanized English</option>
+            </select>
         </div>
 
         <div class="input-group">

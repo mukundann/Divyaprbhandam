@@ -94,7 +94,18 @@
         }
         
         const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
-        const rawTextString = targetPasuram.text || "";
+        // --- LANGUAGE RESOLUTION ADDITION ---
+        let rawTextString = "";
+        if (targetPasuram.text) {
+            if (typeof targetPasuram.text === 'string') {
+                rawTextString = targetPasuram.text; // Backwards compatible with legacy files
+            } else {
+                // Read from the newly added language dropdown element
+                const selectedLang = document.getElementById('textLanguage')?.value || 'ta';
+                rawTextString = targetPasuram.text[selectedLang] || targetPasuram.text['ta'] || targetPasuram.text['en'] || "";
+            }
+        }
+       // rawTextString = targetPasuram.text || "";
         if (!rawTextString) return;
         
         const step1Timeline = targetPasuram["step1"] || [];
