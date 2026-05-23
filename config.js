@@ -32,7 +32,7 @@ const CONFIG = {
         markerPath: 'markers/marker_pmt.js',
         isSingleFile: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            return chapter >= 1 && chapter <= 5;
+            return chapter >= 1 && chapter <= 6;
         },
         getAudioSrc: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
@@ -42,6 +42,7 @@ const CONFIG = {
             if (chapter === 3) return `audiofiles/PMT/PMT.3.all.ogg`;
             if (chapter === 4) return `audiofiles/PMT/PMT.4.all.ogg`;
             if (chapter === 5) return `audiofiles/PMT/PMT.5.all.ogg`;
+            if (chapter === 6) return `audiofiles/PMT/PMT.6.all.ogg`;
             return `https://www.uveda.org/media/recitation/PMT.${num}.mp3`;
         }
     },
