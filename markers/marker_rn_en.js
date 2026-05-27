@@ -30,7 +30,7 @@ const text_bundle_en = {
     26: "thikkuRRa kIrththi irAmAnusanai * en sey vinaiyAm meykkuRRam nIkki * viLangiya mEgaththai *** mEvum nallOr ekkuRRavALar edhu piRappu Edhu iyalvu Aga ninROr * akkuRRam appiRappu * avviyalvE nammai AtkoLLumE *",
     27: "koLLak kuRaivu aRRu ilangi * kozhundhu vittu Ongiya un vaLLal thanaththinAl * valvinaiyEn manam nI pugundhAy *** veLLaich chuddar vidum un peru mEnmaikku izhukku idhu enRu * thaLLuRRu irangum * irAmAnusA en thani nenjamE *",
     28: "nenjil kaRai koNda kanjanaik kAyndha nimalan * nangaL panjith thiruvadip * pinnai than kAdhalan *** pAdham naNNA vanjarkku ariya irAmAnusan * pugazh anRi en vAy konjip paravagillAdhu * enna vAzhvu inRu kUdiyadhE! *",
-    29: "kUttum vidhi enRu kUdungolO? * then kurugaippirAn pAttennum * vEdhap pasum thamizh thannai * *** than paththi ennum vIttin kaN vaiththa irAmAnusan * pugazh mey uNarndhOr IttangaL thannai * en nAttangaL kaNdu inbam eydhidavE *",
+    29: "kUttum vidhi enRu kUdungolO? * then kurugaippirAn pAttennum * vEdhap pasum thamizh thannai *** than paththi ennum vIttin kaN vaiththa irAmAnusan * pugazh mey uNarndhOr IttangaL thannai * en nAttangaL kaNdu inbam eydhidavE *",
     30: "inbam tharu peru vIdu vandhu eydhil en? * eNNiRandha thunbam tharu * nirayam pala sUzhil en? *** thol ulagail man pal uyirgatku iRaiyavan mAyan ena mozhindha * anban anagan * irAmAnusan ennai ANdananE *"
   }
 };

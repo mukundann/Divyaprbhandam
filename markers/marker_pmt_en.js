@@ -36,7 +36,7 @@ const text_bundle_en = {
     7: "eththiRaththilum * yArodum kUdum * ach chiththam thannaith * thavirththanan sengaNmAl * aththanE! * arangA! enRu azhaikkinREn * piththanAy ozhindhEn empirAnukkE *",
     8: "pEyarE * enakku yAvarum * yAnum Or pEyanE * evarkkum idhu pEsi en! * AyanE! * arangA! enRu azhaikkinREn * pEyanAy ozhindhEn * empirAnukkE *",
     9: "angai Azhi * arangan adiyiNai * thangu sindhaith * thanip perum piththanAy * kongarkOn * kulasEkaran sonna sol * ingu vallavarkku Edham onRillaiyE* *",
-    10: "mey nUl mAranAr uNdi thIdhil emparaththar  eththiRaththilum pEyarE angai Un *"
+    10: "mey nUl mAranAr uNdi thIdhil emparaththar eththiRaththilum pEyarE angai Un *"
   },
   'PMT.4.steps': {
     1: "UnERu selvaththu * udaRpiRavi yAn vENdEn * AnEREzh venRAn * adimaith thiRam allAl * kUnERu sangam idaththAn than * vEngadaththu * kOn Eri vAzhum * kurugAyp piRappEnE *",
