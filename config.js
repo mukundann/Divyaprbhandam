@@ -54,6 +54,7 @@ const CONFIG = {
         getAudioSrc: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
             // Route local file assets for Chapter 2; fall back to uVeda for others
+            if (chapter === 4) return `audiofiles/NAT/NAT_4ogg`;
             return `https://www.uveda.org/media/recitation/NAT.${num}.mp3`;
         }
     },
