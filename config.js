@@ -50,7 +50,7 @@ const CONFIG = {
 		structure: 'chapter_pasuram',
         hasSub: false, maxCh: 14, defPas: 10, ex: {},
         markerPath: 'markers/marker_nat.js',
-        isSingleFile: (num) => parseInt(num.split('.')[0], 10) === 2,
+        isSingleFile: (num) => parseInt(num.split('.')[0], 10) === 4,
         getAudioSrc: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
             // Route local file assets for Chapter 2; fall back to uVeda for others
