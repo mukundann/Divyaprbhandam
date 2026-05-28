@@ -1,4 +1,4 @@
-
+//added dynamic language loaded
 let activeLineIndex = 0;
 let pauseTimeoutHandle = null;
 
