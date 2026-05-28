@@ -1,5 +1,6 @@
 window.MARKER_DATABASE = window.MARKER_DATABASE || {};
-
+// Global function to trigger the merge on-demand
+window.mergeLanguageTexts = function () {
 const text_bundle_en = {
   'NAT.4.steps': {
     1: "theLLiyAr * palar kai thozhum dhEvanAr * vaLLal * mAlirunjOlai maNALanAr *** paLLi koLLum idaththu * adi kottida * koLLumAgil * nI kUdidu kUdalE! *",
@@ -14,16 +15,14 @@ const text_bundle_en = {
     10: "pazhagu nAnmaRaiyin poruLAy * madham ozhugu vAraNam * uyya aLiththa *** em azhaganAr * aNi Aychchiyar sindhaiyuL * kuzhaganAr varil * kUdidu kUdalE! *",
     11: "* Udal kUdal * uNardhal puNardhalai * nIdu ninRa * niRai pugazh Aychchiyar *** kUdalaik * kuzhaR kOdhai mun kURiya * pAdal paththum vallArkku * illai pAvamE *",
     12: "adivaravu: theLLiyAr kAttil pUmagan AychchimArgaL mAdam aRRavan anRu Aval koNda pazhagu Udal mannu *"
+  // Non-destructive runtime merging engine
+  for (const key in text_bundle_en) {
+    window.MARKER_DATABASE[key] = window.MARKER_DATABASE[key] || [];
+    for (const p in text_bundle_en[key]) {
+      const idx = parseInt(p) - 1;
+      window.MARKER_DATABASE[key][idx] = window.MARKER_DATABASE[key][idx] || { p: parseInt(p) };
+      window.MARKER_DATABASE[key][idx]['text'] = window.MARKER_DATABASE[key][idx]['text'] || {};
+      window.MARKER_DATABASE[key][idx]['text']['en'] = text_bundle_en[key][p];
+    }
   }
 };
-
-// Non-destructive runtime merging engine
-for (const key in text_bundle_en) {
-  window.MARKER_DATABASE[key] = window.MARKER_DATABASE[key] || [];
-  for (const p in text_bundle_en[key]) {
-    const idx = parseInt(p) - 1;
-    window.MARKER_DATABASE[key][idx] = window.MARKER_DATABASE[key][idx] || { p: parseInt(p) };
-    window.MARKER_DATABASE[key][idx]['text'] = window.MARKER_DATABASE[key][idx]['text'] || {};
-    window.MARKER_DATABASE[key][idx]['text']['en'] = text_bundle_en[key][p];
-  }
-}

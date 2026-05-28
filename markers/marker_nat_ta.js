@@ -1,5 +1,6 @@
 window.MARKER_DATABASE = window.MARKER_DATABASE || {};
-
+// Global function to trigger the merge on-demand
+window.mergeLanguageTexts = function () {
 const text_bundle_ta = {
   'NAT.4.steps': {
     1: "தெள்ளியார் * பலர் கை தொழும் தேவனார் * வள்ளல் * மாலிருஞ்சோலை மணாளனார் *** பள்ளி கொள்ளும் இடத்து * அடி கொட்டிட * கொள்ளுமாகில் * நீ கூடிடு கூடலே! *",
@@ -14,16 +15,14 @@ const text_bundle_ta = {
     10: "பழகு நான்மறையின் பொருளாய் * மதம் ஒழுகு வாரணம் * உய்ய அளித்த *** எம் அழகனார் * அணி ஆய்ச்சியர் சிந்தையுள் * குழகனார் வரில் * கூடிடு கூடலே! *",
     11: "ஊடல் கூடல் * உணர்தல் புணர்தலை * நீடு நின்ற * நிறை புகழ் ஆய்ச்சியர் *** கூடலைக் * குழற் கோதை முன் கூறிய * பாடல் பத்தும் வல்லார்க்கு * இல்லை பாவமே *",
     12: "அடிவரவு: தெள்ளியார் காட்டில் பூமகன் ஆய்ச்சிமார்கள் மாடம் அற்றவன் அன்று ஆவல் கொண்ட பழகு ஊடல் மன்னு *"
+  // Non-destructive runtime merging engine
+  for (const key in text_bundle_ta) {
+    window.MARKER_DATABASE[key] = window.MARKER_DATABASE[key] || [];
+    for (const p in text_bundle_ta[key]) {
+      const idx = parseInt(p) - 1;
+      window.MARKER_DATABASE[key][idx] = window.MARKER_DATABASE[key][idx] || { p: parseInt(p) };
+      window.MARKER_DATABASE[key][idx]['text'] = window.MARKER_DATABASE[key][idx]['text'] || {};
+      window.MARKER_DATABASE[key][idx]['text']['ta'] = text_bundle_ta[key][p];
+    }
   }
 };
-
-// Non-destructive runtime merging engine
-for (const key in text_bundle_ta) {
-  window.MARKER_DATABASE[key] = window.MARKER_DATABASE[key] || [];
-  for (const p in text_bundle_ta[key]) {
-    const idx = parseInt(p) - 1;
-    window.MARKER_DATABASE[key][idx] = window.MARKER_DATABASE[key][idx] || { p: parseInt(p) };
-    window.MARKER_DATABASE[key][idx]['text'] = window.MARKER_DATABASE[key][idx]['text'] || {};
-    window.MARKER_DATABASE[key][idx]['text']['ta'] = text_bundle_ta[key][p];
-  }
-}

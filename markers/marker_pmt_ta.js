@@ -1,5 +1,5 @@
 window.MARKER_DATABASE = window.MARKER_DATABASE || {};
-
+window.mergeLanguageTexts = function () {
 const text_bundle_ta = {
   'PMT.1.steps': {
     1: "இருள் இரியச் சுடர் மணிகள் இமைக்கும் நெற்றி * இனத் துத்தி அணி பணம் ஆயிரங்கள் ஆர்ந்த * அரவரசப் பெருஞ்சோதி அனந்தன் என்னும் * அணி விளங்கும் உயர் வெள்ளை அணையை மேவி *** திருவரங்கப் பெரு நகருள் தெண்ணீர்ப் பொன்னி * திரைக்கையால் அடி வருடப் பள்ளி கொள்ளும் * கரு மணிையக் கோமளத்தைக் கண்டு கொண்டு * என் கண் இணைகள் என்று கொலா களிக்கும் நாளே? *",
@@ -92,3 +92,4 @@ for (const key in text_bundle_ta) {
     window.MARKER_DATABASE[key][idx]['text']['ta'] = text_bundle_ta[key][p];
   }
 }
+};

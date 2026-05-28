@@ -1,5 +1,6 @@
 window.MARKER_DATABASE = window.MARKER_DATABASE || {};
-
+// Global function to trigger the merge on-demand
+window.mergeLanguageTexts = function () {
 const text_bundle_en = {
   'RN.steps': {
     1: "pU mannu mAdhu porundhiya mArban * pugazh malindha pA mannu mARan * adi paNindhu uyndhavan *** pal kalaiyOr thAm manna vandha irAmAnusan * saraNAravindham nAm manni vAzha * nenjE solluvOm avan nAmangLE *",
@@ -32,16 +33,14 @@ const text_bundle_en = {
     28: "nenjil kaRai koNda kanjanaik kAyndha nimalan * nangaL panjith thiruvadip * pinnai than kAdhalan *** pAdham naNNA vanjarkku ariya irAmAnusan * pugazh anRi en vAy konjip paravagillAdhu * enna vAzhvu inRu kUdiyadhE! *",
     29: "kUttum vidhi enRu kUdungolO? * then kurugaippirAn pAttennum * vEdhap pasum thamizh thannai *** than paththi ennum vIttin kaN vaiththa irAmAnusan * pugazh mey uNarndhOr IttangaL thannai * en nAttangaL kaNdu inbam eydhidavE *",
     30: "inbam tharu peru vIdu vandhu eydhil en? * eNNiRandha thunbam tharu * nirayam pala sUzhil en? *** thol ulagail man pal uyirgatku iRaiyavan mAyan ena mozhindha * anban anagan * irAmAnusan ennai ANdananE *"
+  // Non-destructive runtime merging engine
+  for (const key in text_bundle_en) {
+    window.MARKER_DATABASE[key] = window.MARKER_DATABASE[key] || [];
+    for (const p in text_bundle_en[key]) {
+      const idx = parseInt(p) - 1;
+      window.MARKER_DATABASE[key][idx] = window.MARKER_DATABASE[key][idx] || { p: parseInt(p) };
+      window.MARKER_DATABASE[key][idx]['text'] = window.MARKER_DATABASE[key][idx]['text'] || {};
+      window.MARKER_DATABASE[key][idx]['text']['en'] = text_bundle_en[key][p];
+    }
   }
 };
-
-// Non-destructive runtime merging engine
-for (const key in text_bundle_en) {
-  window.MARKER_DATABASE[key] = window.MARKER_DATABASE[key] || [];
-  for (const p in text_bundle_en[key]) {
-    const idx = parseInt(p) - 1;
-    window.MARKER_DATABASE[key][idx] = window.MARKER_DATABASE[key][idx] || { p: parseInt(p) };
-    window.MARKER_DATABASE[key][idx]['text'] = window.MARKER_DATABASE[key][idx]['text'] || {};
-    window.MARKER_DATABASE[key][idx]['text']['en'] = text_bundle_en[key][p];
-  }
-}
