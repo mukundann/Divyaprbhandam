@@ -15,6 +15,9 @@ const text_bundle_en = {
     10: "pazhagu nAnmaRaiyin poruLAy * madham ozhugu vAraNam * uyya aLiththa *** em azhaganAr * aNi Aychchiyar sindhaiyuL * kuzhaganAr varil * kUdidu kUdalE! *",
     11: "* Udal kUdal * uNardhal puNardhalai * nIdu ninRa * niRai pugazh Aychchiyar *** kUdalaik * kuzhaR kOdhai mun kURiya * pAdal paththum vallArkku * illai pAvamE *",
     12: "adivaravu: theLLiyAr kAttil pUmagan AychchimArgaL mAdam aRRavan anRu Aval koNda pazhagu Udal mannu *"
+    }
+  };
+
   // Non-destructive runtime merging engine
   for (const key in text_bundle_en) {
     window.MARKER_DATABASE[key] = window.MARKER_DATABASE[key] || [];
