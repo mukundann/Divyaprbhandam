@@ -79,6 +79,9 @@ const text_bundle_en = {
     9: "mangala nalvanamAlai mArvil ilanga * mayil thazhaippeeli sUdi * pongiLavAdai araiyil sAththip * pUngoththuk kAdhil puNarappeydhu * kongu naRunguzhalArgaLOdu * kuzhaindhu kuzhal inidhUdhi vandhAy * engaLukkE oru nAL vandhUdha * un kuzhal innisai pOtharAdhE *",
     10: "allimalarth thirumangai kELvan thannai * nayandhu iLavAychchimArgaL * ellip pozhudhinil EmaththUdi * eLgi uraiththa urai adhanai * kolli nagarkkiRai kUdaRkOmAn * kulasEkaran innisaiyil mEvi * solliya inthamizh mAlai paththum * solla vallArkku illai thunbam thAnE *",
     11: "adivaravu: Er keNdai karu thAy min maRporu pai ennai mangalam alli Alai *"
+          },
+  };
+
   // Non-destructive runtime merging engine
   for (const key in text_bundle_en) {
     window.MARKER_DATABASE[key] = window.MARKER_DATABASE[key] || [];
