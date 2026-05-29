@@ -46,12 +46,10 @@ const CONFIG = {
         },
         getAudioSrc: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter === 1) return `audiofiles/PMT/PMT.1.all.ogg`;
-            if (chapter === 2) return `audiofiles/PMT/PMT.2.all.ogg`;
-            if (chapter === 3) return `audiofiles/PMT/PMT.3.all.ogg`;
-            if (chapter === 4) return `audiofiles/PMT/PMT.4.all.ogg`;
-            if (chapter === 5) return `audiofiles/PMT/PMT.5.all.ogg`;
-            if (chapter === 6) return `audiofiles/PMT/PMT.6.all.ogg`;
+
+            if (chapter >= 1 && chapter <= 6) {
+                return `audiofiles/PMT/PMT.${chapter}.all.ogg`;
+            }
             return `https://www.uveda.org/media/recitation/PMT.${num}.mp3`;
         }
     },
@@ -60,14 +58,14 @@ const CONFIG = {
         hasSub: false, maxCh: 14, defPas: 10, ex: {},
         getMarkerPath: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter === 4 || chapter === 1 || chapter === 2) {
+            if (chapter >= 1 && chapter <= 4) {
                 return 'markers/marker_nat_timelines.js';
             }
             return null;
         },
         getLanguagePath: (num, langCode) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter === 4 || chapter === 1 || chapter === 2) {
+            if (chapter >= 1 && chapter <= 4) {
                 return `markers/marker_nat_${langCode}.js`;
             }
 
@@ -75,9 +73,9 @@ const CONFIG = {
         },
         getAudioSrc: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter === 4) return `audiofiles/NAT/NAT_4.ogg`;
-            if (chapter === 1) return `audiofiles/NAT/NAT_1.ogg`;
-            if (chapter === 2) return `audiofiles/NAT/NAT_2.ogg`;
+            if (chapter >= 1 && chapter <= 4) {
+                return `audiofiles/NAT/NAT_${chapter}.ogg`;
+            }
             return `https://www.uveda.org/media/recitation/NAT.${num}.mp3`;
         }
     },
