@@ -70,11 +70,15 @@ const CONFIG = {
             if (chapter === 4) {
                 return `markers/marker_nat_${langCode}.js`;
             }
+            if (chapter === 1) {
+                return `markers/marker_nat_${langCode}.js`;
+            }
             return null;
         },
         getAudioSrc: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
             if (chapter === 4) return `audiofiles/NAT/NAT_4.ogg`;
+            if (chapter === 1) return `audiofiles/NAT/NAT_1.ogg`;
             return `https://www.uveda.org/media/recitation/NAT.${num}.mp3`;
         }
     },
