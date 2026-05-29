@@ -52,7 +52,7 @@ window.mergeLanguageTexts = function () {
       9: "sediyAya valvinaigaL * thIrkkum thirumAlE! * nediyAnE! vEngadavA! * nin kOyilin vAsal * adiyArum vAnavarum * arambaiyarum kidandhu iyangum * padiyAyk kidandhu * un pavaLavAy kANbEnE *",
       10: "umbar ulagANdu * oru kudaik kIzh uruppasi than * ampoRkalai algul * peRRAlum AdhariyEn * sembavaLa vAyAn * thiruvEngadam ennum * emperumAn ponmalai mEl * EdhEnum AvEnE *",
       11: "manniya thaNsAral * vadavEngadaththAn than * ponniyalum sEvadigaL * kANbAn purindhu iRainji * konnavilum kUrvEl * kulasEkaran sonna * panniya nUl thamizh vallAr * pAngAya paththargaLE *",
-      12: "adivaravu: *"
+      12: "adivaravu: Un AnAdha pin oN kambam min vAn piRai sedi umbar manniya tharu *"
     },
     'PMT.5.steps': {
       1: "tharuthuyaram thadAyEl * un saraN allAl saraN illai * virai kuzhuvum malarppozhil sUzh * viththuvakkOttammAnE! * arisinaththAl InRa thAy agaRRidinum * maRRavaL than aruL ninaindhE azhum kuzhavi * adhuvE pOnRirundhEnE *",
@@ -65,7 +65,7 @@ window.mergeLanguageTexts = function () {
       8: "thokkilanguyARellAm * parandhOdi * thodukadalE pukkanRip puRam niRka * mAttAdha maRRavai pOl * mikkilangu mugilniRaththAy! * viththuvakkOttammA! * un pukkilangu sIrallAl * pukkilan kAN puNNiyanE! *",
       9: "ninnaiyE thAn vENdi * nILselvam vENdAdhAn thannaiyE * thAn vENdum * selvam pOl mAyaththAl * minnaiyE sEr thigiri * viththuvakkOttammA! * ninnaiyE thAn vENdi * niRpan adiyEnE *",
       10: "viththuvakkOttammA! * nI vENdAyE Ayidinum * maRRArum paRRillEn enRu * avanaith thAL nayandha * koRRavEl thAnaik * kulasEkaran sonna * naRRamizh paththum vallAr * naNNAr naragamE *",
-      11: "adivaravu: *"
+      11: "adivaravu: tharu kaNdAr mIn vALAl vengaN sendhazhal eththanai thokku ninnaiyE viththuvakkOttammA*"
     },
     'PMT.6.steps': {
       1: "Ermalarp pUnguzhal Ayar mAdhar * enaip palar uLLa ivvUril * undhan mArvu thazhuvudhaRku Asaiyinmai * aRindhaRindhE undhan poyyaik kEttu * kUrmazhai pOl panikkUdhal eydhik * kUsi nadungi yamunai ARRil * vArmaNal kunRil pulara ninREn * vAsudhEvA! un varavu pArththE *",
