@@ -31,7 +31,7 @@ const CONFIG = {
         getMarkerPath: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
             // ONLY Chapters 1 and 6 house timeline markers
-            if (chapter === 1 || chapter === 6) {
+            if (chapter >= 1 && chapter <= 6) {
                 return 'markers/marker_pmt_timelines.js';
             }
             return null; // No timeline markers available for other chapters
@@ -39,7 +39,7 @@ const CONFIG = {
         getLanguagePath: (num, langCode) => {
             const chapter = parseInt(num.split('.')[0], 10);
             // ONLY map text assets if the chapter contains an underlying timeline track
-            if (chapter === 1 || chapter === 6) {
+            if (chapter >= 1 && chapter <= 6) {
                 return `markers/marker_pmt_${langCode}.js`;
             }
             return null;
@@ -60,19 +60,17 @@ const CONFIG = {
         hasSub: false, maxCh: 14, defPas: 10, ex: {},
         getMarkerPath: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter === 4) {
+            if (chapter === 4 || chapter === 1) {
                 return 'markers/marker_nat_timelines.js';
             }
             return null;
         },
         getLanguagePath: (num, langCode) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter === 4) {
+            if (chapter === 4 || chapter === 1) {
                 return `markers/marker_nat_${langCode}.js`;
             }
-            if (chapter === 1) {
-                return `markers/marker_nat_${langCode}.js`;
-            }
+
             return null;
         },
         getAudioSrc: (num) => {
