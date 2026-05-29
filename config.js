@@ -27,7 +27,7 @@ const CONFIG = {
     },
     'PMT': {
         structure: 'chapter_pasuram',
-        hasSub: false, maxCh: 10, defPas: 10, ex: {},
+        hasSub: false,minCh: 1, maxCh: 10, defPas: 10, ex: {},
         getMarkerPath: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
             // ONLY Chapters 1 and 6 house timeline markers
@@ -56,16 +56,17 @@ const CONFIG = {
     'NAT': {
         structure: 'chapter_pasuram',
         hasSub: false, maxCh: 14, defPas: 10, ex: {},
+        minCh: 0, // to support thanian in chapter 0
         getMarkerPath: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter >= 1 && chapter <= 4) {
+            if (chapter >= 0 && chapter <= 4) {
                 return 'markers/marker_nat_timelines.js';
             }
             return null;
         },
         getLanguagePath: (num, langCode) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter >= 1 && chapter <= 4) {
+            if (chapter >= 0 && chapter <= 4) {
                 return `markers/marker_nat_${langCode}.js`;
             }
 
@@ -76,6 +77,7 @@ const CONFIG = {
             if (chapter >= 1 && chapter <= 4) {
                 return `audiofiles/NAT/NAT_${chapter}.ogg`;
             }
+            if (chapter ==0) {return `audiofiles/NAT/NAT_${num}.ogg`}
             return `https://www.uveda.org/media/recitation/NAT.${num}.mp3`;
         }
     },
