@@ -8,11 +8,11 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 10px;
             background-color: #f4f4f9;
         }
 
-        /* Flex layout splits the workspace into balanced side-by-side columns */
+        /* Flex layout splits the workspace into balanced side-by-side columns on desktop */
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -57,6 +57,7 @@
         }
 
         input[type="text"],
+        select,
         textarea {
             width: 100%;
             padding: 8px;
@@ -120,26 +121,27 @@
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             transition: background 0.2s ease;
+            flex-wrap: wrap;
+            /* Allows row contents to break lines on small screens */
+            gap: 4px;
         }
 
         .marker-item input[type="number"] {
-            width: 65px;
-            padding: 4px;
-            margin-right: 6px;
+            width: 60px;
+            padding: 6px 4px;
             text-align: center;
         }
 
         .marker-item input[type="text"] {
             flex-grow: 1;
-            padding: 4px 8px;
-            margin-right: 8px;
+            min-width: 120px;
+            padding: 6px 8px;
         }
 
         .checkbox-label {
             display: flex;
             align-items: center;
             font-size: 12px;
-            margin-right: 8px;
             cursor: pointer;
             user-select: none;
             white-space: nowrap;
@@ -172,6 +174,53 @@
         .normal-phrase {
             color: #212121;
         }
+
+        /* Responsive Mobile Breakpoint Overrides */
+        @media (max-width: 768px) {
+            body {
+                margin: 5px;
+            }
+
+            .container {
+                flex-direction: column;
+                padding: 12px;
+                gap: 15px;
+            }
+
+            .left-panel,
+            .right-panel {
+                min-width: 100%;
+                width: 100%;
+                padding-left: 0;
+                border-left: none;
+            }
+
+            .right-panel {
+                margin-top: 10px;
+                border-top: 1px solid #ddd;
+                padding-top: 20px;
+            }
+
+            .marker-list {
+                max-height: 400px;
+                /* Shorter scroll height balances screen real estate on mobile */
+            }
+
+            .btn {
+                padding: 12px 10px;
+                /* Larger tap targets */
+                font-size: 13px;
+            }
+
+            .marker-item {
+                padding: 10px 6px;
+            }
+
+            .marker-item .btn {
+                padding: 8px 10px;
+                font-size: 12px;
+            }
+        }
     </style>
     <script src="https://www.youtube.com/iframe_api" async></script>
 </head>
@@ -183,24 +232,31 @@
             <h2>Audio Marker Studio</h2>
 
             <div class="form-group"
-                style="display: flex; gap: 10px; background: #f1f3f4; padding: 10px; border-radius: 4px;">
-                <div style="flex: 1;">
+                style="display: flex; gap: 10px; background: #f1f3f4; padding: 10px; border-radius: 4px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 160px;">
                     <label style="font-size:12px;">Audio File Track</label>
-                    <input type="file" accept="audio/*" onchange="loadLocalFile(this)">
+                    <input type="file" accept="audio/*" onchange="loadLocalFile(this)" style="width: 100%;">
                 </div>
-                <div style="flex: 1;">
+                <div style="flex: 1; min-width: 160px;">
                     <label style="font-size:12px;">Text Script File (.txt)</label>
-                    <input type="file" accept=".txt" onchange="loadTextFile(this)">
+                    <input type="file" accept=".txt" onchange="loadTextFile(this)" style="width: 100%;">
                 </div>
             </div>
 
             <div class="form-group" style="margin-top: 10px;">
-                <label for="urlInput">Media Stream URL (Direct Audio Link or YouTube Video Page)</label>
+                <label for="urlInput">GitHub Link, Direct File URL, or YouTube Stream Page</label>
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="urlInput"
-                        placeholder="https://www.youtube.com/watch?v=... or server audio path">
+                        placeholder="Paste GitHub Repository link or specific asset file path...">
                     <button class="btn" onclick="handleURL()">Load</button>
                 </div>
+            </div>
+
+            <div class="form-group" id="chapterSelectorContainer"
+                style="display: none; background: #e3f2fd; padding: 12px; border: 1px solid #90caf9; border-radius: 4px;">
+                <label for="chapterDropdown" style="color: #0d47a1;">Select Chapter / Pasuram Section to
+                    Initialize:</label>
+                <select id="chapterDropdown" onchange="loadSelectedChapter()"></select>
             </div>
 
             <div class="form-group">
@@ -210,13 +266,13 @@
                 </div>
             </div>
 
-            <div class="form-group" style="display: flex; gap: 8px; margin-top: 10px;">
-                <button class="btn" id="recordBtn" style="background-color: #28a745; flex: 1;" disabled
-                    onclick="captureTimestampAtCurrent()">Capture Stamp (M)</button>
-                <button class="btn" style="background-color: #6c757d;" onclick="rewind()">Rewind 2s</button>
-                <button class="btn" style="background-color: #17a2b8;" onclick="distributeTimelineProportionally()">Even
-                    Distribute</button>
-                <button class="btn" style="background-color: #dc3545;" onclick="clearAllState()">Reset</button>
+            <div class="form-group" style="display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap;">
+                <button class="btn" id="recordBtn" style="background-color: #28a745; flex: 1; min-width: 130px;"
+                    disabled onclick="captureTimestampAtCurrent()">Capture Stamp (M)</button>
+                <button class="btn" style="background-color: #6c757d; flex: 1;" onclick="rewind()">Rewind 2s</button>
+                <button class="btn" style="background-color: #17a2b8; flex: 1;"
+                    onclick="distributeTimelineProrally()">Even Distribute</button>
+                <button class="btn" style="background-color: #dc3545; flex: 1;" onclick="clearAllState()">Reset</button>
             </div>
 
             <div class="form-group">
@@ -263,6 +319,11 @@
         let isYouTube = false;
         let detectedDuration = 0;
 
+        // Global Editing Locks and Storage Configuration
+        window.isUserEditingActiveCell = false;
+        window.isTestingSegmentAudio = false;
+        let repoChapterDatabase = {};
+
         let player, markerList, ioJson, livePasuramView;
 
         window.loadLocalFile = function (input) {
@@ -292,6 +353,10 @@
                 localStorage.setItem('asm_saved_text', e.target.value);
             });
 
+            // Event listeners to release segment preview locks on manual tracking interaction
+            player.addEventListener('play', () => { window.isTestingSegmentAudio = false; });
+            player.addEventListener('seeking', () => { window.isTestingSegmentAudio = false; });
+
             const savedText = localStorage.getItem('asm_saved_text');
             const savedUrl = localStorage.getItem('asm_saved_url');
             const savedMarkers = localStorage.getItem('asm_saved_markers');
@@ -299,8 +364,13 @@
             if (savedText) document.getElementById('textGuidedContent').value = savedText;
             if (savedUrl) {
                 document.getElementById('urlInput').value = savedUrl;
-                if (savedUrl.includes('youtube.com') || savedUrl.includes('youtu.be')) setupYouTube(savedUrl);
-                else setupDirectAudio(savedUrl);
+                if (savedUrl.includes('github.com') && !savedUrl.endsWith('.txt') && !savedUrl.endsWith('.ogg') && !savedUrl.endsWith('.mp3')) {
+                    scanGitHubRepositoryFolder(savedUrl, false);
+                } else if (savedUrl.includes('youtube.com') || savedUrl.includes('youtu.be')) {
+                    setupYouTube(savedUrl);
+                } else {
+                    setupDirectAudio(savedUrl);
+                }
             }
             if (savedMarkers) {
                 window.rawMarkers = JSON.parse(savedMarkers);
@@ -324,20 +394,145 @@
                         if (activeRow) {
                             e.preventDefault();
                             const index = parseInt(activeRow.id.replace('item-', ''), 10);
-                            if (!isNaN(index)) {
-                                insertSegmentInBetween(index);
-                            }
+                            if (!isNaN(index)) insertSegmentInBetween(index);
                         }
                     }
                 });
             }
         });
 
+        // MASTER ENGINE: Dynamic Link Router & GitHub API Normalizer
         function handleURL() {
-            const url = document.getElementById('urlInput').value.trim();
+            let url = document.getElementById('urlInput').value.trim();
+            if (!url) return;
+
+            // Route A: Is user target an implicit repository folder structural layout overview?
+            if (url.includes('github.com') && !url.endsWith('.txt') && !url.endsWith('.ogg') && !url.endsWith('.mp3') && !url.includes('/blob/')) {
+                scanGitHubRepositoryFolder(url, true);
+                return;
+            }
+
+            // Route B: Handle standard single file layout rewrites
+            if (url.includes('github.com') && url.includes('/blob/')) {
+                url = url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+                document.getElementById('urlInput').value = url;
+            }
+
             localStorage.setItem('asm_saved_url', url);
-            if (url.includes('youtube.com') || url.includes('youtu.be')) setupYouTube(url);
-            else setupDirectAudio(url);
+
+            if (url.toLowerCase().endsWith('.txt')) {
+                fetchTextScriptFromWeb(url);
+            } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                setupYouTube(url);
+            } else {
+                setupDirectAudio(url);
+            }
+        }
+
+        // AUTOMATED CHAPTER PAIR EXTRACTION VIA THE GITHUB API 
+        async function scanGitHubRepositoryFolder(repoUrl, alertUser = true) {
+            try {
+                let cleanPath = repoUrl.replace('https://github.com/', '');
+                let parts = cleanPath.split('/');
+                let user = parts[0];
+                let repo = parts[1];
+
+                let branch = "main";
+                let folderPath = "";
+
+                if (parts[2] === "tree" || parts[2] === "blob") {
+                    branch = parts[3];
+                    folderPath = parts.slice(4).join('/');
+                } else {
+                    folderPath = parts.slice(2).join('/');
+                }
+
+                let apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/${folderPath}?ref=${branch}`;
+
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error("Could not parse repository folder layout via GitHub API.");
+
+                const items = await response.json();
+                repoChapterDatabase = {};
+
+                // Loop and associate asset components based on identical key prefixes (e.g. "NAT_2")
+                items.forEach(item => {
+                    let name = item.name;
+                    let lastDot = name.lastIndexOf('.');
+                    if (lastDot === -1) return;
+
+                    let key = name.substring(0, lastDot);
+                    let ext = name.substring(lastDot).toLowerCase();
+
+                    if (!key) return;
+
+                    if (!repoChapterDatabase[key]) {
+                        repoChapterDatabase[key] = { audio: null, text: null, label: key };
+                    }
+
+                    if (ext === '.ogg' || ext === '.mp3' || ext === '.wav') {
+                        repoChapterDatabase[key].audio = item.download_url;
+                    } else if (ext === '.txt' || ext === '.js') {
+                        repoChapterDatabase[key].text = item.download_url;
+                    }
+                });
+
+                const keys = Object.keys(repoChapterDatabase).filter(k => repoChapterDatabase[k].audio || repoChapterDatabase[k].text);
+
+                if (keys.length === 0) {
+                    if (alertUser) alert("No matching audio track/text bundle script file pairs mapped inside this folder view.");
+                    return;
+                }
+
+                const dropdown = document.getElementById('chapterDropdown');
+                dropdown.innerHTML = '<option value="">-- Choose Chapter/Pasuram Tracking Node --</option>';
+
+                keys.sort().forEach(k => {
+                    dropdown.innerHTML += `<option value="${k}">${k} (${repoChapterDatabase[k].audio ? 'Audio ✓' : 'No Audio'} | ${repoChapterDatabase[k].text ? 'Text ✓' : 'No Text'})</option>`;
+                });
+
+                document.getElementById('chapterSelectorContainer').style.display = 'block';
+                localStorage.setItem('asm_saved_url', repoUrl);
+
+                if (alertUser) alert(`Discovered ${keys.length} parseable track chapters! Please make a choice inside the dropdown menu.`);
+
+            } catch (err) {
+                console.error(err);
+                if (alertUser) alert("Directory Scan Failed.\nDetails: " + err.message);
+            }
+        }
+
+        // DISPATCH SELECTED CHAPTER ASSETS TO RUNTIME ENGINE
+        function loadSelectedChapter() {
+            const key = document.getElementById('chapterDropdown').value;
+            if (!key || !repoChapterDatabase[key]) return;
+
+            const chapter = repoChapterDatabase[key];
+            currentFileName = key;
+
+            if (chapter.audio) {
+                setupDirectAudio(chapter.audio);
+            } else {
+                alert("⚠️ No companion streaming audio track discovered for this chapter node element.");
+            }
+
+            if (chapter.text) {
+                fetchTextScriptFromWeb(chapter.text);
+            }
+        }
+
+        async function fetchTextScriptFromWeb(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP network error status: ${response.status}`);
+                const text = await response.text();
+
+                document.getElementById('textGuidedContent').value = text;
+                localStorage.setItem('asm_saved_text', text);
+                parseTextToMutableState();
+            } catch (err) {
+                alert("Failed to retrieve text content stream: " + err.message);
+            }
         }
 
         function setupYouTube(url) {
@@ -358,7 +553,10 @@
         }
 
         function setupDirectAudio(url) {
-            isYouTube = false; currentFileName = url.split('/').pop().split('.')[0] || "audio_track";
+            isYouTube = false;
+            if (!currentFileName || currentFileName === "audio_data") {
+                currentFileName = url.split('/').pop().split('.')[0] || "audio_track";
+            }
             document.getElementById('yt-container').style.display = 'none'; player.style.display = 'block';
             player.src = url; player.load();
             document.getElementById('recordBtn').disabled = false;
@@ -441,7 +639,6 @@
                 const nextRow = document.getElementById(`item-${index + 1}`);
                 if (nextRow) {
                     const txtInput = nextRow.querySelector('input[type="text"]');
-                    // FIXED: Use preventScroll options flags to avoid abrupt container jumps
                     if (txtInput) txtInput.focus({ preventScroll: true });
                     highlightUIRow(index + 1);
                 }
@@ -458,15 +655,12 @@
 
             if (index > 0) {
                 window.rawMarkers[index - 1].end = removedSegment.end;
-                if (removedSegment.forceEndBlock) {
-                    window.rawMarkers[index - 1].forceEndBlock = true;
-                }
+                if (removedSegment.forceEndBlock) window.rawMarkers[index - 1].forceEndBlock = true;
             } else if (window.rawMarkers[index + 1]) {
                 window.rawMarkers[index + 1].start = removedSegment.start;
             }
 
             window.rawMarkers.splice(index, 1);
-
             renderInteractiveGrid(true);
             serializeStateToJS();
 
@@ -475,14 +669,13 @@
                 const targetRow = document.getElementById(`item-${focusTargetIndex}`);
                 if (targetRow) {
                     const txtInput = targetRow.querySelector('input[type="text"]');
-                    // FIXED: Prevent browser's native jarring scrolling jumps during focus updates
                     if (txtInput) txtInput.focus({ preventScroll: true });
                     highlightUIRow(focusTargetIndex);
                 }
             }, 50);
         }
 
-        function distributeTimelineProportionally() {
+        function distributeTimelineProrally() {
             if (window.rawMarkers.length === 0) return;
             let totalDuration = detectedDuration || 300;
             let step = totalDuration / window.rawMarkers.length;
@@ -614,16 +807,27 @@
             markerList.innerHTML = window.rawMarkers.map((m, i) => {
                 return `
             <div class="marker-item" id="item-${i}">
-                <span style="font-weight:bold; margin-right:8px; min-width:25px;">#${i + 1}</span>
-                <input type="number" step="0.1" value="${m.start}" oninput="updateStateTime(${i}, 'start', this.value)">
-                <input type="number" step="0.1" value="${m.end}" oninput="updateStateTime(${i}, 'end', this.value)">
-                <input type="text" value="${m.text.replace(/"/g, '&quot;')}" oninput="updateStateText(${i}, this.value)">
+                <span style="font-weight:bold; margin-right:4px; min-width:25px; font-size:12px;">#${i + 1}</span>
+                <input type="number" step="0.1" value="${m.start}" 
+                       onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
+                       onblur="window.isUserEditingActiveCell = false;" 
+                       oninput="updateStateTime(${i}, 'start', this.value)">
+                <input type="number" step="0.1" value="${m.end}" 
+                       onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
+                       onblur="window.isUserEditingActiveCell = false;" 
+                       oninput="updateStateTime(${i}, 'end', this.value)">
+                <input type="text" value="${m.text.replace(/"/g, '&quot;')}" 
+                       onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
+                       onblur="window.isUserEditingActiveCell = false;" 
+                       oninput="updateStateText(${i}, this.value)">
                 <label class="checkbox-label">
                     <input type="checkbox" ${m.forceEndBlock ? 'checked' : ''} onchange="toggleStateBoundary(${i}, this.checked)"> Break
                 </label>
-                <button class="btn" style="padding: 4px 8px; font-size: 11px; margin-right:3px;" onclick="snapToCurrentPlayback(${i})">Snap</button>
-                <button class="btn" style="padding: 4px 8px; font-size: 11px; background-color: #28a745; margin-right:5px;" onclick="testSegmentAudio(${i})">▶</button>
-                <button class="btn" style="padding: 4px 8px; font-size: 11px; background-color: #dc3545;" onclick="deleteSegment(${i})" title="Delete Segment">×</button>
+                <div style="display:flex; gap:3px; margin-left:auto;">
+                    <button class="btn" style="padding: 6px 8px; font-size: 11px;" onclick="snapToCurrentPlayback(${i})">Snap</button>
+                    <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #28a745;" onclick="testSegmentAudio(${i})">▶</button>
+                    <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #dc3545;" onclick="deleteSegment(${i})" title="Delete Segment">×</button>
+                </div>
             </div>`;
             }).join('');
 
@@ -638,7 +842,11 @@
             const start = marker.start;
             const end = marker.end;
 
+            // Set segment preview lock so background scroll listeners ignore automatic advancement highlights
+            window.isTestingSegmentAudio = true;
+            currentHighlightIndex = targetId;
             highlightUIRow(targetId);
+
             if (isYouTube) { ytPlayer.seekTo(start); ytPlayer.playVideo(); }
             else { player.currentTime = start; player.play(); }
 
@@ -656,26 +864,33 @@
         }
 
         function highlightUIRow(index) {
+            // 1. Reset backgrounds across all tracking rows
             document.querySelectorAll('.marker-item').forEach(el => el.style.background = '#f9f9f9');
+
             let targetRow = document.getElementById(`item-${index}`);
             if (targetRow) {
+                // 2. Highlight the active focus target segment row
                 targetRow.style.background = '#e1f5fe';
 
+                // 3. DYNAMIC SCROLL CENTER COGNITION
+                // Calculate the physical mid-point of the container viewport window
                 const containerHeight = markerList.clientHeight;
-                const elementTop = targetRow.offsetTop;
-                const currentScroll = markerList.scrollTop;
+                const rowTopWithinContainer = targetRow.offsetTop - markerList.offsetTop;
+                const rowHeight = targetRow.offsetHeight;
 
-                if ((elementTop - currentScroll) > (containerHeight - 60) || (elementTop - currentScroll) < 20) {
-                    markerList.scrollTo({
-                        top: elementTop - (containerHeight / 2.5),
-                        behavior: 'smooth'
-                    });
+                // Position target row exactly centered. This naturally forces the 
+                // previous segment element directly above it, safe from being hidden.
+                const perfectCenterScrollPosition = rowTopWithinContainer - (containerHeight / 2) + (rowHeight / 2);
+
+                if (index < 1) {
+                    // Edge case: Keep top anchors neat for segment #1
+                    markerList.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    markerList.scrollTo({ top: perfectCenterScrollPosition, behavior: 'smooth' });
                 }
             }
             renderPasuramReaderPanel(index);
         }
-
-
 
         function serializeStateToJS() {
             if (!ioJson || window.rawMarkers.length === 0) return;
@@ -691,8 +906,7 @@
 
                 if (s.forceEndBlock || i === window.rawMarkers.length - 1) {
                     let step1 = activeGroup.map(seg => [parseFloat(seg.start.toFixed(1)), parseFloat(seg.end.toFixed(1))]);
-                    let step2 = [];
-                    let step3 = [];
+                    let step2 = []; let step3 = [];
 
                     let pinNadiIndex = activeGroup.findIndex(seg => seg.text.trim().startsWith('**'));
 
@@ -709,16 +923,12 @@
                         }
                     }
 
-                    // 1. Build the Timeline Block (without the explicit text string)
                     timelineBlocks.push({
                         p: currentPasuramIndex,
-                        step1: step1,
-                        step2: step2,
-                        step3: step3,
+                        step1: step1, step2: step2, step3: step3,
                         step4: [parseFloat(activeGroup[0].start.toFixed(1)), parseFloat(activeGroup[activeGroup.length - 1].end.toFixed(1))]
                     });
 
-                    // 2. Build the Text Block String with proper marker delineations (* and ***)
                     let combinedPhrases = [];
                     for (let phraseIdx = 0; phraseIdx < activeGroup.length; phraseIdx++) {
                         let currentPhraseText = activeGroup[phraseIdx].text.trim();
@@ -729,7 +939,6 @@
                         combinedPhrases.push(currentPhraseText);
                     }
 
-                    // Append a trailing ' *' to match your storage schema requirements
                     textBlocks[currentPasuramIndex] = combinedPhrases.join(' ') + ' *';
 
                     currentPasuramIndex++;
@@ -737,21 +946,18 @@
                 }
             }
 
-            // Format output string for the Map/Timeline configuration file
             let timelineLines = timelineBlocks.map(b => `  { "p": ${b.p}, "step1": ${JSON.stringify(b.step1)}, "step2": ${JSON.stringify(b.step2)}, "step3": ${JSON.stringify(b.step3)}, "step4": ${JSON.stringify(b.step4)} }`);
             let timelineOutput = `'${currentFileName}.steps' : [\n${timelineLines.join(",\n")}\n],`;
 
-            // Format output string for the Text Bundle dictionary file (matching marker_nat_ta.js structure)
             let textLines = Object.keys(textBlocks).map(pKey => `    ${pKey}: ${JSON.stringify(textBlocks[pKey])}`);
             let textOutput = `'${currentFileName}.texts' : {\n${textLines.join(",\n")}\n},`;
 
-            // Print both cleanly split outputs into the existing Textarea display container
             ioJson.value = `// ==========================================\n` +
                 `// FILE 1: TIMELINE CONFIGURATIONS (.js / .json)\n` +
                 `// ==========================================\n` +
                 `${timelineOutput}\n\n` +
                 `// ==========================================\n` +
-                `// FILE 2: TEXT DICTIONARY BUNDLE (e.g., text_bundle_ta)\n` +
+                `// FILE 2: TEXT DICTIONARY BUNDLE\n` +
                 `// ==========================================\n` +
                 `${textOutput}`;
 
@@ -802,8 +1008,7 @@
                     const timelines = block.step1 || [];
 
                     for (let i = 0; i < phrases.length; i++) {
-                        let startTime = 0;
-                        let endTime = 0;
+                        let startTime = 0, endTime = 0;
 
                         if (timelines[i]) {
                             startTime = parseFloat(parseFloat(timelines[i][0]).toFixed(1));
@@ -838,7 +1043,9 @@
             const monitor = () => {
                 let curr = isYouTube ? (ytPlayer ? ytPlayer.getCurrentTime() : 0) : (player ? player.currentTime : 0);
                 let idx = window.rawMarkers.findIndex(m => curr >= m.start && curr < m.end);
-                if (idx !== -1 && idx !== currentHighlightIndex) {
+
+                // Only fire layout highlight/auto-scroll adjustments if cell input editing and test-preview cycles are quiet
+                if (idx !== -1 && idx !== currentHighlightIndex && !window.isUserEditingActiveCell && !window.isTestingSegmentAudio) {
                     currentHighlightIndex = idx;
                     highlightUIRow(idx);
                 }
@@ -857,6 +1064,7 @@
                 localStorage.removeItem('asm_saved_url');
                 document.getElementById('textGuidedContent').value = '';
                 document.getElementById('urlInput').value = '';
+                document.getElementById('chapterSelectorContainer').style.display = 'none';
                 renderInteractiveGrid(true);
                 serializeStateToJS();
             }
