@@ -15,14 +15,14 @@ const CONFIG = {
         structure: 'chapter_sub_pasuram',
         hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, ex: { '2.7': 13 },
         getMarkerPath: () => 'markers/marker_tvm_timeline.js',
-        getLanguagePath: () => null,
+        //getLanguagePath: () => null, - don't define as null. it causing a crash and prevents loading of the audiosrc
         getAudioSrc: (num) => `https://www.uveda.org/media/recitation/TVM.${num}.mp3`
     },
     'PT': {
         structure: 'chapter_sub_pasuram',
         hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, ex: {},
         getMarkerPath: () => 'markers/marker_pt_timelines.js',
-        getLanguagePath: () => null,
+        //getLanguagePath: () => null,
         getAudioSrc: (num) => `https://www.uveda.org/media/recitation/PT.${num}.mp3`
     },
     'PMT': {
