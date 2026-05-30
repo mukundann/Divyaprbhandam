@@ -25,9 +25,10 @@ const CONFIG = {
         //getLanguagePath: () => null,
         getAudioSrc: (num) => `https://www.uveda.org/media/recitation/PT.${num}.mp3`
     },
+
     'PMT': {
         structure: 'chapter_pasuram',
-        hasSub: false,minCh: 1, maxCh: 10, defPas: 10, ex: {},
+        hasSub: false, minCh: 1, maxCh: 10, defPas: 10, ex: {},
         getMarkerPath: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
             // ONLY Chapters 1 and 6 house timeline markers
@@ -77,7 +78,7 @@ const CONFIG = {
             if (chapter >= 1 && chapter <= 4) {
                 return `audiofiles/NAT/NAT_${chapter}.ogg`;
             }
-            if (chapter ==0) {return `audiofiles/NAT/NAT_${num}.ogg`}
+            if (chapter == 0) { return `audiofiles/NAT/NAT_${num}.ogg` }
             return `https://www.uveda.org/media/recitation/NAT.${num}.mp3`;
         }
     },
@@ -94,7 +95,14 @@ const CONFIG = {
             if (endGroup > 108) endGroup = 108;
             return `audiofiles/RN/rn_${startGroup}_${endGroup}.ogg`;
         }
-    }
+    },
+    'MUT': {
+        structure: 'flat_pasuram',
+        hasSub: false, maxPas: 100,
+        getMarkerPath: () => 'markers/marker_mut_timeline.js',
+        getLanguagePath: () => (num, langCode) => `markers/marker_mut_${langCode}.js`,
+        getAudioSrc: (num) => `https://www.uveda.org/media/recitation/MUT.${num}.mp3`
+    },
 };
 
 /**
