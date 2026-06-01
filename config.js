@@ -105,7 +105,7 @@ const CONFIG = {
     },
     'TPE': {
         structure: 'chapter_pasuram',
-        hasSub: false, minCh: 1, maxCh: 1, defPas: 10, ex: {},
+        hasSub: false, minCh: 0, maxCh: 1, defPas: 10, ex: {'0':2},
         getMarkerPath: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
 
