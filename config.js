@@ -103,6 +103,29 @@ const CONFIG = {
         getLanguagePath: () => (num, langCode) => `markers/marker_mut_${langCode}.js`,
         getAudioSrc: (num) => `https://www.uveda.org/media/recitation/MUT.${num}.mp3`
     },
+    'TPE': {
+        structure: 'chapter_pasuram',
+        hasSub: false, minCh: 1, maxCh: 1, defPas: 10, ex: {},
+        getMarkerPath: (num) => {
+            const chapter = parseInt(num.split('.')[0], 10);
+
+            return 'markers/marker_tpe_timelines.js';
+
+        },
+        getLanguagePath: (num, langCode) => {
+            const chapter = parseInt(num.split('.')[0], 10);
+            // ONLY map text assets if the chapter contains an underlying timeline track
+
+            return `markers/marker_tpe_${langCode}.js`;
+
+        },
+        getAudioSrc: (num) => {
+            const chapter = parseInt(num.split('.')[0], 10);
+
+            return `audiofiles/TPE/TPE.${chapter}.ogg`;
+
+        }
+    },
 };
 
 /**
