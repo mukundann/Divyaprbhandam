@@ -1,4 +1,23 @@
 window.MARKER_DATABASE = window.MARKER_DATABASE || {};
+window.MARKER_DATABASE['TPE.0.steps'] = [
+  {
+    "p": 1,
+    "step1": [[0, 3.4], [3.4, 7.4], [7.4, 11.5], [11.5, 15.6]],
+    "step2": [[0, 7.4], [7.4, 15.6]],
+    "step3": [[0, 15.6]],
+    "step4": [0, 15.6]
+  },
+  {
+    "p": 2,
+    "step1": [[15.6, 19.9], [19.9, 23.2], [23.2, 27.4], [27.4, 31.5]],
+    "step2": [[15.6, 23.2], [23.2, 31.5]],
+    "step3": [[15.6, 31.5]],
+    "step4": [15.6, 31.5]
+  }
+];
+
+
+
 window.MARKER_DATABASE['TPE.1.steps'] = [
   {
     "p": 1,
