@@ -316,15 +316,39 @@ function resetToStart() {
     safeStopAudio();
     resetLineTracking();
     const pre = document.getElementById('prefix').value;
+    const c = CONFIG[pre];
 
-    if (pre === "PMT") {
-        document.getElementById('number').value = "5.1";
-    } else if (pre === "RN") {
-        document.getElementById('number').value = "1"; // Flat value placeholder
+    // Safe fallback value if configuration context is entirely missing
+    let initialValue = "1.1";
+
+    if (c) {
+        // 1. Determine the starting chapter baseline dynamically (defaulting to 1 if minCh is absent)
+        const startingChapter = (typeof c.minCh !== 'undefined') ? c.minCh : 1;
+
+        // 2. Format the layout coordinate output based on structural rules
+        switch (c.structure) {
+            case 'flat_pasuram':
+                initialValue = "1";
+                break;
+
+            case 'chapter_pasuram':
+                // Dynamically tracks the minCh entry point (e.g., "0.1" for RN, "1.1" for others)
+                initialValue = `${startingChapter}.1`;
+                break;
+
+            case 'chapter_sub_pasuram':
+                initialValue = `${startingChapter}.1.1`;
+                break;
+
+            default:
+                // Fallback catch for safety using the old logical check
+                initialValue = c.hasSub ? "1.1.1" : "1.1";
+                break;
+        }
     }
-    else {
-        document.getElementById('number').value = CONFIG[pre].hasSub ? "1.1.1" : "1.1";
-    }
+
+    // Update the UI label dynamically from the configuration evaluation
+    document.getElementById('number').value = initialValue;
 
     const displayPanel = document.getElementById('pasuramDisplay');
     if (displayPanel) {
