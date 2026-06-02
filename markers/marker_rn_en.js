@@ -2,7 +2,7 @@ window.MARKER_DATABASE = window.MARKER_DATABASE || {};
 // Global function to trigger the merge on-demand
 window.mergeLanguageTexts = function () {
   const text_bundle_en = {
-    'RN.steps': {
+    'RN.1.steps': {
       1: "*pU mannu mAdhu porundhiya mArban * pugazh malindha pA mannu mARan * adi paNindhu uyndhavan *** pal kalaiyOr thAm manna vandha irAmAnusan * saraNAravindham nAm manni vAzha * nenjE solluvOm avan nAmangLE *",
       2: "*kaL Ar pozhil thennarangan * kamalap padhangaL nenjil koLLA * manisarai nIngi *** kuRaiyal pirAn adikkIzh viLLadha anban irAmAnusan * mikka seelam allAl uLLAdhu en nenju * onRu aRIyEn enakkuRRa pEriyalvE *",
       3: "pEr iyal nenjE! * adi paNindhEn unnai * pEyp piRavip pUriyarOdu uLLa * suRRam pularththi *** poruvu arum sIr Ariyan semmai irAmAnusa munikku anbu seyyum * sIRiya pERu udaiyAr * adikkIzh ennaich chErththadhaRkE *",
