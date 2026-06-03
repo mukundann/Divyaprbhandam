@@ -2,20 +2,23 @@ window.MARKER_DATABASE = window.MARKER_DATABASE || {};
 window.mergeLanguageTexts = function () {
     const text_bundle_en = {
         'TPL.0.steps': {
-            1: "thirumalayaNdAn arLich cheytha : thamEva mathvA paravAsudhEvam * rangESayam rAjavadharhaNIyam *** prAbOdhikIm yOkrutha sUkthimAlAm * bhakthAngrirENum bhagavanthamIdE * ",
-            2: "thiruvarangapperumALarayar arLich cheytha : maNdangudi enbar mAmaRaiyOr * manniyasIrth thoNdaradippodi thonnagaram *** vaNdu thiNarththavayal thennarangaththammAnaip * paLLiyuNarththum pirAnudhiththa Ur * ",
+            1: "nAthamunigaL arLich cheytha : gurumukamanadhIthya * prAha vEdhAN asEshAn * narapathiparikluptham * sulkam AdhAthu kAma: *** svasuram amaravandhyam * ranganAthasya sAkshAth * dhvijakulathilakam tham * vishNuchiththam namAmi * ",
+            2: "pANDiya baTTar arLich cheytha : minnAr thadamathiLchUzh * villipuththUr enRorukAl * chonnAr kazhaRkamalam chUdinOm *** munnAL kizhiyaRuththAn enRuraiththOm * kIzhmayiniR chErum * vazhiyaRuththOm nenjamE vaNth * ",
+            3: "pANDiya baTTar arLich cheytha : pANdiyan koNdAdap * pattarpirAn vanthAnenRu * INdiya changameduththUtha *** vENdiya vEdhangaLOdhi * virainthu kizhiyaRuththAn * pAthangaL * yAmudaiya paRRu * ",
         },
         'TPL.1.steps': {
-            1: "kathiravan guNadhisaich chikaram vandhaNainthAn * kana iruL aganRathu kAlai am pozhuthAy * madhuvirinthu ozhugina mAmalar ellAm * vanavar arasargaL vandhu vandhu INdi *** ethirdhisai niRainthanar ivarodum pugundha * irungaLiRRu Ittamum pidiyodu murasum * adhirthalil alaikadal pOnruLudhu * engum arangaththammA paLLi ezhundhu aruLAyE *",
-            2: "kozhungodi mullaiyin kozhu malaraNavik * kUrnthathu guNadhisai mArutham ithuvO * ezhundhana malaraNaip paLLikoL annam * Inpani nanaintha thamirum chiRagudhaRi *** vizhungiya mudhaliyin pilamburai pEzhvAy * veLLeyiRu uRavathan vidaththinukkku anungi * azhungiya Anaiyin arunthuyar keduththa * arangaththammA paLLi ezhundhu aruLAyE *",
-            3: "sudaroLi paranthana sUzhdhisai ellAm * thunniya thArakai minnoLi surungip * padaroLi pasuththanan panimadhi ivanO * pAyiruL aganRathu paimpozhil kamugin *** madalidaik kIRi vaNpALaigaL nARa * vaikaRai kUrnthathu mArutham ithuvO * adaloLi thigazhtharu thigiRiyan thadakkai * arangaththammA paLLi ezhundhu aruLAyE *",
-            4: "mEttiLa mEdhigaL thaLai vidum AyargaL * vEynguzhal Osaiyum vidaimaNik kuralum * Ittiya visaidhisai parandhana vayaluL * irinthana surumbinam ilangaiyar kulaththai *** vAttiya varisilai vanavarERE * mAmuni vELviyaik kAththu * avabiratham Attiya adu thiRal ayOththi emmarasE * arangaththammA paLLi ezhundhu aruLAyE *",
-            5: "pulambina putkaLum pUmpozhilgaLin vAy * pOyiRRuk kangul pugunthathu pulari * kalanthathu guNadhisai kanaikadal aravam * kaLivaNdu mizhaRRiya kalambagam punaintha *** alangalan thodaiyal koNdu adiyiNai paNivAn * amarargaL pugunthanar Adhalil ammA * ilangaiiyarkOn vazhipAdu sey kOyil * emperumAn paLLi ezhundhu aruLAyE *",
-            6: "iraviyar maNi nedum thErodum ivarO * iRaiyavar padhinoru vidaiyarum ivarO * maruviya mayilinan aRumugan ivanO * marutharum vasukkaLum vandhu vandhu INdi *** puraviyOdu Adalum pAdalaum thErum * kumara thaNdam pugundhu Indiya veLLam * aruvarai anaiya nin kOyil mun ivarO * arangaththammA paLLi ezhundhu aruLAyE *",
-            7: "antharatthu amararagaL kUttangaL ivaiyO * arunthava munivarum marutharum ivarO * indhiran Anaiyum thAnum vandhivanO * emperumAn una kOyilin vAsal *** sundharar nerukka vichchAdharar nUkka * iyakkarum mayanginar thiruvadi thozhuvAn * antharam pAr idamillai maRRidhuvO * arangaththammA paLLi ezhundhu aruLAyE *",
-            8: "vambavizh vAnavar vAyuRai vazhanga * mAnidhi kapilai oN kaNNAdi mudhalA * emperumAn padimaikkalam kANdaRku ERpanavAyina * koNdu nal munivar *** thumburu nAradhar pugundhanar ivarO * thOnRinan iraviyum thulangoLi parappi * ambara thalaththil ninRu agalginRathu iruLpOy * arangaththammA paLLi ezhundhu aruLAyE *",
-            9: "Ethamil thaNNumai ekkam maththaLi * yAzh kuzhal muazhavamOdu isai dhisai kezhumik * kIthangaL pAdinar kinnarar kerudargaL * kadharuvar avar kanguluLellAm *** mAthavar vAnavar chAraNar iyakkar * siththarum manginar thiruvadi thozhuvAn * Athalil avarkku nALOlakkam aruLa * arangaththammA paLLi ezhundhu aruLAyE *",
-            10: "kadimalark kamalangal malarnthana ivaiyO * kathiravan kanaikadal muLaiththanan ivanO * thudi idaiyAr suri kuzhal pizhinthu udharith * thugiluduththu ERinar sUzhpunal arangA *** thodai oththa thuLavamum kUdaiyum polindhu * thOnRiya thOL thoNdaradippodi ennum * adiyanai aLiyan enRu aruLi un adiyArkku * AtpaduththAy paLLi ezhuntharuLAyE *",
+            1: "pallANdu pallANdu pallAyiraththANdu * palakOti nURayiram *** mallANda thiNthOL maNivaNNA * un chEvadi chevvith thirukkAppu * ",
+            2: "adiyOmOdum ninnOdum pirivinRi Ayiram pallANdu * vadivAy nin valamArbinil vAzhkinRa mangaiyum pallANdu *** vadivAr chOthi valaththuRaiyum chudarAzhiyum pallANdu * padaipOr pukku muzhangum appAnjasanniyamum pallANdE * ",
+            3: "vAzhAtpattu ninRIruLLIrEl vanthu maNNum maNamum koNmin * kUzhAtpattu ninRIrkaLai engaL kuzhuvinil puguthalottOm *** EzhAtkAlum pazhippilOm nAngaL irAkkathar vAzh ilangai * pAzhALAgap padai poruthAnukkup pallAnNdu kURuthumE * ",
+            4: "Edu nilaththil iduvathan munnam vaNthu engaL kuzhAm pugunthu * kUdu manam udaiyIrgaL varambozhi vanthollaik kUduminO *** nAdu nagaramum nangaRiya namO nArAyaNAya enRu * pAdu manam udaip paththar uLLIr vanthu pallANdu kURuminE * ",
+            5: "aNdak kulaththukku adhipathiyAgi asurar irAkkatharai * iNdak kulaththai eduththuk kaLaintha irudIkEsan thanakku *** thoNdak kulaththiluLLIr vanthu adithozhuthu Ayira nAmam chollip * pAndaik kulaiththaith thavirnthu pallANdu pallAyiraththANdu enminE * ",
+            6: "enthai thanthai thanthai thanthai tham mUththappan Ezh padikAl thodangi * vanthu vazhi vazhi AL cheyginROm *** thiruvONath thiruvizhavil anthiyam pOthil ari uruvAgi ariyai azhiththavanaip * panthanai thIrap pallANdu pallAyiraththANdu enRu pAduthumE * ",
+            7: "thIyil poliginRa senjudarAzhi thigazh thiruchchakkaraththin * kOyil poRiyAlE oRRuNdu ninRu kudi kudi AL seyginROm *** mAyap poru padai vANanai Ayiram thOLum pozhi kurudhi pAya * suzhaRRiya Azhi vallAnukkup pallANdu kURuthumE * ",
+            8: "neyyidai nallathOr sORum niyathamum aththANich chEvakamum * kai adaikkAyum kazhuththukkup pUNodu kAthukkuk kuNdalamum *** meyyida nallathOr sAnthamum thanthu ennai veLLuyirAkka valla * paiyudai nAgap pagaik kodiyAnukkup pallANdu kURuvanE * ",
+            9: "uduththuk kaLaintha nin pIthaga Adai uduththuk kalaththathu uNdu * thoduththa thuzhAy malar sUdik kaLainthana sUdum ith thoNdargaLOm *** viduththa thisaik karumam thiruththith thiruvONath thiruvizhavil * paduththa pain nAgaNaip paLLi koNdAnukkup pallANdu kURuthumE * ",
+            10: "ennAL emperumAn un thanakku adiyOmenRu ezhuththuppatta annALE * adiyOngaL adik kudil vIdu peRRu uynthathu kAN *** sennAL thORRith thiru mathuraiyuL silai kuniththu * ainthalaiya pain nAgath thalaip pAynthavanE unnaip pallANdu kURuthumE * ",
+            11: "al vazhakku onRum illA aNi kOttiyar kOn abhimAna thungan * selvanaip pOlath thirumAlE nAnum unakkup pazha adiyEn *** nal vagaiyAl namO nArAyaNA enRu nAmam pala paravip * pal vagaiyAlum paviththiranE unnaip pallANdu kURuvanE * ",
+            12: "pallANdu enRu paviththiranaip paramEttiyaich chArngam ennum * villANdAn thannai villipuththUr vittuchiththan virumbiya sol *** nallANdu enRu navinRu uraippAr namO nArAyaNAya enRu * pallANdum paramAthmanich chUzhnthu irunthu Eththuvar pallANdE * "
         },
     };
 
@@ -30,3 +33,6 @@ window.mergeLanguageTexts = function () {
         }
     }
 };
+
+
+
