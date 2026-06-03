@@ -89,7 +89,7 @@ const CONFIG = {
         minCh: 0,
         maxCh: 1,
         defPas: 108,
-        ex: { '0': 3 }, 
+        ex: { '0': 3 },
 
         getMarkerPath: (num) => {
             return 'markers/marker_rn_timelines.js';
@@ -151,6 +151,29 @@ const CONFIG = {
             const chapter = parseInt(num.split('.')[0], 10);
 
             return `audiofiles/TPE/TPE.${chapter}.ogg`;
+
+        }
+    },
+    'TPL': {
+        structure: 'chapter_pasuram',
+        hasSub: false, minCh: 0, maxCh: 1, defPas: 12, ex: { '0': 3 },
+        getMarkerPath: (num) => {
+            const chapter = parseInt(num.split('.')[0], 10);
+
+            return 'markers/marker_tpl_timelines.js';
+
+        },
+        getLanguagePath: (num, langCode) => {
+            const chapter = parseInt(num.split('.')[0], 10);
+            // ONLY map text assets if the chapter contains an underlying timeline track
+
+            return `markers/marker_tpl_${langCode}.js`;
+
+        },
+        getAudioSrc: (num) => {
+            const chapter = parseInt(num.split('.')[0], 10);
+
+            return `audiofiles/TPL/TPL.${chapter}.ogg`;
 
         }
     },
