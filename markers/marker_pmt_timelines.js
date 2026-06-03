@@ -1,5 +1,26 @@
 window.MARKER_DATABASE = window.MARKER_DATABASE || {};
 
+window.MARKER_DATABASE['PMT.0.steps'] = [
+  {
+    "p": 1,
+    "step1": [[0, 4.1], [4.1, 8.2], [8.2, 12.4], [12.4, 16.3]],
+    "step2": [[0, 8.2], [8.2, 16.3]],
+    "step3": [[0, 16.3]],
+    "step4": [0, 16.3]
+  },
+
+  {
+    "p": 1,
+    "step1": [[0, 3.8], [3.8, 7.9], [7.9, 12.9], [12.9, 19.2]],
+    "step2": [[0, 7.9], [7.9, 19.2]],
+    "step3": [[0, 19.2]],
+    "step4": [0, 19.2]
+  }
+
+
+];
+
+
 window.MARKER_DATABASE['PMT.1.steps'] = [
   {
     "p": 1,
