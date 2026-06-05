@@ -111,6 +111,14 @@ window.mergeLanguageTexts = function () {
     },
     'NAT.10.steps': {
     },
+    'NAT.11.steps': {
+    },
+    'NAT.12.steps': {
+    },
+    'NAT.13.steps': {
+    },
+    'NAT.14.steps': {
+    },
   };
 
   // Non-destructive runtime merging engine

@@ -28,16 +28,16 @@ const CONFIG = {
 
     'PMT': {
         structure: 'chapter_pasuram',
-        hasSub: false, minCh: 0, maxCh: 10, defPas: 10, ex: {'0':2},
+        hasSub: false, minCh: 0, maxCh: 10, defPas: 10, ex: { '0': 2 },
         getMarkerPath: (num) => {
-  
-                return 'markers/marker_pmt_timelines.js';
+
+            return 'markers/marker_pmt_timelines.js';
 
         },
         getLanguagePath: (num, langCode) => {
             const chapter = parseInt(num.split('.')[0], 10);
             // ONLY map text assets if the chapter contains an underlying timeline track
-                return `markers/marker_pmt_${langCode}.js`;
+            return `markers/marker_pmt_${langCode}.js`;
             return null;
         },
         getAudioSrc: (num) => {
@@ -45,7 +45,7 @@ const CONFIG = {
             const chapter = parseInt(parts[0], 10);
             const pasuram = parseInt(parts[1], 10);
 
-            if (chapter ==0)
+            if (chapter == 0)
                 return `audiofiles/PMT/PMT.${num}.ogg`
 
             if (chapter >= 1 && chapter <= 10) {
@@ -60,14 +60,14 @@ const CONFIG = {
         minCh: 0, // to support thanian in chapter 0
         getMarkerPath: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter >= 0 && chapter <= 9) {
+            if (chapter >= 0 && chapter <= 14) {
                 return 'markers/marker_nat_timelines.js';
             }
             return null;
         },
         getLanguagePath: (num, langCode) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter >= 0 && chapter <= 9) {
+            if (chapter >= 0 && chapter <= 14) {
                 return `markers/marker_nat_${langCode}.js`;
             }
 
@@ -75,7 +75,7 @@ const CONFIG = {
         },
         getAudioSrc: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter >= 1 && chapter <= 9) {
+            if (chapter >= 1 && chapter <= 14) {
                 return `audiofiles/NAT/NAT_${chapter}.ogg`;
             }
             if (chapter == 0) { return `audiofiles/NAT/NAT_${num}.ogg` }

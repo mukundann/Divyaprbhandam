@@ -80,6 +80,22 @@ window.mergeLanguageTexts = function () {
       11: "AyanukkAgath * thAn kaNda kanAvinai * vEyar pugazh * villipuththUrk kOn kOdhai sol *** thUya thamizh mAlai * Iraindhum vallavar * vAyu nanmakkaLaip peRRu * magizhvarE *",
       12: "adivaravu: vAraNam nALai * indhiran nARRthisai * kadhir maththaLam * vAy immaikkum * varisilai kungumam * AyanukkAga karuppUram *"
     },
+    'NAT.7.steps': {
+    },
+    'NAT.8.steps': {
+    },
+    'NAT.9.steps': {
+    },
+    'NAT.10.steps': {
+    },
+    'NAT.11.steps': {
+    },
+    'NAT.12.steps': {
+    },
+    'NAT.13.steps': {
+    },
+    'NAT.14.steps': {
+    },
   };
 
 
