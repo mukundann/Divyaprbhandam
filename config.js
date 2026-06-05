@@ -60,14 +60,14 @@ const CONFIG = {
         minCh: 0, // to support thanian in chapter 0
         getMarkerPath: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter >= 0 && chapter <= 6) {
+            if (chapter >= 0 && chapter <= 9) {
                 return 'markers/marker_nat_timelines.js';
             }
             return null;
         },
         getLanguagePath: (num, langCode) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter >= 0 && chapter <= 6) {
+            if (chapter >= 0 && chapter <= 9) {
                 return `markers/marker_nat_${langCode}.js`;
             }
 
@@ -75,7 +75,7 @@ const CONFIG = {
         },
         getAudioSrc: (num) => {
             const chapter = parseInt(num.split('.')[0], 10);
-            if (chapter >= 1 && chapter <= 6) {
+            if (chapter >= 1 && chapter <= 9) {
                 return `audiofiles/NAT/NAT_${chapter}.ogg`;
             }
             if (chapter == 0) { return `audiofiles/NAT/NAT_${num}.ogg` }
