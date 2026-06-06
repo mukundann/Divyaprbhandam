@@ -82,6 +82,7 @@ const CONFIG = {
             return `https://www.uveda.org/media/recitation/NAT.${num}.mp3`;
         }
     },
+    
     'RN': {
 
         structure: 'chapter_pasuram',
