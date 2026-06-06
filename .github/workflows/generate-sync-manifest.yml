@@ -5,10 +5,10 @@ on:
     branches:
       - main  # Triggers the pipeline whenever you push to your primary branch
     paths:
-      - 'public/markers/**' # Only runs if files inside the markers folder are modified
-      - 'public/markers/**'
-      - 'public/audiofiles/**'
-      - 'public/*.js' 
+      - 'markers/**' # Only runs if files inside the markers folder are modified
+      - 'markers/**'
+      - 'audiofiles/**'
+      - '*.js' 
 
 permissions:
   contents: write # Grants GitHub Actions permission to commit the sync-check.json back to your repo

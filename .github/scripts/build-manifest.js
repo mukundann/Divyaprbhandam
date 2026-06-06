@@ -2,21 +2,19 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const OUTPUT_FILE = path.join(process.cwd(), 'public', 'sync-check.json');
+// Output file path drops 'public' and saves to your repository root
+const OUTPUT_FILE = path.join(process.cwd(), 'sync-check.json');
 
-// Define the root target paths to track inside the public deployment layout
+// Root directories to map (paths are relative to project root)
 const TARGET_DIRECTORIES = [
-    { webPrefix: 'markers', localPath: path.join(process.cwd(), 'public', 'markers') },
-    { webPrefix: 'audiofiles', localPath: path.join(process.cwd(), 'public', 'audiofiles') },
-    { webPrefix: 'config', localPath: path.join(process.cwd(), 'public', 'js', 'config') } // Adjust to match config path
+    { webPrefix: 'markers', localPath: path.join(process.cwd(), 'markers') },
+    { webPrefix: 'audiofiles', localPath: path.join(process.cwd(), 'audiofiles') },
+    { webPrefix: 'js', localPath: path.join(process.cwd(), 'js') }
 ];
 
 const assetMap = {};
 let systemWideRawHashes = "";
 
-/**
- * Recursively scans directories to collect file paths
- */
 function walkDirectorySync(currentDirPath, callback) {
     if (!fs.existsSync(currentDirPath)) return;
     
@@ -32,35 +30,37 @@ function walkDirectorySync(currentDirPath, callback) {
     });
 }
 
-console.log("⚡ Initiating systemic recursive tree scanning sequence...");
+console.log("⚡ Initiating systemic root directory scanning sequence...");
 
 TARGET_DIRECTORIES.forEach(target => {
-    console.log(`Checking tree path: ${target.webPrefix}`);
-    
-    walkDirectorySync(target.localPath, (absoluteFilePath) => {
-        try {
-            const fileBuffer = fs.readFileSync(absoluteFilePath);
-            const fileMd5 = crypto.createHash('md5').update(fileBuffer).digest('hex');
-            
-            // Reconstruct web relative reference path
-            // e.g., "public/markers/TPA/marker_tpl_ta.js" -> "markers/TPA/marker_tpl_ta.js"
-            const relativePath = path.relative(path.join(process.cwd(), 'public'), absoluteFilePath)
-                                    .replace(/\\/g, '/'); // Standardize URL paths across Windows/Linux runners
+    if (fs.existsSync(target.localPath)) {
+        console.log(`Checking root directory: ${target.webPrefix}`);
+        
+        walkDirectorySync(target.localPath, (absoluteFilePath) => {
+            try {
+                const fileBuffer = fs.readFileSync(absoluteFilePath);
+                const fileMd5 = crypto.createHash('md5').update(fileBuffer).digest('hex');
+                
+                // Construct standard clean URLs relative to the root directory
+                const relativePath = path.relative(process.cwd(), absoluteFilePath)
+                                        .replace(/\\/g, '/');
 
-            assetMap[relativePath] = fileMd5;
-            systemWideRawHashes += fileMd5;
-            
-        } catch (err) {
-            console.error(`❌ Failed processing object context: ${absoluteFilePath}`, err.message);
-        }
-    });
+                assetMap[relativePath] = fileMd5;
+                systemWideRawHashes += fileMd5;
+                
+            } catch (err) {
+                console.error(`❌ Failed processing object: ${absoluteFilePath}`, err.message);
+            }
+        });
+    } else {
+        console.warn(`⚠️ Path skipped (not found in root): ${target.localPath}`);
+    }
 });
 
-// Compute structural cluster validation signature
 const globalFingerprint = crypto.createHash('md5').update(systemWideRawHashes).digest('hex').substring(0, 8);
 
 const manifestPayload = {
-    server_version: `global_tree_${globalFingerprint}`,
+    server_version: `root_tree_${globalFingerprint}`,
     last_compiled_at: new Date().toISOString(),
     assets: assetMap,
     actions: {
@@ -68,6 +68,5 @@ const manifestPayload = {
     }
 };
 
-// Write out static mapping reference file
 fs.writeFileSync(OUTPUT_FILE, JSON.stringify(manifestPayload, null, 2));
-console.log(`🚀 Tree verification file finalized successfully at: ${OUTPUT_FILE}`);
+console.log(`🚀 Tree verification file finalized successfully at root: ${OUTPUT_FILE}`);
