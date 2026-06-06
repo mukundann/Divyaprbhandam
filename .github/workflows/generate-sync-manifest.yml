@@ -1,37 +1,39 @@
-name: Generate Automated Sync Manifest
+name: Generate Automated Prabandha Sync Manifest
 
 on:
   push:
     branches:
-      - main  # Triggers the pipeline whenever you push to your primary branch
+      - main
     paths:
-      - 'markers/**' # Only runs if files inside the markers folder are modified
       - 'markers/**'
       - 'audiofiles/**'
-      - '*.js' 
+      - '*.js'
+  workflow_dispatch:
+
+# Force execution environments to utilize Node.js 24 runtime structures natively
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
-  contents: write # Grants GitHub Actions permission to commit the sync-check.json back to your repo
+  contents: write
 
 jobs:
   build-and-sync:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Repository Code
-      uses: actions/checkout@v4
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js Environment
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18
+      - name: Setup Node.js Build Context
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24 # Upgraded structural baseline from 18 to 24
 
-    - name: Run Automated Manifest Generator
-      run: |
-        node .github/scripts/build-manifest.js
+      - name: Run Flat Tree Hashing
+        run: node .github/scripts/build-manifest.js
 
-    - name: Commit and Push Updated Sync Manifest
-      uses: stefanzweifel/git-auto-commit-action@v5
-      with:
-        commit_message: "chrono: automated sync-check.json update [skip ci]"
-        file_pattern: 'sync-check.json'
+      - name: Commit and Push Updated Sync Manifest
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chrono: systemic node24 manifest compliance update [skip ci]"
+          file_pattern: 'sync-check.json'
