@@ -5,7 +5,7 @@ const crypto = require('crypto');
 // Output file path goes straight to your repository root
 const OUTPUT_FILE = path.join(process.cwd(), 'sync-check.json');
 
-// Root targets to monitor dynamically (local paths point directly to repo roots)
+// Subdirectories to scan recursively
 const TARGET_DIRECTORIES = [
     { webPrefix: 'markers', localPath: path.join(process.cwd(), 'markers') },
     { webPrefix: 'audiofiles', localPath: path.join(process.cwd(), 'audiofiles') }
@@ -14,6 +14,17 @@ const TARGET_DIRECTORIES = [
 const assetMap = {};
 let systemWideRawHashes = "";
 
+/**
+ * Standard utility to calculate MD5 checksums of files
+ */
+function getFileMd5Hash(absolutePath) {
+    const fileBuffer = fs.readFileSync(absolutePath);
+    return crypto.createHash('md5').update(fileBuffer).digest('hex');
+}
+
+/**
+ * Recursively scans directories to collect file paths
+ */
 function walkDirectorySync(currentDirPath, callback) {
     if (!fs.existsSync(currentDirPath)) return;
     
@@ -29,49 +40,64 @@ function walkDirectorySync(currentDirPath, callback) {
     });
 }
 
-console.log("⚡ Initiating flat root environment tree scanning sequence...");
+console.log("⚡ Initiating system tree scanning sequence...");
 
-// 1. Scan your structured directories (markers, audio)
+// Pass 1: Walk the target directories (markers and media)
 TARGET_DIRECTORIES.forEach(target => {
     if (fs.existsSync(target.localPath)) {
-        console.log(`Checking folder: ${target.webPrefix}`);
+        console.log(`Checking folder directory: ${target.webPrefix}`);
         walkDirectorySync(target.localPath, (absoluteFilePath) => {
             try {
-                const fileBuffer = fs.readFileSync(absoluteFilePath);
-                const fileMd5 = crypto.createHash('md5').update(fileBuffer).digest('hex');
+                const fileMd5 = getFileMd5Hash(absoluteFilePath);
                 const relativePath = path.relative(process.cwd(), absoluteFilePath).replace(/\\/g, '/');
 
                 assetMap[relativePath] = fileMd5;
                 systemWideRawHashes += fileMd5;
             } catch (err) {
-                console.error(`❌ Failed processing object: ${absoluteFilePath}`, err.message);
+                console.error(`❌ Failed processing nested asset: ${absoluteFilePath}`, err.message);
             }
         });
     }
 });
 
-// 2. Manually track standalone engine files sitting right in your root directory
-const rootStandaloneFiles = ['playerEngine.js', 'sync-engine.js'];
-rootStandaloneFiles.forEach(file => {
-    const fullPath = path.join(process.cwd(), file);
-    if (fs.existsSync(fullPath)) {
-        const fileBuffer = fs.readFileSync(fullPath);
-        const fileMd5 = crypto.createHash('md5').update(fileBuffer).digest('hex');
+// Pass 2: Automatically dynamic scan all standalone .js files sitting right in your repo root
+console.log("Checking standalone root files...");
+try {
+    const rootItems = fs.readdirSync(process.cwd());
+    
+    rootItems.forEach(item => {
+        const absolutePath = path.join(process.cwd(), item);
+        const stat = fs.statSync(absolutePath);
         
-        assetMap[file] = fileMd5;
-        systemWideRawHashes += fileMd5;
-        console.log(`✔️ Processed root standalone asset: ${file}`);
-    }
-});
+        // Target only files ending in .js while intentionally ignoring the generated manifest if named .js
+        if (stat.isFile() && item.endsWith('.js')) {
+            try {
+                const fileMd5 = getFileMd5Hash(absolutePath);
+                
+                assetMap[item] = fileMd5;
+                systemWideRawHashes += fileMd5;
+                console.log(`✔️ Successfully tracked root JavaScript asset: ${item} [${fileMd5.substring(0, 8)}]`);
+            } catch (fileErr) {
+                console.error(`❌ Error parsing root asset ${item}:`, fileErr.message);
+            }
+        }
+    });
+} catch (dirErr) {
+    console.error("❌ Failed to query top level root tree files:", dirErr.message);
+}
 
+// Compute systemic cluster verification signature
 const globalFingerprint = crypto.createHash('md5').update(systemWideRawHashes).digest('hex').substring(0, 8);
 
 const manifestPayload = {
-    server_version: `flat_root_${globalFingerprint}`,
+    server_version: `flat_root_tree_${globalFingerprint}`,
     last_compiled_at: new Date().toISOString(),
     assets: assetMap,
-    actions: { must_clear_local_storage: [] }
+    actions: {
+        must_clear_local_storage: []
+    }
 };
 
+// Save back out to the workspace root
 fs.writeFileSync(OUTPUT_FILE, JSON.stringify(manifestPayload, null, 2));
-console.log(`🚀 System manifest file finalized successfully at root: ${OUTPUT_FILE}`);
+console.log(`🚀 Manifest finalized. Tracked ${Object.keys(assetMap).length} total assets.`);
