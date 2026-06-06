@@ -1,0 +1,37 @@
+name: Generate Automated Sync Manifest
+
+on:
+  push:
+    branches:
+      - main  # Triggers the pipeline whenever you push to your primary branch
+    paths:
+      - 'public/markers/**' # Only runs if files inside the markers folder are modified
+      - 'public/markers/**'
+      - 'public/audiofiles/**'
+      - 'public/*.js' 
+
+permissions:
+  contents: write # Grants GitHub Actions permission to commit the sync-check.json back to your repo
+
+jobs:
+  build-and-sync:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository Code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Run Automated Manifest Generator
+      run: |
+        node .github/scripts/build-manifest.js
+
+    - name: Commit and Push Updated Sync Manifest
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "chrono: automated sync-check.json update [skip ci]"
+        file_pattern: 'public/sync-check.json'
