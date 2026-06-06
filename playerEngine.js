@@ -117,34 +117,32 @@ function syncTextToAudioTimeline() {
     if (!rawTextString) return;
 
     const step1Timeline = targetPasuram["step1"] || [];
-    const currentTime = playerEl.currentTime || 0;
+    
+    // Smooth Normalization: Round playhead down to 1 decimal point to avoid floating-point race flickers
+    const currentTime = Math.round((playerEl.currentTime || 0) * 10) / 10;
 
     let matchIndex = -1;
     for (let i = 0; i < step1Timeline.length; i++) {
         const isLastSegment = (i === step1Timeline.length - 1);
+        const segmentStart = Math.round(step1Timeline[i][0] * 10) / 10;
+        const segmentEnd = Math.round(step1Timeline[i][1] * 10) / 10;
 
         if (isLastSegment) {
-            // Fix: Let the final line catch micro-gaps and trailing silence in full recitation mode
-            if (currentTime >= step1Timeline[i][0]) {
+            if (currentTime >= segmentStart) {
                 matchIndex = i;
                 break;
             }
         } else {
-            // Precise strict bounding boxes for standard internal segments
-            if (currentTime >= step1Timeline[i][0] && currentTime <= step1Timeline[i][1]) {
+            if (currentTime >= segmentStart && currentTime <= segmentEnd) {
                 matchIndex = i;
                 break;
             }
         }
     }
 
-    // ⚡ FLICKER PROTECTION FIX: Use a composite signature tracking exactly which text block, 
-    // language selection, and highlighted phrase index are rendered.
     const selectedLangToken = document.getElementById('textLanguage')?.value || 'ta';
     const currentSignature = `${pre}_${coords.ch}_${coords.pas}_${selectedLangToken}_${matchIndex}`;
     
-    // If nothing has actually transitioned structurally, stop execution here. 
-    // This blocks the continuous redraw triggers during loops.
     if (displayPanel.dataset.lastSignature === currentSignature) {
         return;
     }
@@ -165,7 +163,6 @@ function syncTextToAudioTimeline() {
         }
     }
     
-    // Perform a single atomic write to the DOM only when changes are confirmed true
     displayPanel.innerHTML = innerHTMLString.join('');
     displayPanel.dataset.lastSignature = currentSignature;
 }
