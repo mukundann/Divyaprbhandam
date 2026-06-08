@@ -261,6 +261,9 @@
 
             <div class="form-group">
                 <audio id="player" controls></audio>
+                <div id="timeDisplay"
+                    style="font-family: monospace; font-size: 14px; font-weight: bold; color: #333; margin-top: 4px; padding-left: 2px;">
+                    0.0s</div>
                 <div id="yt-container">
                     <div id="yt-player"></div>
                 </div>
@@ -1048,6 +1051,13 @@
                 if (idx !== -1 && idx !== currentHighlightIndex && !window.isUserEditingActiveCell && !window.isTestingSegmentAudio) {
                     currentHighlightIndex = idx;
                     highlightUIRow(idx);
+                }
+
+
+                // DYNAMIC TIMER FIELD HOOK
+                const timeDisplayEl = document.getElementById('timeDisplay');
+                if (timeDisplayEl && typeof curr === 'number') {
+                    timeDisplayEl.innerText = curr.toFixed(1) + 's';
                 }
                 requestAnimationFrame(monitor);
             };
