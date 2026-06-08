@@ -16,7 +16,18 @@
 
         try {
             // Fetch the static manifest produced by your GitHub Actions runner
-            const response = await fetch('./sync-check.json', { cache: 'no-cache' });
+            // FORCE BYPASS: Append a dynamic microsecond timestamp to bypass edge/disk layers completely
+            const cacheBusterUrl = `./sync-check.json?t=${Date.now()}`;
+            
+            const response = await fetch(cacheBusterUrl, { 
+                cache: 'no-store', // 'no-store' is stricter than 'no-cache' and blocks disk storage entirely
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
+            
             if (!response.ok) throw new Error("Manifest tracking file unreachable.");
 
             const manifest = await response.json();
