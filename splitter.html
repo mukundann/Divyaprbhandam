@@ -628,7 +628,7 @@
             const newSegment = {
                 start: midTime,
                 end: originalEnd,
-                text: "Inserted Segment Placeholder",
+                text: "",
                 forceEndBlock: currentSegment.forceEndBlock
             };
 
@@ -819,7 +819,7 @@
                        onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
                        onblur="window.isUserEditingActiveCell = false;" 
                        oninput="updateStateTime(${i}, 'end', this.value)">
-                <input type="text" value="${m.text.replace(/"/g, '&quot;')}" 
+                <input type="text" placeholder="Add new segment text" value="${m.text.replace(/"/g, '&quot;')}" 
                        onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
                        onblur="window.isUserEditingActiveCell = false;" 
                        oninput="updateStateText(${i}, this.value)">
