@@ -185,7 +185,7 @@ const CONFIG = {
         minCh: 0,
         maxCh: 1,
         defPas: 30,
-        ex: { '0': 2 },
+        ex: { '0': 3 },
 
         getMarkerPath: (num) => {
             return 'markers/marker_tpv_timelines.js';
