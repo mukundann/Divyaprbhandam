@@ -1,6 +1,6 @@
 window.MARKER_DATABASE = window.MARKER_DATABASE || {};
 
-/ Global function to trigger the merge on-demand
+// Global function to trigger the merge on-demand
 window.mergeLanguageTexts = function () {
     const text_bundle_en = {
         'TVM.3.1.steps':
@@ -162,14 +162,15 @@ window.mergeLanguageTexts = function () {
             10: "thaLarvinRiyE enRum engum parandha * thani mudhal gyAnam onRAy * aLavudai aim pulangaL aRiyA vagaiyAl * aruvAgi niRkum * vaLaroLi Isanai mUrththiyai * bUdhangaL aindhai iru sudaraik * kiLaroLi mAyanaik kaNNanaith thAL paRRi * yAn onRum kEdilanE *",
             11: "kEdil vizhuppugazhk kEsavanaik * kurugUrch chatakOpan sonna * pAdal Or AyiraththuL * ivaiyum oru paththum payiRRa vallArgatku * avan nAdum nagaramum nagudan kANa * nalanidai Urdhi paNNi * vIdum peRuththith than mUvulagukkum tharum * oru nAyagamE *"
         },
-        // Non-destructive runtime merging engine
-        for(const key in text_bundle_en) {
-            window.MARKER_DATABASE[key] = window.MARKER_DATABASE[key] || [];
-            for (const p in text_bundle_en[key]) {
-                const idx = parseInt(p) - 1;
-                window.MARKER_DATABASE[key][idx] = window.MARKER_DATABASE[key][idx] || { p: parseInt(p) };
-                window.MARKER_DATABASE[key][idx]['text'] = window.MARKER_DATABASE[key][idx]['text'] || {};
-                window.MARKER_DATABASE[key][idx]['text']['en'] = text_bundle_en[key][p];
-            }
-        }
     };
+    // Non-destructive runtime merging engine
+    for (const key in text_bundle_en) {
+        window.MARKER_DATABASE[key] = window.MARKER_DATABASE[key] || [];
+        for (const p in text_bundle_en[key]) {
+            const idx = parseInt(p) - 1;
+            window.MARKER_DATABASE[key][idx] = window.MARKER_DATABASE[key][idx] || { p: parseInt(p) };
+            window.MARKER_DATABASE[key][idx]['text'] = window.MARKER_DATABASE[key][idx]['text'] || {};
+            window.MARKER_DATABASE[key][idx]['text']['en'] = text_bundle_en[key][p];
+        }
+    }
+};
