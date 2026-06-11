@@ -234,6 +234,52 @@ const CONFIG = {
 
         }
     },
+    'KCT': {
+        structure: 'chapter_pasuram',
+        hasSub: false, minCh: 0, maxCh: 1, defPas: 11, ex: { '0': 2 },
+        getMarkerPath: (num) => {
+            const chapter = parseInt(num.split('.')[0], 10);
+
+            return 'markers/marker_kct_timelines.js';
+
+        },
+        getLanguagePath: (num, langCode) => {
+            const chapter = parseInt(num.split('.')[0], 10);
+            // ONLY map text assets if the chapter contains an underlying timeline track
+
+            return `markers/marker_kct_${langCode}.js`;
+
+        },
+        getAudioSrc: (num) => {
+            const chapter = parseInt(num.split('.')[0], 10);
+
+            return `audiofiles/KCT/KCT_${chapter}.ogg`;
+
+        }
+    },
+    'AAP': {
+        structure: 'chapter_pasuram',
+        hasSub: false, minCh: 0, maxCh: 1, defPas: 10, ex: { '0': 2 },
+        getMarkerPath: (num) => {
+            const chapter = parseInt(num.split('.')[0], 10);
+
+            return 'markers/marker_aap_timelines.js';
+
+        },
+        getLanguagePath: (num, langCode) => {
+            const chapter = parseInt(num.split('.')[0], 10);
+            // ONLY map text assets if the chapter contains an underlying timeline track
+
+            return `markers/marker_aap_${langCode}.js`;
+
+        },
+        getAudioSrc: (num) => {
+            const chapter = parseInt(num.split('.')[0], 10);
+
+            return `audiofiles/AAP/AAP_${chapter}.ogg`;
+
+        }
+    },
     'TPV': {
 
         structure: 'chapter_pasuram',
