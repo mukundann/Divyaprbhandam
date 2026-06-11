@@ -5,49 +5,48 @@ window.mergeLanguageTexts = function () {
     const text_bundle_en = {
         'TVM.3.1.steps':
         {
-            1: "mudichchOdhiyAy * unadhu mugachchOdhi malarndhadhuvO? adichchOdhi nI ninRa * thAmaraiyAy alarndhadhuvO? * padichchOdhi Adaiyodum * palakalanAy * nin paim pon kadicchOdhi kalandhadhuvO? * thirumAlE! katturaiyE *",
-            2: "katturaikkil thAmarai * nin kaN pAdham kai ovvA * katturaiththa nan pon * un thirumEni oLi ovvAdhu * otturaiththu ivvulagu unnaip * pugazhvellAm perumbAlum * patturaiyAyp puRkenRE * kAttumAl paranjOdhI! *",
-            3: "paranjOdhi! nI paramAy * nin igazhndhu pin maRROr * paranjOdhi inmaiyin * padiyOvi nigazhginRa * paranjOdhi nin uLLE * padar ulagam padaiththa * em paranjOdhi! gOvindhA! * paNburaikka mAttEnE *",
-            4: "mAttAdhE Agilum * im malar thalai mA gyAlam * nin mAttAya malar puraiyum * thiru uruvam manam vaikka * mAttAdha pala samaya * madhi koduththAy malarththuzhAy * mAttE nI manam vaiththAy * mA gyAlam varundhAdhE? *",
-            5: "varundhAdha arundhavaththa * malar kadhirin sudar udambAy * varundhAdha gyAnamAy * varambinRi muzhudhiyanRAy! * varungAlam nigazhkAlam * kazhikAlamAy ulagai * orungAga aLippAy! sIr * engulakka OdhuvanE? *",
-            6: "OdhuvAr OththellAm * evvulagaththu evvevaiyum * sAdhuvAy nin pugazhin * thagaiyallAl piRidhillai * pOdhuvAzh punandhuzhAy * mudiyinAy! pUvin mEl * mAdhuvAzh mArbinAy! * en solli yAn vAzhththuvanE? *",
-            7: "vAzhththuvAr palarAga * nin uLLE nAnmuganai * mUzhththa nIr ulagellAm * padai enRu mudhal padaiththAy! * kEzththa sIr aran mudhalAk * kiLar dheyvamAyk kiLarndhu * sUzhththamarar thudhiththAl * un thol pugazh mAsUNAdhE? *",
-            8: "mAsUNAch chudar udambAy * malarAdhu kuviyAdhu * mAsUNA gyAnamAy * muzhudhumAy muzhudhiyanRAy! * mAsUNA vAn kOlaththu * amarar kOn vazhippattAl * mAsUNA una pAdha * malarch chOdhi mazhungAdhE? *",
-            9: "mazhungAdha vainnudhiya * chakkara nal valaththaiyAy * thozhum kAdhal kaLirRaLippAn * puLLUrndhu thOnRinaiyE * mazhungAdha gyAnamE * padaiyAga malarulagil * thozhumbAyArkku aLiththAl * un sudarch chOdhi maRaiyAdhE? *",
-            10: "maRaiyAya nAl vEdhaththuL ninRa * malarch chudarE! * muRaiyAl ivvulagellAm * padaiththu idandhu uNdu umizhndhu aLandhAy! * piRai ERu sadaiyAnum * nAnmuganum indhiranum * iRai Adhal aRindhEththa * vIRRiruththal idhu viyappE? *",
-            11: "viyappAya viyappillA * meygyAna vEdhiyanai * sayap pugazhAr palar vAzhum * thadam kurugUrch chatakOpan * thuyakkinRith thozhudhuraiththa * AyiraththuL ippaththum * uyak koNdu piRappaRukkum * oli munnIr gyAlaththE *"
-
+            1: "* mudichchOdhiyAy * unadhu mugachchOdhi malarndhadhuvO? * adichchOdhi nI ninRa * thAmaraiyAy alarndhadhuvO? *** padichchOdhi Adaiyodum * palakalanAy * nin paim pon kadicchOdhi kalandhadhuvO? * thirumAlE! katturaiyE *",
+            2: "katturaikkil thAmarai * nin kaN pAdham kai ovvA * katturaiththa nan pon * un thirumEni oLi ovvAdhu *** otturaiththu ivvulagu unnaip * pugazhvellAm perumbAlum * patturaiyAyp puRkenRE * kAttumAl paranjOdhI! *",
+            3: "paranjOdhi! nI paramAy * nin igazhndhu pin maRROr * paranjOdhi inmaiyin * padiyOvi nigazhginRa *** paranjOdhi nin uLLE * padar ulagam padaiththa * em paranjOdhi! gOvindhA! * paNburaikka mAttEnE *",
+            4: "mAttAdhE Agilum * im malar thalai mA gyAlam * nin mAttAya malar puraiyum * thiru uruvam manam vaikka *** mAttAdha pala samaya * madhi koduththAy malarththuzhAy * mAttE nI manam vaiththAy * mA gyAlam varundhAdhE? *",
+            5: "varundhAdha arundhavaththa * malar kadhirin sudar udambAy * varundhAdha gyAnamAy * varambinRi muzhudhiyanRAy! *** varungAlam nigazhkAlam * kazhikAlamAy ulagai * orungAga aLippAy! sIr * engulakka OdhuvanE? *",
+            6: "OdhuvAr OththellAm * evvulagaththu evvevaiyum * sAdhuvAy nin pugazhin * thagaiyallAl piRidhillai *** pOdhuvAzh punandhuzhAy * mudiyinAy! pUvin mEl * mAdhuvAzh mArbinAy! * en solli yAn vAzhththuvanE? *",
+            7: "vAzhththuvAr palarAga * nin uLLE nAnmuganai * mUzhththa nIr ulagellAm * padai enRu mudhal padaiththAy! *** kEzththa sIr aran mudhalAk * kiLar dheyvamAyk kiLarndhu * sUzhththamarar thudhiththAl * un thol pugazh mAsUNAdhE? *",
+            8: "mAsUNAch chudar udambAy * malarAdhu kuviyAdhu * mAsUNA gyAnamAy * muzhudhumAy muzhudhiyanRAy! *** mAsUNA vAn kOlaththu * amarar kOn vazhippattAl * mAsUNA una pAdha * malarch chOdhi mazhungAdhE? *",
+            9: "mazhungAdha vainnudhiya * chakkara nal valaththaiyAy * thozhum kAdhal kaLirRaLippAn * puLLUrndhu thOnRinaiyE *** mazhungAdha gyAnamE * padaiyAga malarulagil * thozhumbAyArkku aLiththAl * un sudarch chOdhi maRaiyAdhE? *",
+            10: "maRaiyAya nAl vEdhaththuL ninRa * malarch chudarE! * muRaiyAl ivvulagellAm * padaiththu idandhu uNdu umizhndhu aLandhAy! *** piRai ERu sadaiyAnum * nAnmuganum indhiranum * iRai Adhal aRindhEththa * vIRRiruththal idhu viyappE? *",
+            11: "* viyappAya viyappillA * meygyAna vEdhiyanai * sayap pugazhAr palar vAzhum * thadam kurugUrch chatakOpan *** thuyakkinRith thozhudhuraiththa * AyiraththuL ippaththum * uyak koNdu piRappaRukkum * oli munnIr gyAlaththE *"
         },
         'TVM.3.2.steps':
         {
-            1: "munnIr gyAlam padaiththa * em mugil vaNNanE! * anNAL nI thandha * Akkaiyin vazhi uzhalvEn * vennAL nOy vIya * vinaigaLai vEr aRap pAyndhu * ennAL yAn unnai * ini vandhu kUduvanE? *",
-            2: "vanmA vaiyam aLandha * em vAmanA! * nin panmA mAyap * piRaviyil padiginRa yAn * thonmA valvinaith * thodargaLai mudhalarindhu * nin mA thAL sErndhu * niRpadhu engyAnRukolO? *",
-            3: "kollA mAkkOl * kolai seydhu bhAradhap pOr * ellAch chEnaiyum * iru nilaththu aviththa endhAy! * pollA Akkaiyin * puNarvinai aRukkalaRA * sollAy yAn unnaich * chArvadhOr sUzhchchiyE *",
-            4: "sUzhchchi gyAnach * chudaroLy Agi * enRum Ezhchchik kEdinRi * engaNum niRaindha endhAy! * thAzhchchi maRRengu thavirndhu * nin thALiNaik kIzh vAzhchchi * yAn sErum vagai * aruLAy vandhE *",
-            5: "vandhAy pOlE * vandhum en manaththinai nI * sindhAmal seyyAy * idhuvE idhu Agil * kondhAr kAyAvin * kozhumalarth thiru niRaththa endhAy! * yAn unnai * engu vandhu aNugiRpanE? *",
-            6: "kiRpan killEn * enRilan muna nALAl * aRpa sArangaL * avai suvaiththu aganRozhindhEn * paRpal Ayiram * uyir seydha paramA! * nin naRpoRsOdhith thAL * naNuguvadhu engyAnRE? *",
-            7: "engyAnRum nAm irundhirundhu * irangi nenjE! * mey gyAnam inRi * vinai iyal piRappazhundhi * engyAnRum engum * ozhivaRa niRaindhu ninRa * mey gyAnach chOdhik * kaNNanai mEvudhumE? *",
-            8: "mEvu thunba vinaigaLai * viduththum ilEn * Ovudhal inRi * un kazhal vaNangiRRilEn * pAvu thol sIrk kaNNA * en paranjudarE! * kUvuginREn kANbAn * engu eydhak kUvuvanE? *",
-            9: "kUvik kUvik * koduvinaith thURRuL ninRu * pAviyEn pala kAlam * vazhi thigaiththu alamaruginREn * mEvi anRu Anirai kAththavan * ulagamellAm * thAviya ammAnai * enginith thalaip peyvanE? *",
-            10: "thalaip pey kAlam * naman thamar pAsam vittAl * alaippUN uNNum * avvallal ellAm agalak * kalaip pal gyAnaththu * en kaNNanaik kaNdu koNdu * nilaip peRRen nenjam peRRadhu * nIduyirE *",
-            11: "uyirgaL ellA * ulagamum udaiyavanaik * kuyil koL sOlaith * then kurugUrch chatakOpan * seyiril sol isai mAlai * AyiraththuL ippaththum * uyirin mEl Akkai * Unidai ozhivikkumE *",
+            1: "* munnIr gyAlam padaiththa * em mugil vaNNanE! * anNAL nI thandha * Akkaiyin vazhi uzhalvEn *** vennAL nOy vIya * vinaigaLai vEr aRap pAyndhu * ennAL yAn unnai * ini vandhu kUduvanE? *",
+            2: "vanmA vaiyam aLandha * em vAmanA! * nin panmA mAyap * piRaviyil padiginRa yAn *** thonmA valvinaith * thodargaLai mudhalarindhu * nin mA thAL sErndhu * niRpadhu engyAnRukolO? *",
+            3: "kollA mAkkOl * kolai seydhu bhAradhap pOr * ellAch chEnaiyum * iru nilaththu aviththa endhAy! *** pollA Akkaiyin * puNarvinai aRukkalaRA * sollAy yAn unnaich * chArvadhOr sUzhchchiyE *",
+            4: "sUzhchchi gyAnach * chudaroLy Agi * enRum Ezhchchik kEdinRi * engaNum niRaindha endhAy! *** thAzhchchi maRRengu thavirndhu * nin thALiNaik kIzh vAzhchchi * yAn sErum vagai * aruLAy vandhE *",
+            5: "vandhAy pOlE * vandhum en manaththinai nI * sindhAmal seyyAy * idhuvE idhu Agil *** kondhAr kAyAvin * kozhumalarth thiru niRaththa endhAy! * yAn unnai * engu vandhu aNugiRpanE? *",
+            6: "kiRpan killEn * enRilan muna nALAl * aRpa sArangaL * avai suvaiththu aganRozhindhEn *** paRpal Ayiram * uyir seydha paramA! * nin naRpoRsOdhith thAL * naNuguvadhu engyAnRE? *",
+            7: "engyAnRum nAm irundhirundhu * irangi nenjE! * mey gyAnam inRi * vinai iyal piRappazhundhi *** engyAnRum engum * ozhivaRa niRaindhu ninRa * mey gyAnach chOdhik * kaNNanai mEvudhumE? *",
+            8: "mEvu thunba vinaigaLai * viduththum ilEn * Ovudhal inRi * un kazhal vaNangiRRilEn *** pAvu thol sIrk kaNNA * en paranjudarE! * kUvuginREn kANbAn * engu eydhak kUvuvanE? *",
+            9: "kUvik kUvik * koduvinaith thURRuL ninRu * pAviyEn pala kAlam * vazhi thigaiththu alamaruginREn *** mEvi anRu Anirai kAththavan * ulagamellAm * thAviya ammAnai * enginith thalaip peyvanE? *",
+            10: "thalaip pey kAlam * naman thamar pAsam vittAl * alaippUN uNNum * avvallal ellAm agalak *** kalaip pal gyAnaththu * en kaNNanaik kaNdu koNdu * nilaip peRRen nenjam peRRadhu * nIduyirE *",
+            11: "* uyirgaL ellA * ulagamum udaiyavanaik * kuyil koL sOlaith * then kurugUrch chatakOpan *** seyiril sol isai mAlai * AyiraththuL ippaththum * uyirin mEl Akkai * Unidai ozhivikkumE *",
 
         },
         'TVM.3.3.steps': {
-            1: "ozhivil kAlam ellAm * udanAy manni * vazhuvilA * adimai seyya vENdum nAm * thezhikural aruvith * thiruvEngataththu * ezhilkoL sOdhi * endhai thandhai thandhaikkE *",
-            2: "endhai thandhai thandhai * thandhai thandhaikkum Mundhai * vAnavar vAnavar kOnodum * sindhupU magizhum * thiruvEngataththu * andhamil pugazhk * kAr ezhil aNNalE *",
-            3: "aNNal mAyan * aNi koL sendhAmaraik kaNNan * sengani vAyk * karumANikkam * theNNiRaich chunai nIrth * thiruvEngataththu * eNNil thol pugazh * vAnavar IsanE *",
-            4: "Isan vAnavarkku enban * enRAl * adhu thEsamO * thiruvEngataththAnukku * nIsanEn * niRai onRum ilEn * en kaN pAsam vaiththa * paranjudarch chOdhikkE *",
-            5: "sOdhiyAgi * ellA ulagum thozhum * Adhi mUrththi enRAl * aLavAgumO? * vEdhiyar * muzhu vEdhaththamudhaththaith * thIdhil sIrth * thiruvEngataththAnaiyE *",
-            6: "vEngatangaL * meym mEl vinai muRRavum * thAngaL thangatku * nallanavE seyvAr * vEngataththuRaivArkku * namavennal Am kadamai * adhu sumandhArgatkE *",
-            7: "sumandhu mA malar * nIr sudar dhUpam koNdu * amarndhu vAnavar * vAnavar kOnodum * namanRezhum * thiruvEngatam nangatkuch * chaman koL vIdu tharum * thadam kunRamE *",
-            8: "kunRam Endhik * kuLir mazhai kAththavan * anRu gyAlam * aLandha pirAn * paran senRu sEr * thiruvEngata mA malai * onRumE thozha * nam vinai OyumE *",
-            9: "OyumUppup * piRappiRappup piNi * vIyumARu seyvAn * thiruvEngataththu Ayan * nALmalarAm * adith thAmarai * vAyuLLum manaththuLLum * vaippArgatkE *",
-            10: "vaiththa nAL varai * ellai kuRugich chenRu * eyththiLaippadhan * munnam adaiminO * paiththa pAmbaNaiyAn * thiruvEngatam * moyththa sOlai * moy pUm thadam thAzhvarE *",
-            11: "thAL parappi * maN thAviya Isanai * nIL pozhil kurugUrch * chatakOpan sol * kEzhil Ayiraththu * ippaththum vallavar * vAzhvar vAzhveydhi * gyAlam pugazhavE *",
+            1: "* ozhivil kAlam ellAm * udanAy manni * vazhuvilA * adimai seyya vENdum nAm *** thezhikural aruvith * thiruvEngataththu * ezhilkoL sOdhi * endhai thandhai thandhaikkE *",
+            2: "endhai thandhai thandhai * thandhai thandhaikkum Mundhai * vAnavar * vAnavar kOnodum *** sindhupU magizhum * thiruvEngataththu * andhamil pugazhk * kAr ezhil aNNalE *",
+            3: "aNNal mAyan * aNi koL sendhAmaraik kaNNan * sengani vAyk * karumANikkam *** theNNiRaich chunai nIrth * thiruvEngataththu * eNNil thol pugazh * vAnavar IsanE *",
+            4: "Isan vAnavarkku enban * enRAl * adhu thEsamO * thiruvEngataththAnukku *** nIsanEn * niRai onRum ilEn * en kaN pAsam vaiththa * paranjudarch chOdhikkE *",
+            5: "sOdhiyAgi * ellA ulagum thozhum * Adhi mUrththi enRAl * aLavAgumO? *** vEdhiyar * muzhu vEdhaththamudhaththaith * thIdhil sIrth * thiruvEngataththAnaiyE *",
+            6: "vEngatangaL * meym mEl vinai muRRavum * thAngaL thangatku * nallanavE seyvAr *** vEngataththuRaivArkku * namavennal Am kadamai * adhu sumandhArgatkE *",
+            7: "sumandhu mA malar * nIr sudar dhUpam koNdu * amarndhu vAnavar * vAnavar kOnodum *** namanRezhum * thiruvEngatam nangatkuch * chaman koL vIdu tharum * thadam kunRamE *",
+            8: "* kunRam Endhik * kuLir mazhai kAththavan * anRu gyAlam * aLandha pirAn *** paran senRu sEr * thiruvEngata mA malai * onRumE thozha * nam vinai OyumE *",
+            9: "OyumUppup * piRappiRappup piNi * vIyumARu seyvAn * thiruvEngataththu Ayan *** nALmalarAm * adith thAmarai * vAyuLLum manaththuLLum * vaippArgatkE *",
+            10: "vaiththa nAL varai * ellai kuRugich chenRu * eyththiLaippadhan * munnam adaiminO *** paiththa pAmbaNaiyAn * thiruvEngatam * moyththa sOlai * moy pUm thadam thAzhvarE *",
+            11: "* thAL parappi * maN thAviya Isanai * nIL pozhil kurugUrch * chatakOpan sol *** kEzhil Ayiraththu * ippaththum vallavar * vAzhvar vAzhveydhi * gyAlam pugazhavE *"
         },
 
-      'TVM.3.4.steps':
+        'TVM.3.4.steps':
         {
             1: "pugazhum nal oruvan engO? * poruvil sIr bhUmi engO? thigazhum thaN paravai engO? * thI engO vAyu engO? * nigazhum AkAsam engO? * nIL sudar iraNdum engO? * igazhvil ivvanaiththum engO? kaNNanaik kUvumARE *",
             2: "kUvumARu aRiya mAttEn * kunRangaL anaiththum engO? * mEvu sIr mAri engO? * viLangu thAragaigaL engO? * nAviyal kalaigaL engO? * gyAna nal Avi engO? * pAvu sIrk kaNNan emmAn * pangayak kaNNanaiyE *",
