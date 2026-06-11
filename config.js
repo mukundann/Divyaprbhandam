@@ -20,7 +20,8 @@ const CONFIG = {
         // AND the corresponding custom chapter timeline file.
         availableContent: [
             "3_1" ,
-            "3_2"
+            "3_2",
+            "3_3"
         ],
 
 
