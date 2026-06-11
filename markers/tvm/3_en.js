@@ -5,7 +5,6 @@ window.mergeLanguageTexts = function () {
     const text_bundle_en = {
         'TVM.3.1.steps':
         {
-
             1: "mudichchOdhiyAy * unadhu mugachchOdhi malarndhadhuvO? adichchOdhi nI ninRa * thAmaraiyAy alarndhadhuvO? * padichchOdhi Adaiyodum * palakalanAy * nin paim pon kadicchOdhi kalandhadhuvO? * thirumAlE! katturaiyE *",
             2: "katturaikkil thAmarai * nin kaN pAdham kai ovvA * katturaiththa nan pon * un thirumEni oLi ovvAdhu * otturaiththu ivvulagu unnaip * pugazhvellAm perumbAlum * patturaiyAyp puRkenRE * kAttumAl paranjOdhI! *",
             3: "paranjOdhi! nI paramAy * nin igazhndhu pin maRROr * paranjOdhi inmaiyin * padiyOvi nigazhginRa * paranjOdhi nin uLLE * padar ulagam padaiththa * em paranjOdhi! gOvindhA! * paNburaikka mAttEnE *",
@@ -34,7 +33,7 @@ window.mergeLanguageTexts = function () {
             11: "uyirgaL ellA * ulagamum udaiyavanaik * kuyil koL sOlaith * then kurugUrch chatakOpan * seyiril sol isai mAlai * AyiraththuL ippaththum * uyirin mEl Akkai * Unidai ozhivikkumE *",
 
         },
-        'TVM.3.2.steps': {
+        'TVM.3.3.steps': {
             1: "ozhivil kAlam ellAm * udanAy manni * vazhuvilA * adimai seyya vENdum nAm * thezhikural aruvith * thiruvEngataththu * ezhilkoL sOdhi * endhai thandhai thandhaikkE *",
             2: "endhai thandhai thandhai * thandhai thandhaikkum Mundhai * vAnavar vAnavar kOnodum * sindhupU magizhum * thiruvEngataththu * andhamil pugazhk * kAr ezhil aNNalE *",
             3: "aNNal mAyan * aNi koL sendhAmaraik kaNNan * sengani vAyk * karumANikkam * theNNiRaich chunai nIrth * thiruvEngataththu * eNNil thol pugazh * vAnavar IsanE *",
@@ -48,21 +47,7 @@ window.mergeLanguageTexts = function () {
             11: "thAL parappi * maN thAviya Isanai * nIL pozhil kurugUrch * chatakOpan sol * kEzhil Ayiraththu * ippaththum vallavar * vAzhvar vAzhveydhi * gyAlam pugazhavE *",
         },
 
-        'TVM.3.3.steps':
-        {
-            1: "ozhivil kAlam ellAm * udanAy manni * vazhuvilA * adimai seyya vENdum nAm * thezhikural aruvith * thiruvEngataththu * ezhilkoL sOdhi * endhai thandhai thandhaikkE *",
-            2: "endhai thandhai thandhai * thandhai thandhaikkum Mundhai * vAnavar vAnavar kOnodum * sindhupU magizhum * thiruvEngataththu * andhamil pugazhk * kAr ezhil aNNalE *",
-            3: "aNNal mAyan * aNi koL sendhAmaraik kaNNan * sengani vAyk * karumANikkam * theNNiRaich chunai nIrth * thiruvEngataththu * eNNil thol pugazh * vAnavar IsanE *",
-            4: "Isan vAnavarkku enban * enRAl * adhu thEsamO * thiruvEngataththAnukku * nIsanEn * niRai onRum ilEn * en kaN pAsam vaiththa * paranjudarch chOdhikkE *",
-            5: "sOdhiyAgi * ellA ulagum thozhum * Adhi mUrththi enRAl * aLavAgumO? * vEdhiyar * muzhu vEdhaththamudhaththaith * thIdhil sIrth * thiruvEngataththAnaiyE *",
-            6: "vEngatangaL * meym mEl vinai muRRavum * thAngaL thangatku * nallanavE seyvAr * vEngataththuRaivArkku * namavennal Am kadamai * adhu sumandhArgatkE *",
-            7: "sumandhu mA malar * nIr sudar dhUpam koNdu * amarndhu vAnavar * vAnavar kOnodum * namanRezhum * thiruvEngatam nangatkuch * chaman koL vIdu tharum * thadam kunRamE *",
-            8: "kunRam Endhik * kuLir mazhai kAththavan * anRu gyAlam * aLandha pirAn * paran senRu sEr * thiruvEngata mA malai * onRumE thozha * nam vinai OyumE *",
-            9: "OyumUppup * piRappiRappup piNi * vIyumARu seyvAn * thiruvEngataththu Ayan * nALmalarAm * adith thAmarai * vAyuLLum manaththuLLum * vaippArgatkE *",
-            10: "vaiththa nAL varai * ellai kuRugich chenRu * eyththiLaippadhan * munnam adaiminO * paiththa pAmbaNaiyAn * thiruvEngatam * moyththa sOlai * moy pUm thadam thAzhvarE *",
-            11: "thAL parappi * maN thAviya Isanai * nIL pozhil kurugUrch * chatakOpan sol * kEzhil Ayiraththu * ippaththum vallavar * vAzhvar vAzhveydhi * gyAlam pugazhavE *"
-        },
-        'TVM.3.4.steps':
+      'TVM.3.4.steps':
         {
             1: "pugazhum nal oruvan engO? * poruvil sIr bhUmi engO? thigazhum thaN paravai engO? * thI engO vAyu engO? * nigazhum AkAsam engO? * nIL sudar iraNdum engO? * igazhvil ivvanaiththum engO? kaNNanaik kUvumARE *",
             2: "kUvumARu aRiya mAttEn * kunRangaL anaiththum engO? * mEvu sIr mAri engO? * viLangu thAragaigaL engO? * nAviyal kalaigaL engO? * gyAna nal Avi engO? * pAvu sIrk kaNNan emmAn * pangayak kaNNanaiyE *",
@@ -148,7 +133,7 @@ window.mergeLanguageTexts = function () {
             10: "ninRu ninRu pala nAL uykkum * ivvudal nIngip pOych * chenRu chenRAgilum kaNdu * sanmam kazhippAn eNNi * onRi onRi ulagam padaiththAn * kavi AyinERku * enRum enRum ini * maRRoruvar kavi ERkumE? *",
             11: "ERkum perum pugazh * vAnavar Isan kaNNan thanakku * ERkum perum pugazh * vaN kurugUrch chatakOpan sol * ERkum perum pugazh * AyiraththuL ivaiyum Or paththu * ERkum perum pugazh * solla vallArkkillai sanmamE *"
         },
-        'TVM.3.10.steps':
+        'TVM.3.11.steps':
         {
             1: "sanmam pala pala seydhu veLippattuch * changodu chakkaram vil * oNmai udaiya ulakkai oL vAL * thaNdu koNdu puL Urndhu * ulagil vaNmai udaiya arakkar * asurarai mALap padai porudha * nanmai udaiyavan sIr paravap peRRa * nAnOr kuRaivilanE *",
             2: "kuRaivil thadam kadal kOL aravERith * than kOlach chendhAmaraikkaN * uRaibavaan pOla Or yOgu puNarndha * oLi maNi vaNNan kaNNan * kaRai aNi mUkkudaip puLLaik kadAvi * asuraraik kAyndha ammAn * niRai pugazh Eththiyum pAdiyum Adiyum * yAnoru muttilanE *",
