@@ -314,8 +314,8 @@ const CONFIG = {
                 let fileEnd = fileStart + 9;
 
                 // Cap the final audio file window string at 108
-                if (fileEnd > 108) {
-                    fileEnd = 108;
+                if (fileEnd > 74) {
+                    fileEnd = 74;
                 }
 
                 return `audiofiles/URM/URM_${fileStart}_${fileEnd}.ogg`;
