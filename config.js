@@ -280,21 +280,21 @@ const CONFIG = {
 
         }
     },
-    'TPV': {
+    'URM': {
 
         structure: 'chapter_pasuram',
         hasSub: false,
         minCh: 0,
         maxCh: 1,
-        defPas: 30,
-        ex: { '0': 3 },
+        defPas: 74,
+        ex: { '0': 1 },
 
         getMarkerPath: (num) => {
-            return 'markers/marker_tpv_timelines.js';
+            return 'markers/marker_urm_timelines.js';
         },
 
         getLanguagePath: (num, langCode) => {
-            return `markers/marker_tpv_${langCode}.js`;
+            return `markers/marker_urm_${langCode}.js`;
         },
 
         getAudioSrc: (num) => {
@@ -304,7 +304,7 @@ const CONFIG = {
 
             // CASE 1: Thanians (Chapter 0) -> Plays individual files per Thaniyan
             if (chapter === 0) {
-                return `audiofiles/TPV/TPV_${chapter}.ogg`;
+                return `audiofiles/URM/URM_${chapter}.ogg`;
             }
 
             // CASE 2: Main Pasurams (Chapter 1) -> Grouped in batches of 10
@@ -313,15 +313,58 @@ const CONFIG = {
                 let fileStart = Math.floor((pasuram - 1) / 10) * 10 + 1;
                 let fileEnd = fileStart + 9;
 
-                // Cap the final audio file window string at 30
-                if (fileEnd > 30) {
-                    fileEnd = 30;
+                // Cap the final audio file window string at 108
+                if (fileEnd > 108) {
+                    fileEnd = 108;
                 }
 
-                return `audiofiles/TPV/TPV_${fileStart}_${fileEnd}.ogg`;
+                return `audiofiles/URM/URM_${fileStart}_${fileEnd}.ogg`;
             }
         }
     },
+},
+'TPV': {
+
+    structure: 'chapter_pasuram',
+        hasSub: false,
+            minCh: 0,
+                maxCh: 1,
+                    defPas: 30,
+                        ex: { '0': 3 },
+
+    getMarkerPath: (num) => {
+        return 'markers/marker_tpv_timelines.js';
+    },
+
+        getLanguagePath: (num, langCode) => {
+            return `markers/marker_tpv_${langCode}.js`;
+        },
+
+            getAudioSrc: (num) => {
+                const parts = num.split('.');
+                const chapter = parseInt(parts[0], 10);
+                const pasuram = parseInt(parts[1], 10);
+
+                // CASE 1: Thanians (Chapter 0) -> Plays individual files per Thaniyan
+                if (chapter === 0) {
+                    return `audiofiles/TPV/TPV_${chapter}.ogg`;
+                }
+
+                // CASE 2: Main Pasurams (Chapter 1) -> Grouped in batches of 10
+                if (chapter === 1) {
+                    // Automatically groups: 1-10 -> 1, 11-20 -> 11, 101-108 -> 101
+                    let fileStart = Math.floor((pasuram - 1) / 10) * 10 + 1;
+                    let fileEnd = fileStart + 9;
+
+                    // Cap the final audio file window string at 30
+                    if (fileEnd > 30) {
+                        fileEnd = 30;
+                    }
+
+                    return `audiofiles/TPV/TPV_${fileStart}_${fileEnd}.ogg`;
+                }
+            }
+},
 };
 
 /**
