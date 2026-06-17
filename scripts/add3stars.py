@@ -10,6 +10,7 @@ def process_file_asterisks(input_file_path, output_file_path):
         for line in infile:
             modified_line = []
             
+            counter = 0  # Reset the counter
             for char in line:
                 if char == '*':
                     counter += 1
