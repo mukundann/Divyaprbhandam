@@ -2,7 +2,7 @@ window.MARKER_DATABASE = window.MARKER_DATABASE || {};
 
 // Global function to trigger the merge on-demand
 window.mergeLanguageTexts = function () {
-    const text_bundle_en = {
+    const text_bundle_ta = {
         'PAT.1.1.steps':
         {
             1: "வண்ண மாடங்கள் சூழ் * திருக்கோட்டியூர் * கண்ணன் கேசவன் * நம்பி பிறந்தினில் *** எண்ணெய் சுண்ணம் * எதிரெதிர் தூவிடக் * கண்ணன் முற்றம் * கலந்து அளராயிற்றே. ",
