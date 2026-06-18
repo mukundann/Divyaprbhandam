@@ -367,8 +367,10 @@
             if (savedText) document.getElementById('textGuidedContent').value = savedText;
             if (savedUrl) {
                 document.getElementById('urlInput').value = savedUrl;
-                if (savedUrl.includes('github.com') && !savedUrl.endsWith('.txt') && !savedUrl.endsWith('.ogg') && !savedUrl.endsWith('.mp3')) {
+                if (savedUrl.includes('github.com') && !savedUrl.endsWith('.txt') && !savedUrl.endsWith('.js') && !savedUrl.endsWith('.ogg') && !savedUrl.endsWith('.mp3')) {
                     scanGitHubRepositoryFolder(savedUrl, false);
+                } else if (savedUrl.toLowerCase().endsWith('.js')) {
+                    fetchAndParseJsFile(savedUrl);
                 } else if (savedUrl.includes('youtube.com') || savedUrl.includes('youtu.be')) {
                     setupYouTube(savedUrl);
                 } else {
@@ -410,7 +412,7 @@
             if (!url) return;
 
             // Route A: Is user target an implicit repository folder structural layout overview?
-            if (url.includes('github.com') && !url.endsWith('.txt') && !url.endsWith('.ogg') && !url.endsWith('.mp3') && !url.includes('/blob/')) {
+            if (url.includes('github.com') && !url.endsWith('.txt') && !url.endsWith('.js') && !url.endsWith('.ogg') && !url.endsWith('.mp3') && !url.includes('/blob/')) {
                 scanGitHubRepositoryFolder(url, true);
                 return;
             }
@@ -425,6 +427,8 @@
 
             if (url.toLowerCase().endsWith('.txt')) {
                 fetchTextScriptFromWeb(url);
+            } else if (url.toLowerCase().endsWith('.js')) {
+                fetchAndParseJsFile(url);
             } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
                 setupYouTube(url);
             } else {
@@ -520,7 +524,12 @@
             }
 
             if (chapter.text) {
-                fetchTextScriptFromWeb(chapter.text);
+                const isJs = chapter.text.toLowerCase().endsWith('.js');
+                if (isJs) {
+                    fetchAndParseJsFile(chapter.text);
+                } else {
+                    fetchTextScriptFromWeb(chapter.text);
+                }
             }
         }
 
@@ -537,6 +546,117 @@
                 alert("Failed to retrieve text content stream: " + err.message);
             }
         }
+
+        // ─── JS FILE PARSER ───────────────────────────────────────────────────────
+        // Fetches a 1_ta.js-style marker database file from any URL (GitHub raw,
+        // CDN, or local server), extracts all named pasuram key blocks from the
+        // mergeLanguageTexts / text_bundle structure, then presents an inline
+        // dropdown so the user can pick which pasuram set to load into the canvas.
+
+        let jsKeyDatabase = {};
+        let jsSourceUrl   = '';
+
+        async function fetchAndParseJsFile(url) {
+            let rawUrl = url;
+            if (rawUrl.includes('github.com') && rawUrl.includes('/blob/')) {
+                rawUrl = rawUrl.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+            }
+            try {
+                const response = await fetch(rawUrl);
+                if (!response.ok) throw new Error('HTTP ' + response.status + ' fetching JS file.');
+                const src = await response.text();
+                jsKeyDatabase = parseJsTextBundle(src);
+                jsSourceUrl   = rawUrl;
+                const keys = Object.keys(jsKeyDatabase);
+                if (keys.length === 0) {
+                    alert("No named pasuram key blocks found in this JS file.\nMake sure it uses the text_bundle / mergeLanguageTexts structure.");
+                    return;
+                }
+                showJsKeySelectorPanel(keys, rawUrl);
+                localStorage.setItem('asm_saved_url', url);
+            } catch (err) {
+                alert("Failed to load JS file: " + err.message);
+            }
+        }
+
+        function parseJsTextBundle(src) {
+            let clean = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+            const result = {};
+            const keyPattern = /['"]([A-Za-z0-9_.]+)['"]\s*:\s*\{/g;
+            let match;
+            while ((match = keyPattern.exec(clean)) !== null) {
+                const blockKey  = match[1];
+                const bodyStart = match.index + match[0].length;
+                let depth = 1, i = bodyStart;
+                while (i < clean.length && depth > 0) {
+                    if (clean[i] === '{') depth++;
+                    else if (clean[i] === '}') depth--;
+                    i++;
+                }
+                const bodyText = clean.substring(bodyStart, i - 1);
+                const entryPat = /(\d+|['"][^'"]+['"])\s*:\s*['"]([^'"]+)['"]/g;
+                let entryMatch;
+                const entries = {};
+                while ((entryMatch = entryPat.exec(bodyText)) !== null) {
+                    let eKey = entryMatch[1].replace(/['"]/g, '').trim();
+                    entries[eKey] = entryMatch[2].trim();
+                }
+                if (Object.keys(entries).length > 0) {
+                    result[blockKey] = entries;
+                }
+            }
+            return result;
+        }
+
+        function showJsKeySelectorPanel(keys, sourceUrl) {
+            let panel = document.getElementById('jsKeySelectorContainer');
+            if (!panel) {
+                panel = document.createElement('div');
+                panel.id = 'jsKeySelectorContainer';
+                panel.className = 'form-group';
+                panel.style.cssText = 'background:#e8f5e9;padding:12px;border:1px solid #a5d6a7;border-radius:4px;';
+                const anchor = document.getElementById('chapterSelectorContainer');
+                anchor.parentNode.insertBefore(panel, anchor.nextSibling);
+            }
+            const filename = sourceUrl.split('/').pop();
+            panel.innerHTML =
+                '<label style="color:#1b5e20;margin-bottom:6px;display:block;">' +
+                    '\uD83D\uDCC4 JS File loaded \u2014 <span style="font-weight:normal;font-size:12px;">' + filename + '</span><br>' +
+                    '<span style="font-weight:normal;font-size:11px;color:#388e3c;">' + keys.length + ' pasuram block' + (keys.length !== 1 ? 's' : '') + ' found</span>' +
+                '</label>' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
+                    '<select id="jsKeyDropdown" style="flex:1;min-width:200px;padding:7px 8px;border:1px solid #a5d6a7;border-radius:4px;">' +
+                        '<option value="">-- Select a Pasuram Block --</option>' +
+                        keys.sort().map(function(k) {
+                            return '<option value="' + k + '">' + k + ' (' + Object.keys(jsKeyDatabase[k]).length + ' verses)</option>';
+                        }).join('') +
+                    '</select>' +
+                    '<button class="btn" style="background:#2e7d32;white-space:nowrap;" onclick="loadJsKeyBlock()">Load Block \u2192</button>' +
+                '</div>';
+            panel.style.display = 'block';
+        }
+
+        function loadJsKeyBlock() {
+            const dropdown = document.getElementById('jsKeyDropdown');
+            if (!dropdown) return;
+            const selectedKey = dropdown.value;
+            if (!selectedKey || !jsKeyDatabase[selectedKey]) {
+                alert("Please select a pasuram block first.");
+                return;
+            }
+            const entries = jsKeyDatabase[selectedKey];
+            const lines   = [];
+            Object.keys(entries).forEach(function(idx) {
+                let verse = entries[idx].trim().replace(/\.\s*$/, '');
+                lines.push(verse + ' * ' + idx + '.');
+            });
+            const formatted = lines.join('\n\n');
+            document.getElementById('textGuidedContent').value = formatted;
+            localStorage.setItem('asm_saved_text', formatted);
+            currentFileName = selectedKey;
+            parseTextToMutableState();
+        }
+        // ─── END JS FILE PARSER ───────────────────────────────────────────────────
 
         function setupYouTube(url) {
             const videoId = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
