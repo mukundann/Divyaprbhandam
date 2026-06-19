@@ -23,7 +23,7 @@ window.mergeLanguageTexts = function () {
             const idx = parseInt(p) - 1;
             window.MARKER_DATABASE[key][idx] = window.MARKER_DATABASE[key][idx] || { p: parseInt(p) };
             window.MARKER_DATABASE[key][idx]['text'] = window.MARKER_DATABASE[key][idx]['text'] || {};
-            window.MARKER_DATABASE[key][idx]['text']['ta'] = text_bundle_ta[key][p];
+            window.MARKER_DATABASE[key][idx]['text']['en'] = text_bundle_en[key][p];
         }
     }
 };
