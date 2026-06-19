@@ -301,7 +301,7 @@ const CONFIG = {
         structure: 'flat_pasuram',
         hasSub: false, maxPas: 100,
         getMarkerPath: () => 'markers/marker_3ta_timeline.js',
-        getLanguagePath: () => (num, langCode) => `markers/marker_2ta_${langCode}.js`,
+        getLanguagePath: () => (num, langCode) => `markers/marker_3ta_${langCode}.js`,
         getAudioSrc: (num) => `https://www.uveda.org/media/recitation/MUT.${num}.mp3`
     },
     'TPE': {
