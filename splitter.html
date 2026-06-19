@@ -278,6 +278,11 @@
                 <button class="btn" style="background-color: #dc3545; flex: 1;" onclick="clearAllState()">Reset</button>
             </div>
 
+            <div class="form-group" style="display:flex; gap:8px; align-items:center; background:#f1f3f4; padding:10px; border-radius:4px; flex-wrap:wrap;">
+                <button class="btn" style="background-color:#5c35a0; flex:1; min-width:160px;" onclick="copyHandoffURL()">📋 Copy Handoff URL</button>
+                <span id="handoffStatus" style="font-size:12px; color:#555; flex:1; min-width:120px;"></span>
+            </div>
+
             <div class="form-group">
                 <label for="textGuidedContent">Raw Pasuram / Script Source Text Content</label>
                 <textarea id="textGuidedContent" rows="6"
@@ -360,27 +365,32 @@
             player.addEventListener('play', () => { window.isTestingSegmentAudio = false; });
             player.addEventListener('seeking', () => { window.isTestingSegmentAudio = false; });
 
-            const savedText = localStorage.getItem('asm_saved_text');
-            const savedUrl = localStorage.getItem('asm_saved_url');
-            const savedMarkers = localStorage.getItem('asm_saved_markers');
+            // Hash-based handoff takes priority over localStorage restore
+            const restoredFromHash = restoreFromHash();
 
-            if (savedText) document.getElementById('textGuidedContent').value = savedText;
-            if (savedUrl) {
-                document.getElementById('urlInput').value = savedUrl;
-                if (savedUrl.includes('github.com') && !savedUrl.endsWith('.txt') && !savedUrl.endsWith('.js') && !savedUrl.endsWith('.ogg') && !savedUrl.endsWith('.mp3')) {
-                    scanGitHubRepositoryFolder(savedUrl, false);
-                } else if (savedUrl.toLowerCase().endsWith('.js')) {
-                    fetchAndParseJsFile(savedUrl);
-                } else if (savedUrl.includes('youtube.com') || savedUrl.includes('youtu.be')) {
-                    setupYouTube(savedUrl);
-                } else {
-                    setupDirectAudio(savedUrl);
+            if (!restoredFromHash) {
+                const savedText = localStorage.getItem('asm_saved_text');
+                const savedUrl = localStorage.getItem('asm_saved_url');
+                const savedMarkers = localStorage.getItem('asm_saved_markers');
+
+                if (savedText) document.getElementById('textGuidedContent').value = savedText;
+                if (savedUrl) {
+                    document.getElementById('urlInput').value = savedUrl;
+                    if (savedUrl.includes('github.com') && !savedUrl.endsWith('.txt') && !savedUrl.endsWith('.js') && !savedUrl.endsWith('.ogg') && !savedUrl.endsWith('.mp3')) {
+                        scanGitHubRepositoryFolder(savedUrl, false);
+                    } else if (savedUrl.toLowerCase().endsWith('.js')) {
+                        fetchAndParseJsFile(savedUrl);
+                    } else if (savedUrl.includes('youtube.com') || savedUrl.includes('youtu.be')) {
+                        setupYouTube(savedUrl);
+                    } else {
+                        setupDirectAudio(savedUrl);
+                    }
                 }
-            }
-            if (savedMarkers) {
-                window.rawMarkers = JSON.parse(savedMarkers);
-                renderInteractiveGrid(true);
-                serializeStateToJS();
+                if (savedMarkers) {
+                    window.rawMarkers = JSON.parse(savedMarkers);
+                    renderInteractiveGrid(true);
+                    serializeStateToJS();
+                }
             }
 
             window.addEventListener('keydown', (e) => {
@@ -657,6 +667,115 @@
             parseTextToMutableState();
         }
         // ─── END JS FILE PARSER ───────────────────────────────────────────────────
+
+        // ─── HANDOFF URL (hash-based session sharing) ────────────────────────────
+        // Encodes the current session (source URL, selected JS key, all markers)
+        // into the page's #hash so the URL can be opened on any device to restore
+        // the full session without any copy-paste or file transfer.
+
+        function encodeHandoffState() {
+            const state = {
+                v: 1,                                               // schema version
+                url: localStorage.getItem('asm_saved_url') || '',
+                key: currentFileName || '',
+                markers: window.rawMarkers || []
+            };
+            try {
+                const json = JSON.stringify(state);
+                // btoa needs a byte string; use encodeURIComponent to handle Unicode (Tamil)
+                return btoa(unescape(encodeURIComponent(json)));
+            } catch(e) {
+                return null;
+            }
+        }
+
+        function decodeHandoffState(hash) {
+            try {
+                const b64 = hash.startsWith('#') ? hash.slice(1) : hash;
+                const json = decodeURIComponent(escape(atob(b64)));
+                return JSON.parse(json);
+            } catch(e) {
+                return null;
+            }
+        }
+
+        function copyHandoffURL() {
+            const encoded = encodeHandoffState();
+            if (!encoded) {
+                document.getElementById('handoffStatus').textContent = 'Nothing to share yet.';
+                return;
+            }
+            const url = window.location.href.split('#')[0] + '#' + encoded;
+            navigator.clipboard.writeText(url).then(function() {
+                const s = document.getElementById('handoffStatus');
+                s.textContent = '✓ Copied! Open on any device.';
+                s.style.color = '#28a745';
+                setTimeout(function() { s.textContent = ''; }, 4000);
+            }).catch(function() {
+                // Fallback: prompt the user to copy manually
+                window.prompt('Copy this handoff URL:', url);
+            });
+        }
+
+        function restoreFromHash() {
+            const hash = window.location.hash;
+            if (!hash || hash.length < 10) return false;
+
+            const state = decodeHandoffState(hash);
+            if (!state || state.v !== 1) return false;
+
+            // Restore markers
+            if (Array.isArray(state.markers) && state.markers.length > 0) {
+                window.rawMarkers = state.markers;
+                // Save to localStorage so subsequent reloads (without hash) also work
+                localStorage.setItem('asm_saved_markers', JSON.stringify(state.markers));
+            }
+
+            // Restore source URL + media
+            if (state.url) {
+                document.getElementById('urlInput').value = state.url;
+                localStorage.setItem('asm_saved_url', state.url);
+
+                if (state.url.toLowerCase().endsWith('.js')) {
+                    // After JS file loads & panel renders, auto-select the saved key
+                    fetchAndParseJsFile(state.url).then(function() {
+                        if (state.key) autoSelectJsKey(state.key);
+                    });
+                } else if (state.url.includes('github.com') && !state.url.endsWith('.txt') &&
+                           !state.url.endsWith('.ogg') && !state.url.endsWith('.mp3')) {
+                    scanGitHubRepositoryFolder(state.url, false);
+                } else if (state.url.includes('youtube.com') || state.url.includes('youtu.be')) {
+                    setupYouTube(state.url);
+                } else {
+                    setupDirectAudio(state.url);
+                }
+            }
+
+            // Restore filename/key
+            if (state.key) currentFileName = state.key;
+
+            renderInteractiveGrid(true);
+            serializeStateToJS();
+
+            const s = document.getElementById('handoffStatus');
+            s.textContent = '✓ Session restored from URL (' + window.rawMarkers.length + ' markers).';
+            s.style.color = '#007bff';
+
+            return true;
+        }
+
+        function autoSelectJsKey(key) {
+            const dropdown = document.getElementById('jsKeyDropdown');
+            if (!dropdown) return;
+            for (let i = 0; i < dropdown.options.length; i++) {
+                if (dropdown.options[i].value === key) {
+                    dropdown.selectedIndex = i;
+                    loadJsKeyBlock();
+                    break;
+                }
+            }
+        }
+        // ─── END HANDOFF URL ──────────────────────────────────────────────────────
 
         function setupYouTube(url) {
             const videoId = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
