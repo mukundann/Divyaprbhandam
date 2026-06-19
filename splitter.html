@@ -223,6 +223,7 @@
         }
     </style>
     <script src="https://www.youtube.com/iframe_api" async></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 </head>
 
 <body>
@@ -279,8 +280,20 @@
             </div>
 
             <div class="form-group" style="display:flex; gap:8px; align-items:center; background:#f1f3f4; padding:10px; border-radius:4px; flex-wrap:wrap;">
-                <button class="btn" style="background-color:#5c35a0; flex:1; min-width:160px;" onclick="copyHandoffURL()">📋 Copy Handoff URL</button>
+                <button class="btn" style="background-color:#5c35a0; flex:1; min-width:140px;" onclick="copyHandoffURL()">📋 Copy Handoff URL</button>
+                <button class="btn" style="background-color:#c0392b; flex:1; min-width:120px;" onclick="showHandoffQR()">📷 Show QR Code</button>
                 <span id="handoffStatus" style="font-size:12px; color:#555; flex:1; min-width:120px;"></span>
+            </div>
+
+            <!-- QR Code Modal -->
+            <div id="qrModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
+                <div style="background:#fff; border-radius:12px; padding:24px; max-width:340px; width:90%; text-align:center; position:relative;">
+                    <button onclick="closeQRModal()" style="position:absolute; top:10px; right:14px; background:none; border:none; font-size:22px; cursor:pointer; color:#555;">&times;</button>
+                    <p style="margin:0 0 6px 0; font-weight:bold; font-size:15px; color:#333;">Scan to open on another device</p>
+                    <p style="margin:0 0 14px 0; font-size:11px; color:#888;">Opens splitter with full session restored</p>
+                    <div id="qrCodeCanvas" style="display:flex; justify-content:center; margin-bottom:14px;"></div>
+                    <p id="qrMarkerCount" style="font-size:12px; color:#555; margin:0;"></p>
+                </div>
             </div>
 
             <div class="form-group">
@@ -715,6 +728,47 @@
                 // Fallback: prompt the user to copy manually
                 window.prompt('Copy this handoff URL:', url);
             });
+        }
+
+        function showHandoffQR() {
+            const encoded = encodeHandoffState();
+            if (!encoded) {
+                document.getElementById('handoffStatus').textContent = 'Nothing to share yet.';
+                return;
+            }
+            const url = window.location.href.split('#')[0] + '#' + encoded;
+
+            // Clear previous QR
+            const container = document.getElementById('qrCodeCanvas');
+            container.innerHTML = '';
+
+            // Generate QR using QRious
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            new QRious({
+                element: canvas,
+                value: url,
+                size: 260,
+                level: 'M',        // Medium error correction — good balance of density vs robustness
+                background: '#ffffff',
+                foreground: '#1a1a2e'
+            });
+
+            // Show marker count info
+            const count = window.rawMarkers ? window.rawMarkers.length : 0;
+            document.getElementById('qrMarkerCount').textContent =
+                count + ' marker' + (count !== 1 ? 's' : '') + ' encoded • ' + (currentFileName || 'no file');
+
+            // Show modal
+            const modal = document.getElementById('qrModal');
+            modal.style.display = 'flex';
+
+            // Close on backdrop click
+            modal.onclick = function(e) { if (e.target === modal) closeQRModal(); };
+        }
+
+        function closeQRModal() {
+            document.getElementById('qrModal').style.display = 'none';
         }
 
         function restoreFromHash() {
