@@ -180,11 +180,11 @@ const LearningEngine = {
         this.startMonitor();
 
         const playPromise = player.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(() => {
-                document.getElementById('status').innerText = "Tap screen to wake audio";
-            });
-        }
+        // if (playPromise !== undefined) {
+        //     playPromise.catch(() => {
+        //         document.getElementById('status').innerText = "Tap screen to wake audio";
+        //     });
+        // }
     },
 
     startMonitor: function () {

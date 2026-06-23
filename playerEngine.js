@@ -229,7 +229,7 @@ function startLearning(onPlayCallback) {
 
         if (!markersFound) {
             bounds = { start: 0, end: 9999 };
-            document.getElementById('status').innerText = `Playing Full Pasuram...`;
+            // document.getElementById('status').innerText = `Playing Full Pasuram...`;
         }
 
         let audioSrc = "";
@@ -237,7 +237,7 @@ function startLearning(onPlayCallback) {
             audioSrc = c.getAudioSrc(numInput);
         } catch (err) {
             console.error("Audio source path mapping error:", err);
-            document.getElementById('status').innerText = "Audio track path missing";
+            // document.getElementById('status').innerText = "Audio track path missing";
             return;
         }
 
