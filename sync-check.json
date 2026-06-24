@@ -1,6 +1,6 @@
 {
-  "server_version": "flat_root_tree_21e51a0c",
-  "last_compiled_at": "2026-06-24T15:08:18.528Z",
+  "server_version": "flat_root_tree_234299ab",
+  "last_compiled_at": "2026-06-24T16:19:50.651Z",
   "assets": {
     "markers/PAT/1_en.js": "e3aadf8d3ea6afcc05db4117cefa2b08",
     "markers/PAT/1_ta.js": "30c9f8ebcf6bbeef7ea80c12dbd3f9c2",
@@ -217,7 +217,7 @@
     "audiofiles/URM/URM_61_70.ogg": "e8bb1e0fa4d051d741be52a0f3b7ad16",
     "audiofiles/URM/URM_71_74.ogg": "98e10019d6126495147423916993341c",
     "audiofiles/YRV/YRV_0_5.ogg": "fa7ca16328a7cf81c690bd674be663c1",
-    "config.js": "402efc8b806b44715fc645ed17c28c62",
+    "config.js": "1a9b8098f6947bc24ca216e309ef149c",
     "learningEngine.js": "1090065c0894459b2b8ab8656ed3e1f0",
     "marker.js": "b4f4ed02a82e2151d4bdc6f1d88e236c",
     "markerProcessor.js": "bc420796d46fa77f25675877fefb8b01",
