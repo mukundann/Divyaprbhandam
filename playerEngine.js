@@ -317,19 +317,27 @@ function navigate(dir) {
             break;
 
         case 'chapter_sub_pasuram':
-            let subLimit = Navigation.getLimit(pre, coords.ch, coords.sub);
-            if (coords.pas > subLimit) {
+            // 1. Get the current active pasuram limit for the specific subchapter
+            let subPasuramLimit = Navigation.getLimit(pre, coords.ch, coords.sub);
+
+            if (coords.pas > subPasuramLimit) {
                 coords.pas = 1;
                 coords.sub++;
-                if (coords.sub > c.maxSub) {
+                
+                // FIX: Get the dynamic subchapter limit for this specific chapter instead of static c.maxSub
+                let activeSubLimit = Navigation.getSubLimit(pre, coords.ch);
+                if (coords.sub > activeSubLimit) {
                     coords.sub = 1;
                     coords.ch = (coords.ch >= c.maxCh) ? minChapterIndex : coords.ch + 1;
                 }
             } else if (coords.pas < 1) {
                 coords.sub--;
                 if (coords.sub < 1) {
+                    // Navigate to the previous chapter
                     coords.ch = (coords.ch <= 1) ? c.maxCh : coords.ch - 1;
-                    coords.sub = c.maxSub;
+                    
+                    // FIX: Set the subchapter index to the previous chapter's dynamic maximum
+                    coords.sub = Navigation.getSubLimit(pre, coords.ch);
                 }
                 coords.pas = Navigation.getLimit(pre, coords.ch, coords.sub);
             }
