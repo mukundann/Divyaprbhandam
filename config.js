@@ -19,7 +19,7 @@ const CONFIG = {
         // Listing a key here automatically activates BOTH the local high-fi audio track 
         // AND the corresponding custom chapter timeline file.
         availableContent: [
-            "3_1", "3_2", "3_3"
+            "3_1", "3_2", "3_3","3_4","3_5"
         ],
 
 
