@@ -601,7 +601,7 @@
                     <input type="checkbox" ${marker.forceEndBlock ? 'checked' : ''} onchange="toggleSegmentBlockBoundary(${i}, this.checked)"> Break
                 </label>
                 <div style="display:flex; gap:3px; margin-left:auto;">
-                    <button class="btn btn-primary" style="padding:4px 8px; font-size:11px;" onclick="snapSegmentBoundaryToPlaybackTime(${i})">Snap</button>
+                   <!-- <button class="btn btn-primary" style="padding:4px 8px; font-size:11px;" onclick="snapSegmentBoundaryToPlaybackTime(${i})">Snap</button> -->
                     <button class="btn btn-success" style="padding:4px 8px; font-size:11px;" onclick="testSegmentAudioPlaybackInterval(${i})">▶</button>
                     <button class="btn btn-danger" style="padding:4px 8px; font-size:11px;" onclick="deleteSegmentRow(${i})">×</button>
                 </div>
@@ -668,13 +668,13 @@
             }
         }
 
-        function snapSegmentBoundaryToPlaybackTime(index) {
-            const time = player.currentTime;
-            window.rawMarkers[index].end = parseFloat(time.toFixed(1));
-            if (window.rawMarkers[index + 1]) window.rawMarkers[index + 1].start = parseFloat(time.toFixed(1));
-            renderTimelineGridCanvas(false);
-            serializeWorkspaceStateToJsCodeblock();
-        }
+        // function snapSegmentBoundaryToPlaybackTime(index) {
+        //     const time = player.currentTime;
+        //     window.rawMarkers[index].end = parseFloat(time.toFixed(1));
+        //     if (window.rawMarkers[index + 1]) window.rawMarkers[index + 1].start = parseFloat(time.toFixed(1));
+        //     renderTimelineGridCanvas(false);
+        //     serializeWorkspaceStateToJsCodeblock();
+        // }
 
         function captureLiveTimestamp() {
             const time = parseFloat(player.currentTime.toFixed(1));
