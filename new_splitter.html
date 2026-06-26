@@ -81,12 +81,32 @@
             transition: background 0.2s;
         }
 
-        .btn-primary { background-color: #007bff; color: white; }
-        .btn-primary:hover { background-color: #0056b3; }
-        .btn-success { background-color: #28a745; color: white; }
-        .btn-success:hover { background-color: #218838; }
-        .btn-danger { background-color: #dc3545; color: white; }
-        .btn-danger:hover { background-color: #c82333; }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
 
         audio {
             width: 100%;
@@ -149,9 +169,23 @@
             overflow-y: auto;
         }
 
-        #livePasuramView hr { border-top: 1px dashed #444; margin: 8px 0; }
-        .active-phrase { background: #ffeb3b; color: #000; padding: 0 4px; border-radius: 3px; font-weight: bold; }
-        .normal-phrase { color: #e0e0e0; opacity: 0.85; }
+        #livePasuramView hr {
+            border-top: 1px dashed #444;
+            margin: 8px 0;
+        }
+
+        .active-phrase {
+            background: #ffeb3b;
+            color: #000;
+            padding: 0 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .normal-phrase {
+            color: #e0e0e0;
+            opacity: 0.85;
+        }
 
         textarea {
             width: 100%;
@@ -173,41 +207,49 @@
     <div class="container">
         <div class="left-panel">
             <div class="card" style="background: #f8fafc; border: 1px solid #cbd5e0;">
-                <h3 style="margin-top:0; color:#1e293b; border-bottom:2px solid #3b82f6; padding-bottom:6px;">📥 Native Script Ingestion Pipeline</h3>
-                
+                <h3 style="margin-top:0; color:#1e293b; border-bottom:2px solid #3b82f6; padding-bottom:6px;">📥 Native
+                    Script Ingestion Pipeline</h3>
+
                 <div class="form-group">
                     <label>1. Audio Stream Target</label>
-                    <input type="file" accept="audio/*" onchange="loadLocalAudio(this)" style="margin-bottom:6px; display:block; font-size:12px;">
+                    <input type="file" accept="audio/*" onchange="loadLocalAudio(this)"
+                        style="margin-bottom:6px; display:block; font-size:12px;">
                     <input type="text" id="audioUrlInput" placeholder="Paste raw audio link...">
                 </div>
 
                 <div class="form-group">
                     <label>2. Text Companion Script File (e.g., 5_ta.js)</label>
-                    <input type="file" accept=".js" onchange="injectLocalScriptAsset(this)" style="margin-bottom:6px; display:block; font-size:12px;">
+                    <input type="file" accept=".js" onchange="injectLocalScriptAsset(this)"
+                        style="margin-bottom:6px; display:block; font-size:12px;">
                     <input type="text" id="textUrlInput" placeholder="Paste raw JavaScript repository file link...">
                 </div>
 
                 <div class="form-group">
                     <label>3. Timeline Database Coordinates File (e.g., timeline_5.js)</label>
-                    <input type="file" accept=".js" onchange="injectLocalScriptAsset(this)" style="margin-bottom:6px; display:block; font-size:12px;">
+                    <input type="file" accept=".js" onchange="injectLocalScriptAsset(this)"
+                        style="margin-bottom:6px; display:block; font-size:12px;">
                     <input type="text" id="stepsUrlInput" placeholder="Paste raw JavaScript timeline file link...">
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button class="btn btn-primary" style="flex: 1;" onclick="triggerUnifiedNetworkPipelineFetch()">Assemble Network Assets ⚡</button>
+                    <button class="btn btn-primary" style="flex: 1;"
+                        onclick="triggerUnifiedNetworkPipelineFetch()">Assemble Network Assets ⚡</button>
                     <button class="btn btn-danger" onclick="clearWorkspaceState()">Reset Canvas</button>
                 </div>
             </div>
 
-            <div id="pipelineKeySelectorContainer" class="card" style="display:none; background:#ecfdf5; border:1px solid #a7f3d0;"></div>
+            <div id="pipelineKeySelectorContainer" class="card"
+                style="display:none; background:#ecfdf5; border:1px solid #a7f3d0;"></div>
 
             <div class="card">
                 <h4 style="margin:0 0 8px 0; color:#334155;">🎧 Media Playback Controls</h4>
-                <div id="timeDisplay" style="font-size:24px; font-weight:bold; color:#0f172a; margin-bottom:4px;">0.0s</div>
+                <div id="timeDisplay" style="font-size:24px; font-weight:bold; color:#0f172a; margin-bottom:4px;">0.0s
+                </div>
                 <audio id="player" controls></audio>
                 <div style="display:flex; gap:8px; margin-top:8px;">
                     <button class="btn btn-primary" onclick="rewindPlayback()">↩ Rewind 2s</button>
-                    <button id="captureBtn" class="btn btn-success" onclick="captureLiveTimestamp()" disabled>Capture Stamp (M)</button>
+                    <button id="captureBtn" class="btn btn-success" onclick="captureLiveTimestamp()" disabled>Capture
+                        Stamp (M)</button>
                 </div>
             </div>
 
@@ -222,20 +264,24 @@
                 <div style="display:flex; justify-content:between; align-items:center;">
                     <h3 id="status" style="margin:0; color:#1e293b;">Markers: 0</h3>
                     <div style="margin-left:auto;">
-                        <button class="btn btn-primary" onclick="reproportionalizeTimelineDist()">Distribute Uniformly</button>
+                        <button class="btn btn-primary" onclick="reproportionalizeTimelineDist()">Distribute
+                            Uniformly</button>
                     </div>
                 </div>
-                
+
                 <div id="marker-list">
-                    <div style="text-align:center; color:#94a3b8; padding:50px 0;">Workspace clear. Ingest asset configurations to populate interactive canvas grids.</div>
+                    <div style="text-align:center; color:#94a3b8; padding:50px 0;">Workspace clear. Ingest asset
+                        configurations to populate interactive canvas grids.</div>
                 </div>
             </div>
 
             <div class="card">
                 <h4 style="margin:0 0 6px 0; color:#334155;">💾 Compiled Database Configuration File Output</h4>
-                <textarea id="ioJson" rows="10" placeholder="Valid JavaScript payload arrays auto-serialize here..."></textarea>
+                <textarea id="ioJson" rows="10"
+                    placeholder="Valid JavaScript payload arrays auto-serialize here..."></textarea>
                 <div style="margin-top:8px; display:flex; gap:10px;">
-                    <button class="btn btn-success" onclick="importFromRawConfigSnippet()">Import Structured Configuration Code Block</button>
+                    <button class="btn btn-success" onclick="importFromRawConfigSnippet()">Import Structured
+                        Configuration Code Block</button>
                 </div>
             </div>
         </div>
@@ -245,7 +291,7 @@
         // Initialize global structures if not loaded yet
         window.MARKER_DATABASE = window.MARKER_DATABASE || {};
         window.rawMarkers = [];
-        
+
         let currentHighlightIndex = -1;
         let currentFileName = "audio_data";
         let detectedDuration = 0;
@@ -264,11 +310,63 @@
             setupGlobalSyncLoop();
 
             window.addEventListener('keydown', (e) => {
+                const active = document.activeElement;
+                if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
                 if (e.key.toLowerCase() === 'm') {
                     const active = document.activeElement;
                     if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
                     e.preventDefault();
                     captureLiveTimestamp();
+                }
+                // 2. Bounded Segment Play/Pause
+                if (e.key === ' ' || e.code === 'Space') {
+                    e.preventDefault();
+
+                    if (!player.paused) {
+                        // If hitting space while playing, stop immediately and clear monitoring loops
+                        player.pause();
+                        if (window.segmentPlaybackIntervalHandle) clearInterval(window.segmentPlaybackIntervalHandle);
+                        window.isTestingSegmentAudio = false;
+                    } else {
+                        // Start playing the current active highlighted segment
+                        if (currentHighlightIndex !== -1 && window.rawMarkers[currentHighlightIndex]) {
+                            const currentSegment = window.rawMarkers[currentHighlightIndex];
+
+                            // Enforce that we are running an isolated segment audition block
+                            window.isTestingSegmentAudio = true;
+
+                            // If the playback head is not already within the segment's boundaries, snap to its start
+                            if (player.currentTime < currentSegment.start || player.currentTime >= currentSegment.end) {
+                                player.currentTime = currentSegment.start;
+                            }
+
+                            player.play();
+
+                            // Clear any lingering interval checks
+                            if (window.segmentPlaybackIntervalHandle) clearInterval(window.segmentPlaybackIntervalHandle);
+
+                            // Monitor the playback line relative to this specific segment's end boundary
+                            window.segmentPlaybackIntervalHandle = setInterval(() => {
+                                if (player.currentTime >= currentSegment.end) {
+                                    player.pause();
+                                    clearInterval(window.segmentPlaybackIntervalHandle);
+                                    window.isTestingSegmentAudio = false;
+
+                                    // Advance focus to the next row automatically so the next Spacebar hit plays it
+                                    const nextIndex = currentHighlightIndex + 1;
+                                    if (nextIndex < window.rawMarkers.length) {
+                                        currentHighlightIndex = nextIndex;
+                                        focusRowScrollHighlight(nextIndex);
+                                        // Set player timeline head perfectly onto the start threshold of the incoming segment
+                                        player.currentTime = window.rawMarkers[nextIndex].start;
+                                    }
+                                }
+                            }, 20); // High-frequency polling (20ms) for frame-accurate boundary cutting
+                        } else {
+                            // Fallback if no valid segment context exists
+                            player.play();
+                        }
+                    }
                 }
             });
 
@@ -330,7 +428,7 @@
 
         async function triggerUnifiedNetworkPipelineFetch() {
             const audioUrl = document.getElementById('audioUrlInput').value.trim();
-            const textUrl  = document.getElementById('textUrlInput').value.trim();
+            const textUrl = document.getElementById('textUrlInput').value.trim();
             const stepsUrl = document.getElementById('stepsUrlInput').value.trim();
 
             const parseCleanUrl = (u) => u.includes('github.com') && u.includes('/blob/') ? u.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/') : u;
@@ -374,22 +472,22 @@
             container.style.display = 'block';
         }
 
-    function buildActiveWorkspaceCanvasTimeline() {
+        function buildActiveWorkspaceCanvasTimeline() {
             const targetNamespaceKey = document.getElementById('selectedPipelineTargetNamespace').value;
             if (!targetNamespaceKey) return;
 
             currentFileName = targetNamespaceKey;
-            
+
             const stepsSourceTimelineArray = window.MARKER_DATABASE[targetNamespaceKey] || [];
             let unifiedCompiledMarkers = [];
 
             if (Array.isArray(stepsSourceTimelineArray) && stepsSourceTimelineArray.length > 0) {
                 stepsSourceTimelineArray.forEach((pasuramBlock, blockIdx) => {
                     if (!pasuramBlock || typeof pasuramBlock !== 'object') return;
-                    
+
                     const step1Timelines = pasuramBlock.step1 || [];
                     const pIndex = pasuramBlock.p || (blockIdx + 1);
-                    
+
                     // Trace and extract text directly from the native nested script engine structure
                     let matchingRawTextLineString = "";
                     if (pasuramBlock.text && pasuramBlock.text.ta) {
@@ -422,11 +520,11 @@
             }
 
             if (unifiedCompiledMarkers.length > 0) {
-                isSystemImportingData = true; 
+                isSystemImportingData = true;
                 window.rawMarkers = unifiedCompiledMarkers;
                 renderTimelineGridCanvas(true);
                 serializeWorkspaceStateToJsCodeblock();
-                isSystemImportingData = false; 
+                isSystemImportingData = false;
                 document.getElementById('pipelineKeySelectorContainer').style.display = 'none';
             } else {
                 alert("Could not load tracking matrix context. Ensure script files match target namespaces.");
@@ -637,15 +735,20 @@
             if (window.segmentPlaybackIntervalHandle) clearInterval(window.segmentPlaybackIntervalHandle);
 
             window.segmentPlaybackIntervalHandle = setInterval(() => {
-                let currentPos = player.currentTime;
-                let targetEnd = window.rawMarkers[id] ? window.rawMarkers[id].end : m.end;
-
-                if (currentPos >= targetEnd) {
+                if (player.currentTime >= m.end) {
                     player.pause();
                     clearInterval(window.segmentPlaybackIntervalHandle);
                     window.isTestingSegmentAudio = false;
+
+                    // Advance focus pointer automatically here too
+                    const nextIndex = id + 1;
+                    if (nextIndex < window.rawMarkers.length) {
+                        currentHighlightIndex = nextIndex;
+                        focusRowScrollHighlight(nextIndex);
+                        player.currentTime = window.rawMarkers[nextIndex].start;
+                    }
                 }
-            }, 30);
+            }, 20);
         }
 
         function renderRunningLiveHighlightViewer(activeIndex) {
@@ -678,7 +781,7 @@
                 let curr = player ? player.currentTime : 0;
                 let idx = window.rawMarkers.findIndex(m => curr >= m.start && curr < m.end);
 
-                if (idx !== -1 && idx !== currentHighlightIndex && !window.isUserEditingActiveCell && !window.isTestingSegmentAudio) {
+                if (idx !== -1 && idx !== currentHighlightIndex && !window.isUserEditingActiveCell) {
                     currentHighlightIndex = idx;
                     focusRowScrollHighlight(idx);
                 }
@@ -695,7 +798,7 @@
 
             let timelineBlocks = [];
             let textBlocks = {};
-            
+
             let groupedByP = {};
             window.rawMarkers.forEach(m => {
                 let p = m.pIndex || 1;
@@ -703,10 +806,10 @@
                 groupedByP[p].push(m);
             });
 
-            Object.keys(groupedByP).sort((a,b) => parseInt(a) - parseInt(b)).forEach(pKey => {
+            Object.keys(groupedByP).sort((a, b) => parseInt(a) - parseInt(b)).forEach(pKey => {
                 let activeGroup = groupedByP[pKey];
                 let step1 = activeGroup.map(seg => [parseFloat(seg.start.toFixed(1)), parseFloat(seg.end.toFixed(1))]);
-                
+
                 let headMarker = activeGroup[0];
                 let step2 = headMarker.origStep2;
                 let step3 = headMarker.origStep3;
@@ -715,7 +818,7 @@
                 if (!step2 || step2.length === 0) {
                     step2 = [];
                     for (let j = 0; j < step1.length; j += 2) {
-                        if(step1[j]) {
+                        if (step1[j]) {
                             step2.push([step1[j][0], step1[j + 1] ? step1[j + 1][1] : step1[j][1]]);
                         }
                     }
@@ -723,7 +826,7 @@
                 if (!step3 || step3.length === 0) {
                     step3 = [];
                     for (let k = 0; k < step2.length; k += 2) {
-                        if(step2[k]) {
+                        if (step2[k]) {
                             step3.push([step2[k][0], step2[k + 1] ? step2[k + 1][1] : step2[k][1]]);
                         }
                     }
@@ -792,13 +895,13 @@
                     }
                 });
 
-                isSystemImportingData = true; 
+                isSystemImportingData = true;
                 window.rawMarkers = imported;
                 renderTimelineGridCanvas(true);
                 serializeWorkspaceStateToJsCodeblock();
-                isSystemImportingData = false; 
+                isSystemImportingData = false;
                 alert(`Successfully mounted canvas timeline using ${window.rawMarkers.length} structural entries.`);
-            } catch(e) { alert("Import Fault: " + e.message); }
+            } catch (e) { alert("Import Fault: " + e.message); }
         }
 
         function rewindPlayback() { player.currentTime = Math.max(0, player.currentTime - 2); }
