@@ -454,22 +454,37 @@
 
             currentFileName = targetNamespaceKey;
 
+            // 1. Trace and extract text directly from the native nested script engine structure
+            let textSourceMap = {};
+            if (window.text_bundle_ta && window.text_bundle_ta[targetNamespaceKey]) {
+                textSourceMap = window.text_bundle_ta[targetNamespaceKey];
+            } else if (window.MARKER_DATABASE[targetNamespaceKey] && window.MARKER_DATABASE[targetNamespaceKey]._textSourceMap) {
+                textSourceMap = window.MARKER_DATABASE[targetNamespaceKey]._textSourceMap;
+            } else if (Array.isArray(window.MARKER_DATABASE[targetNamespaceKey])) {
+                // Check if text is attached directly onto array items
+                window.MARKER_DATABASE[targetNamespaceKey].forEach(block => {
+                    if (block && block.p && block.text && block.text.ta) {
+                        textSourceMap[block.p] = block.text.ta;
+                    }
+                });
+            }
+
             const stepsSourceTimelineArray = window.MARKER_DATABASE[targetNamespaceKey] || [];
             let unifiedCompiledMarkers = [];
 
-            if (Array.isArray(stepsSourceTimelineArray) && stepsSourceTimelineArray.length > 0) {
+            // Check if we actually have valid step timing blocks
+            let hasTimings = Array.isArray(stepsSourceTimelineArray) &&
+                stepsSourceTimelineArray.length > 0 &&
+                stepsSourceTimelineArray.some(b => b.step1 && b.step1.length > 0);
+
+            if (hasTimings) {
+                // Path A: Parse standard existing timeline steps
                 stepsSourceTimelineArray.forEach((pasuramBlock, blockIdx) => {
                     if (!pasuramBlock || typeof pasuramBlock !== 'object') return;
 
                     const step1Timelines = pasuramBlock.step1 || [];
                     const pIndex = pasuramBlock.p || (blockIdx + 1);
-
-                    // Trace and extract text directly from the native nested script engine structure
-                    let matchingRawTextLineString = "";
-                    if (pasuramBlock.text && pasuramBlock.text.ta) {
-                        matchingRawTextLineString = pasuramBlock.text.ta;
-                    }
-
+                    const matchingRawTextLineString = pasuramBlock.text && pasuramBlock.text.ta ? pasuramBlock.text.ta : (textSourceMap[pIndex] || "");
                     let splitPhrases = matchingRawTextLineString.split('*').map(t => t.trim()).filter(t => t.length > 0);
 
                     const currentStep2 = pasuramBlock.step2 ? JSON.parse(JSON.stringify(pasuramBlock.step2)) : null;
@@ -493,6 +508,43 @@
                         });
                     }
                 });
+            } else {
+                // Path B: Timeline is missing/empty -> Extract text phrases and distribute evenly
+                let allPhrases = [];
+
+                // Collect phrases from the text map
+                Object.keys(textSourceMap).sort((a, b) => parseInt(a) - parseInt(b)).forEach(pKey => {
+                    let rawText = textSourceMap[pKey] || "";
+                    let splitPhrases = rawText.split('*').map(t => t.trim()).filter(t => t.length > 0);
+
+                    splitPhrases.forEach((phrase, i) => {
+                        allPhrases.push({
+                            text: phrase,
+                            pIndex: parseInt(pKey),
+                            isLastInBlock: (i === splitPhrases.length - 1)
+                        });
+                    });
+                });
+
+                if (allPhrases.length > 0) {
+                    // Use audio duration if loaded, default to a 5-minute workspace canvas if not
+                    let totalDuration = detectedDuration || 300;
+                    let incrementStep = totalDuration / allPhrases.length;
+
+                    allPhrases.forEach((phraseObj, idx) => {
+                        let startTime = parseFloat((idx * incrementStep).toFixed(1));
+                        let endTime = (idx === allPhrases.length - 1) ? parseFloat(totalDuration.toFixed(1)) : parseFloat(((idx + 1) * incrementStep).toFixed(1));
+
+                        unifiedCompiledMarkers.push({
+                            start: startTime,
+                            end: endTime,
+                            text: phraseObj.text,
+                            pIndex: phraseObj.pIndex,
+                            forceEndBlock: phraseObj.isLastInBlock,
+                            origStep2: null, origStep3: null, origStep4: null
+                        });
+                    });
+                }
             }
 
             if (unifiedCompiledMarkers.length > 0) {
@@ -503,7 +555,7 @@
                 isSystemImportingData = false;
                 document.getElementById('pipelineKeySelectorContainer').style.display = 'none';
             } else {
-                alert("Could not load tracking matrix context. Ensure script files match target namespaces.");
+                alert("Could not load tracking context. Ensure script targets contain text or structural matrices.");
             }
         }
 
