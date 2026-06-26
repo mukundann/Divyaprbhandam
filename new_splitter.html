@@ -231,11 +231,21 @@
                     <input type="text" id="stepsUrlInput" placeholder="Paste raw JavaScript timeline file link...">
                 </div>
 
+              
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
                     <button class="btn btn-primary" style="flex: 1;"
                         onclick="triggerUnifiedNetworkPipelineFetch()">Assemble Network Assets ⚡</button>
                     <button class="btn btn-danger" onclick="clearWorkspaceState()">Reset Canvas</button>
                 </div>
+
+                <div style="margin-top: 12px; display: flex; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="rippleTimeAdjustmentsToggle" checked style="cursor: pointer;">
+                    <label for="rippleTimeAdjustmentsToggle"
+                        style="font-size: 12px; font-weight: 600; color: #475569; cursor: pointer; user-select: none;">
+                        🔄 Ripple changes to subsequent segments
+                    </label>
+                </div>
+
             </div>
 
             <div id="pipelineKeySelectorContainer" class="card"
@@ -602,27 +612,29 @@
 
             window.rawMarkers[index][field] = parsedNum;
 
+            // Maintain back-to-back continuity with immediate neighbors
             if (field === 'start' && window.rawMarkers[index - 1]) {
                 window.rawMarkers[index - 1].end = parsedNum;
             }
+            if (field === 'end' && window.rawMarkers[index + 1]) {
+                window.rawMarkers[index + 1].start = parsedNum;
+            }
 
-            if (deltaOffset !== 0) {
-                if (field === 'end' && window.rawMarkers[index + 1]) {
-                    window.rawMarkers[index + 1].start = parsedNum;
-                }
+            // Only cascade the shift down the timeline if the ripple checkbox is enabled
+            const shouldRipple = document.getElementById('rippleTimeAdjustmentsToggle').checked;
 
-                if (!isSystemImportingData && window.isUserEditingActiveCell) {
-                    for (let i = index + 1; i < window.rawMarkers.length; i++) {
-                        let targetEnd = parseFloat((window.rawMarkers[i].end + deltaOffset).toFixed(1));
-                        window.rawMarkers[i].end = targetEnd;
-                        window.rawMarkers[i].start = window.rawMarkers[i - 1].end;
-                    }
+            if (deltaOffset !== 0 && shouldRipple && !isSystemImportingData && window.isUserEditingActiveCell) {
+                for (let i = index + 1; i < window.rawMarkers.length; i++) {
+                    let targetEnd = parseFloat((window.rawMarkers[i].end + deltaOffset).toFixed(1));
+                    window.rawMarkers[i].end = targetEnd;
+                    window.rawMarkers[i].start = window.rawMarkers[i - 1].end;
                 }
+            }
 
-                const lastIdx = window.rawMarkers.length - 1;
-                if (window.rawMarkers[lastIdx].end > detectedDuration && detectedDuration > 0) {
-                    window.rawMarkers[lastIdx].end = parseFloat(detectedDuration.toFixed(1));
-                }
+            // Enforce maximum track boundary safety ceiling safely
+            const lastIdx = window.rawMarkers.length - 1;
+            if (window.rawMarkers[lastIdx].end > detectedDuration && detectedDuration > 0) {
+                window.rawMarkers[lastIdx].end = parseFloat(detectedDuration.toFixed(1));
             }
 
             renderTimelineGridCanvas(false);
