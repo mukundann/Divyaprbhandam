@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Marker Studio - Multi-Asset Ingestion Pipeline</title>
+    <title>Audio Marker Studio - Native Script Pipeline</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -173,24 +173,24 @@
     <div class="container">
         <div class="left-panel">
             <div class="card" style="background: #f8fafc; border: 1px solid #cbd5e0;">
-                <h3 style="margin-top:0; color:#1e293b; border-bottom:2px solid #3b82f6; padding-bottom:6px;">📥 Multi-Asset Ingestion Pipeline</h3>
+                <h3 style="margin-top:0; color:#1e293b; border-bottom:2px solid #3b82f6; padding-bottom:6px;">📥 Native Script Ingestion Pipeline</h3>
                 
                 <div class="form-group">
                     <label>1. Audio Stream Target</label>
                     <input type="file" accept="audio/*" onchange="loadLocalAudio(this)" style="margin-bottom:6px; display:block; font-size:12px;">
-                    <input type="text" id="audioUrlInput" placeholder="Paste raw audio network target link...">
+                    <input type="text" id="audioUrlInput" placeholder="Paste raw audio link...">
                 </div>
 
                 <div class="form-group">
-                    <label>2. Text Dictionary Script Bundle (e.g., 5_ta.js)</label>
-                    <input type="file" accept=".js,.txt" onchange="loadLocalTextScript(this)" style="margin-bottom:6px; display:block; font-size:12px;">
-                    <input type="text" id="textUrlInput" placeholder="Paste raw text repository file link...">
+                    <label>2. Text Companion Script File (e.g., 5_ta.js)</label>
+                    <input type="file" accept=".js" onchange="injectLocalScriptAsset(this)" style="margin-bottom:6px; display:block; font-size:12px;">
+                    <input type="text" id="textUrlInput" placeholder="Paste raw JavaScript repository file link...">
                 </div>
 
                 <div class="form-group">
-                    <label>3. Steps Coordinates Database Array (e.g., timeline_5.js)</label>
-                    <input type="file" accept=".js,.json" onchange="loadLocalStepsDb(this)" style="margin-bottom:6px; display:block; font-size:12px;">
-                    <input type="text" id="stepsUrlInput" placeholder="Paste raw steps timing file link...">
+                    <label>3. Timeline Database Coordinates File (e.g., timeline_5.js)</label>
+                    <input type="file" accept=".js" onchange="injectLocalScriptAsset(this)" style="margin-bottom:6px; display:block; font-size:12px;">
+                    <input type="text" id="stepsUrlInput" placeholder="Paste raw JavaScript timeline file link...">
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
@@ -233,7 +233,7 @@
 
             <div class="card">
                 <h4 style="margin:0 0 6px 0; color:#334155;">💾 Compiled Database Configuration File Output</h4>
-                <textarea id="ioJson" rows="10" placeholder="Valid JavaScript payload arrays auto-serialize here on adjustments..."></textarea>
+                <textarea id="ioJson" rows="10" placeholder="Valid JavaScript payload arrays auto-serialize here..."></textarea>
                 <div style="margin-top:8px; display:flex; gap:10px;">
                     <button class="btn btn-success" onclick="importFromRawConfigSnippet()">Import Structured Configuration Code Block</button>
                 </div>
@@ -242,16 +242,17 @@
     </div>
 
     <script>
+        // Initialize global structures if not loaded yet
+        window.MARKER_DATABASE = window.MARKER_DATABASE || {};
         window.rawMarkers = [];
+        
         let currentHighlightIndex = -1;
         let currentFileName = "audio_data";
         let detectedDuration = 0;
 
         window.isUserEditingActiveCell = false;
         window.isTestingSegmentAudio = false;
-
-        let parsedTextDatabase = {};   
-        let parsedStepsDatabase = {};  
+        let isSystemImportingData = false;
 
         let player, markerList, ioJson, livePasuramView;
 
@@ -303,80 +304,28 @@
             };
         }
 
-        function loadLocalTextScript(input) {
+        // Direct clean script dynamic injector method
+        function injectLocalScriptAsset(input) {
             if (!input || !input.files || input.files.length === 0) return;
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                extractTextBundleTokens(e.target.result);
+            const scriptUrl = URL.createObjectURL(input.files[0]);
+            appendScriptNodeToDOM(scriptUrl, () => {
+                // Check if text bundle engine merge function is present inside language definitions
+                if (typeof window.mergeLanguageTexts === 'function') {
+                    window.mergeLanguageTexts();
+                }
                 evaluateIncomingPipelineAssets();
+            });
+        }
+
+        function appendScriptNodeToDOM(srcUrl, callback) {
+            const script = document.createElement('script');
+            script.src = srcUrl;
+            script.async = false;
+            script.onload = () => {
+                if (callback) callback();
             };
-            reader.readAsText(input.files[0]);
-        }
-
-        function extractTextBundleTokens(src) {
-            let clean = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-            const pattern = /['"]([A-Za-z0-9_.]+)['"]\s*:\s*\{/g;
-            let match;
-            while ((match = pattern.exec(clean)) !== null) {
-                const key = match[1];
-                const bodyStart = match.index + match[0].length;
-                let depth = 1, i = bodyStart;
-                
-                while (i < clean.length && depth > 0) {
-                    if (clean[i] === '{') depth++;
-                    else if (clean[i] === '}') depth--;
-                    i++;
-                }
-                const bodyText = clean.substring(bodyStart, i - 1);
-                const lineItemPattern = /(\d+|['"][^'"]+['"])\s*:\s*['"]([^'"]+)['"]/g;
-                let lineMatch;
-                if (!parsedTextDatabase[key]) parsedTextDatabase[key] = {};
-                
-                while ((lineMatch = lineItemPattern.exec(bodyText)) !== null) {
-                    let stepIdx = lineMatch[1].replace(/['"]/g, '').trim();
-                    parsedTextDatabase[key][stepIdx] = lineMatch[2].trim();
-                }
-            }
-        }
-
-        function loadLocalStepsDb(input) {
-            if (!input || !input.files || input.files.length === 0) return;
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                extractStepsDatabaseArrays(e.target.result);
-                evaluateIncomingPipelineAssets();
-            };
-            reader.readAsText(input.files[0]);
-        }
-
-        function extractStepsDatabaseArrays(src) {
-            let clean = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-            const pattern = /(?:MARKER_DATABASE\s*\[\s*['"]([^'"]+)['"]\s*\]|['"]([^'"]+)['"]\s*:\s*\[)/g;
-            let match;
-            while ((match = pattern.exec(clean)) !== null) {
-                const key = match[1] || match[2];
-                const bodyStart = pattern.lastIndex;
-                
-                let depth = 0, i = bodyStart - 1;
-                while (i < clean.length) {
-                    if (clean[i] === '[') depth++;
-                    if (clean[i] === ']') {
-                        depth--;
-                        if (depth === 0) break;
-                    }
-                    i++;
-                }
-                const arrayContentString = clean.substring(bodyStart - 1, i + 1);
-                try {
-                    let jsonValid = arrayContentString.replace(/,\s*([\]}])/g, '$1');
-                    parsedStepsDatabase[key] = JSON.parse(jsonValid);
-                } catch(err) {
-                    try {
-                        let evalArr = new Function(`return ${arrayContentString};`)();
-                        if (Array.isArray(evalArr)) parsedStepsDatabase[key] = evalArr;
-                    } catch(e) { console.error("Could not deserialize file coordinates matrix template segment: ", e); }
-                }
-            }
+            script.onerror = () => console.error("Could not parse native script resource context cleanly.");
+            document.head.appendChild(script);
         }
 
         async function triggerUnifiedNetworkPipelineFetch() {
@@ -388,34 +337,25 @@
 
             if (audioUrl) initiateAudioStreamingNode(parseCleanUrl(audioUrl));
 
-            if (textUrl) {
-                try {
-                    const res = await fetch(parseCleanUrl(textUrl));
-                    if (res.ok) extractTextBundleTokens(await res.text());
-                } catch(e) { alert("Error pulling remote dictionary endpoint stream: " + e.message); }
-            }
+            let tracksLoaded = 0;
+            const checkSyncStatus = () => {
+                tracksLoaded++;
+                if (tracksLoaded >= [textUrl, stepsUrl].filter(Boolean).length) {
+                    if (typeof window.mergeLanguageTexts === 'function') window.mergeLanguageTexts();
+                    evaluateIncomingPipelineAssets();
+                }
+            };
 
-            if (stepsUrl) {
-                try {
-                    const res = await fetch(parseCleanUrl(stepsUrl));
-                    if (res.ok) extractStepsDatabaseArrays(await res.text());
-                } catch(e) { alert("Error pulling remote coordinates database stream: " + e.message); }
-            }
-
-            evaluateIncomingPipelineAssets();
+            if (textUrl) appendScriptNodeToDOM(parseCleanUrl(textUrl), checkSyncStatus);
+            if (stepsUrl) appendScriptNodeToDOM(parseCleanUrl(stepsUrl), checkSyncStatus);
         }
 
         function evaluateIncomingPipelineAssets() {
-            const textKeys = Object.keys(parsedTextDatabase);
-            const stepsKeys = Object.keys(parsedStepsDatabase);
-            const sharedIntersectionKeys = textKeys.filter(k => stepsKeys.includes(k));
-
-            if (sharedIntersectionKeys.length === 0) {
-                const globalJoinedFallbackKeys = Array.from(new Set([...textKeys, ...stepsKeys]));
-                if (globalJoinedFallbackKeys.length > 0) renderPipelineSelectorDropdownPanel(globalJoinedFallbackKeys);
-                return;
+            // Find active configurations tracked directly across global windows memory namespaces
+            const targetKeys = Object.keys(window.MARKER_DATABASE || {});
+            if (targetKeys.length > 0) {
+                renderPipelineSelectorDropdownPanel(targetKeys);
             }
-            renderPipelineSelectorDropdownPanel(sharedIntersectionKeys);
         }
 
         function renderPipelineSelectorDropdownPanel(keys) {
@@ -425,7 +365,7 @@
                     🎯 Pipeline Key Identifier Targets Traced
                 </label>
                 <div style="display:flex; gap:10px; align-items:center;">
-                    <select id="selectedPipelineTargetNamespace" style="flex:1; padding:6px; font-size:12px; border:1px solid #10b981; border-radius:4px;">
+                    <select id="selectedPipelineTargetNamespace" style="flex:1; padding:6px; font-size:12px; border:1px solid #10b981; border-radius:4px; height:32px;">
                         ${keys.map(k => `<option value="${k}">${k}</option>`).join('')}
                     </select>
                     <button class="btn btn-success" style="padding:6px 14px;" onclick="buildActiveWorkspaceCanvasTimeline()">Load Combined Matrix</button>
@@ -434,26 +374,33 @@
             container.style.display = 'block';
         }
 
-        function buildActiveWorkspaceCanvasTimeline() {
+    function buildActiveWorkspaceCanvasTimeline() {
             const targetNamespaceKey = document.getElementById('selectedPipelineTargetNamespace').value;
             if (!targetNamespaceKey) return;
 
             currentFileName = targetNamespaceKey;
-            const textSourceMap = parsedTextDatabase[targetNamespaceKey] || {};
-            const stepsSourceTimelineArray = parsedStepsDatabase[targetNamespaceKey] || [];
-
+            
+            const stepsSourceTimelineArray = window.MARKER_DATABASE[targetNamespaceKey] || [];
             let unifiedCompiledMarkers = [];
 
-            if (stepsSourceTimelineArray.length > 0) {
-                stepsSourceTimelineArray.forEach((pasuramBlock) => {
-                    const step1Timelines = pasuramBlock.step1 || [];
-                    const step2Timelines = pasuramBlock.step2 || null;
-                    const step3Timelines = pasuramBlock.step3 || null;
-                    const step4Timeline  = pasuramBlock.step4 || null;
-                    const pIndex = pasuramBlock.p || 1;
+            if (Array.isArray(stepsSourceTimelineArray) && stepsSourceTimelineArray.length > 0) {
+                stepsSourceTimelineArray.forEach((pasuramBlock, blockIdx) => {
+                    if (!pasuramBlock || typeof pasuramBlock !== 'object') return;
                     
-                    const matchingRawTextLineString = textSourceMap[pIndex] || "";
+                    const step1Timelines = pasuramBlock.step1 || [];
+                    const pIndex = pasuramBlock.p || (blockIdx + 1);
+                    
+                    // Trace and extract text directly from the native nested script engine structure
+                    let matchingRawTextLineString = "";
+                    if (pasuramBlock.text && pasuramBlock.text.ta) {
+                        matchingRawTextLineString = pasuramBlock.text.ta;
+                    }
+
                     let splitPhrases = matchingRawTextLineString.split('*').map(t => t.trim()).filter(t => t.length > 0);
+
+                    const currentStep2 = pasuramBlock.step2 ? JSON.parse(JSON.stringify(pasuramBlock.step2)) : null;
+                    const currentStep3 = pasuramBlock.step3 ? JSON.parse(JSON.stringify(pasuramBlock.step3)) : null;
+                    const currentStep4 = pasuramBlock.step4 ? JSON.parse(JSON.stringify(pasuramBlock.step4)) : null;
 
                     for (let i = 0; i < step1Timelines.length; i++) {
                         let startTime = parseFloat(step1Timelines[i][0]);
@@ -466,41 +413,23 @@
                             text: verseContent,
                             pIndex: pIndex,
                             forceEndBlock: (i === step1Timelines.length - 1),
-                            origStep2: i === 0 ? step2Timelines : null,
-                            origStep3: i === 0 ? step3Timelines : null,
-                            origStep4: i === 0 ? step4Timeline : null
+                            origStep2: i === 0 ? currentStep2 : null,
+                            origStep3: i === 0 ? currentStep3 : null,
+                            origStep4: i === 0 ? currentStep4 : null
                         });
                     }
                 });
-            } else if (Object.keys(textSourceMap).length > 0) {
-                let collectorArray = [];
-                Object.keys(textSourceMap).sort((a,b) => parseInt(a) - parseInt(b)).forEach(pKey => {
-                    let segments = textSourceMap[pKey].split('*').map(t => t.trim()).filter(t => t.length > 0);
-                    segments.forEach((txt, idx) => {
-                        collectorArray.push({ phrase: txt, isBoundary: (idx === segments.length - 1), pIndex: parseInt(pKey) });
-                    });
-                });
-
-                let runtimeLimit = detectedDuration || 300;
-                let singleLengthStep = runtimeLimit / collectorArray.length;
-                unifiedCompiledMarkers = collectorArray.map((p, index) => ({
-                    start: parseFloat((index * singleLengthStep).toFixed(1)),
-                    end: parseFloat(((index + 1) * singleLengthStep).toFixed(1)),
-                    text: p.phrase,
-                    pIndex: p.pIndex,
-                    forceEndBlock: p.isBoundary,
-                    origStep2: null, origStep3: null, origStep4: null
-                }));
             }
 
             if (unifiedCompiledMarkers.length > 0) {
+                isSystemImportingData = true; 
                 window.rawMarkers = unifiedCompiledMarkers;
                 renderTimelineGridCanvas(true);
-                // Pre-populate JSON output without causing recursive mutation cycles
-                serializeWorkspaceStateToJsCodeblock(true);
+                serializeWorkspaceStateToJsCodeblock();
+                isSystemImportingData = false; 
                 document.getElementById('pipelineKeySelectorContainer').style.display = 'none';
             } else {
-                alert("Could not process dynamic mapping arrays.");
+                alert("Could not load tracking matrix context. Ensure script files match target namespaces.");
             }
         }
 
@@ -538,7 +467,7 @@
                        onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
                        onblur="window.isUserEditingActiveCell = false;" 
                        oninput="modifySegmentTimeCoordinates(${i}, 'end', this.value)">
-                <input type="text" placeholder="Verse fragment content parameters" value="${marker.text.replace(/"/g, '&quot;')}" 
+                <input type="text" placeholder="Verse fragment text" value="${marker.text.replace(/"/g, '&quot;')}" 
                        onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
                        onblur="window.isUserEditingActiveCell = false;" 
                        oninput="modifySegmentTextString(${i}, this.value)">
@@ -575,7 +504,6 @@
 
             window.rawMarkers[index][field] = parsedNum;
 
-            // Maintain alignment with previous row seamlessly
             if (field === 'start' && window.rawMarkers[index - 1]) {
                 window.rawMarkers[index - 1].end = parsedNum;
             }
@@ -585,8 +513,7 @@
                     window.rawMarkers[index + 1].start = parsedNum;
                 }
 
-                // FIX: Only loop down if the user is explicitly editing and shifting timestamps manually
-                if (window.isUserEditingActiveCell) {
+                if (!isSystemImportingData && window.isUserEditingActiveCell) {
                     for (let i = index + 1; i < window.rawMarkers.length; i++) {
                         let targetEnd = parseFloat((window.rawMarkers[i].end + deltaOffset).toFixed(1));
                         window.rawMarkers[i].end = targetEnd;
@@ -601,7 +528,9 @@
             }
 
             renderTimelineGridCanvas(false);
-            serializeWorkspaceStateToJsCodeblock();
+            if (!isSystemImportingData) {
+                serializeWorkspaceStateToJsCodeblock();
+            }
         }
 
         function toggleSegmentBlockBoundary(index, isChecked) {
@@ -761,8 +690,7 @@
             requestAnimationFrame(monitor);
         }
 
-        // FIX: Added clearPreservationOnly parameter to maintain 100% exact values during programmatic mapping
-        function serializeWorkspaceStateToJsCodeblock(clearPreservationOnly = false) {
+        function serializeWorkspaceStateToJsCodeblock() {
             if (!ioJson || window.rawMarkers.length === 0) return;
 
             let timelineBlocks = [];
@@ -780,11 +708,11 @@
                 let step1 = activeGroup.map(seg => [parseFloat(seg.start.toFixed(1)), parseFloat(seg.end.toFixed(1))]);
                 
                 let headMarker = activeGroup[0];
-                let step2 = clearPreservationOnly ? null : headMarker.origStep2;
-                let step3 = clearPreservationOnly ? null : headMarker.origStep3;
-                let step4 = clearPreservationOnly ? null : headMarker.origStep4;
+                let step2 = headMarker.origStep2;
+                let step3 = headMarker.origStep3;
+                let step4 = headMarker.origStep4;
 
-                if (!step2) {
+                if (!step2 || step2.length === 0) {
                     step2 = [];
                     for (let j = 0; j < step1.length; j += 2) {
                         if(step1[j]) {
@@ -792,7 +720,7 @@
                         }
                     }
                 }
-                if (!step3) {
+                if (!step3 || step3.length === 0) {
                     step3 = [];
                     for (let k = 0; k < step2.length; k += 2) {
                         if(step2[k]) {
@@ -800,7 +728,7 @@
                         }
                     }
                 }
-                if (!step4) {
+                if (!step4 || step4.length === 0) {
                     step4 = [parseFloat(activeGroup[0].start.toFixed(1)), parseFloat(activeGroup[activeGroup.length - 1].end.toFixed(1))];
                 }
 
@@ -836,7 +764,9 @@
                 const arrayEnd = raw.lastIndexOf(']');
                 if (arrayStart === -1 || arrayEnd === -1) throw new Error("Could not detect top-level array anchors.");
 
-                let cleanJsonStr = raw.substring(arrayStart, arrayEnd + 1).replace(/,\s*([\]}])/g, '$1');
+                let cleanJsonStr = raw.substring(arrayStart, arrayEnd + 1)
+                    .replace(/,\s*([\]}])/g, '$1')
+                    .replace(/,\s*\n\s*([\]}])/g, '$1');
                 const parsedBlocks = JSON.parse(cleanJsonStr);
 
                 if (!Array.isArray(parsedBlocks)) throw new Error("Target node payload is not an explicit matrix array configuration.");
@@ -844,6 +774,10 @@
                 let imported = [];
                 parsedBlocks.forEach((block) => {
                     const step1 = block.step1 || [];
+                    const currentStep2 = block.step2 ? JSON.parse(JSON.stringify(block.step2)) : null;
+                    const currentStep3 = block.step3 ? JSON.parse(JSON.stringify(block.step3)) : null;
+                    const currentStep4 = block.step4 ? JSON.parse(JSON.stringify(block.step4)) : null;
+
                     for (let i = 0; i < step1.length; i++) {
                         imported.push({
                             start: parseFloat(step1[i][0]),
@@ -851,16 +785,18 @@
                             text: `Verse Fragment Node Row [P.${block.p || 1} #${i + 1}]`,
                             pIndex: block.p || 1,
                             forceEndBlock: (i === step1.length - 1),
-                            origStep2: i === 0 ? block.step2 : null,
-                            origStep3: i === 0 ? block.step3 : null,
-                            origStep4: i === 0 ? block.step4 : null
+                            origStep2: i === 0 ? currentStep2 : null,
+                            origStep3: i === 0 ? currentStep3 : null,
+                            origStep4: i === 0 ? currentStep4 : null
                         });
                     }
                 });
 
+                isSystemImportingData = true; 
                 window.rawMarkers = imported;
                 renderTimelineGridCanvas(true);
                 serializeWorkspaceStateToJsCodeblock();
+                isSystemImportingData = false; 
                 alert(`Successfully mounted canvas timeline using ${window.rawMarkers.length} structural entries.`);
             } catch(e) { alert("Import Fault: " + e.message); }
         }
@@ -870,8 +806,8 @@
         function clearWorkspaceState() {
             if (confirm("Clear active canvas context?")) {
                 window.rawMarkers = [];
-                parsedTextDatabase = {};
-                parsedStepsDatabase = {};
+                window.MARKER_DATABASE = {};
+                window.text_bundle_ta = {};
                 document.getElementById('audioUrlInput').value = '';
                 document.getElementById('textUrlInput').value = '';
                 document.getElementById('stepsUrlInput').value = '';
