@@ -172,12 +172,11 @@
 
     <div class="container">
         <div class="left-panel">
-            
             <div class="card" style="background: #f8fafc; border: 1px solid #cbd5e0;">
                 <h3 style="margin-top:0; color:#1e293b; border-bottom:2px solid #3b82f6; padding-bottom:6px;">📥 Multi-Asset Ingestion Pipeline</h3>
                 
                 <div class="form-group">
-                    <label>1. Audio Stream Target (Local File or GitHub URL)</label>
+                    <label>1. Audio Stream Target</label>
                     <input type="file" accept="audio/*" onchange="loadLocalAudio(this)" style="margin-bottom:6px; display:block; font-size:12px;">
                     <input type="text" id="audioUrlInput" placeholder="Paste raw audio network target link...">
                 </div>
@@ -216,7 +215,6 @@
                 <h4 style="margin:0 0 8px 0; color:#334155;"># Live Verse Synchronizer View</h4>
                 <div id="livePasuramView"><em>Load assets to generate dynamic highlighter canvas...</em></div>
             </div>
-
         </div>
 
         <div class="right-panel">
@@ -244,7 +242,6 @@
     </div>
 
     <script>
-        // Global State Memory Maps
         window.rawMarkers = [];
         let currentHighlightIndex = -1;
         let currentFileName = "audio_data";
@@ -253,7 +250,6 @@
         window.isUserEditingActiveCell = false;
         window.isTestingSegmentAudio = false;
 
-        // Isolated Dynamic Local Store Vaults
         let parsedTextDatabase = {};   
         let parsedStepsDatabase = {};  
 
@@ -449,7 +445,6 @@
             let unifiedCompiledMarkers = [];
 
             if (stepsSourceTimelineArray.length > 0) {
-                // FIXED IMPORT LOGIC: Cache custom step2, step3, step4 values from the array completely untouched
                 stepsSourceTimelineArray.forEach((pasuramBlock) => {
                     const step1Timelines = pasuramBlock.step1 || [];
                     const step2Timelines = pasuramBlock.step2 || null;
@@ -471,7 +466,6 @@
                             text: verseContent,
                             pIndex: pIndex,
                             forceEndBlock: (i === step1Timelines.length - 1),
-                            // Save original structures as metadata so serialize won't regenerate them blindly
                             origStep2: i === 0 ? step2Timelines : null,
                             origStep3: i === 0 ? step3Timelines : null,
                             origStep4: i === 0 ? step4Timeline : null
@@ -502,10 +496,11 @@
             if (unifiedCompiledMarkers.length > 0) {
                 window.rawMarkers = unifiedCompiledMarkers;
                 renderTimelineGridCanvas(true);
-                serializeWorkspaceStateToJsCodeblock();
+                // Pre-populate JSON output without causing recursive mutation cycles
+                serializeWorkspaceStateToJsCodeblock(true);
                 document.getElementById('pipelineKeySelectorContainer').style.display = 'none';
             } else {
-                alert("Could not process dynamic mapping arrays using variables parsed in runtime paths.");
+                alert("Could not process dynamic mapping arrays.");
             }
         }
 
@@ -572,12 +567,15 @@
         function modifySegmentTimeCoordinates(index, field, value) {
             if (!window.rawMarkers[index]) return;
 
-            const parsedNum = parseFloat(value) || 0;
+            const parsedNum = parseFloat(value);
+            if (isNaN(parsedNum)) return;
+
             const originalVal = window.rawMarkers[index][field];
             const deltaOffset = parsedNum - originalVal;
 
             window.rawMarkers[index][field] = parsedNum;
 
+            // Maintain alignment with previous row seamlessly
             if (field === 'start' && window.rawMarkers[index - 1]) {
                 window.rawMarkers[index - 1].end = parsedNum;
             }
@@ -587,10 +585,13 @@
                     window.rawMarkers[index + 1].start = parsedNum;
                 }
 
-                for (let i = index + 1; i < window.rawMarkers.length; i++) {
-                    let targetEnd = parseFloat((window.rawMarkers[i].end + deltaOffset).toFixed(1));
-                    window.rawMarkers[i].end = targetEnd;
-                    window.rawMarkers[i].start = window.rawMarkers[i - 1].end;
+                // FIX: Only loop down if the user is explicitly editing and shifting timestamps manually
+                if (window.isUserEditingActiveCell) {
+                    for (let i = index + 1; i < window.rawMarkers.length; i++) {
+                        let targetEnd = parseFloat((window.rawMarkers[i].end + deltaOffset).toFixed(1));
+                        window.rawMarkers[i].end = targetEnd;
+                        window.rawMarkers[i].start = window.rawMarkers[i - 1].end;
+                    }
                 }
 
                 const lastIdx = window.rawMarkers.length - 1;
@@ -760,16 +761,13 @@
             requestAnimationFrame(monitor);
         }
 
-        // -------------------------------------------------------------
-        // OUTPUT SERIALIZATION - PRESERVES CUSTOM ARRAYS UNTOUCHED
-        // -------------------------------------------------------------
-        function serializeWorkspaceStateToJsCodeblock() {
+        // FIX: Added clearPreservationOnly parameter to maintain 100% exact values during programmatic mapping
+        function serializeWorkspaceStateToJsCodeblock(clearPreservationOnly = false) {
             if (!ioJson || window.rawMarkers.length === 0) return;
 
             let timelineBlocks = [];
             let textBlocks = {};
             
-            // Group raw markers back by their structural verse indexes (pIndex)
             let groupedByP = {};
             window.rawMarkers.forEach(m => {
                 let p = m.pIndex || 1;
@@ -781,23 +779,25 @@
                 let activeGroup = groupedByP[pKey];
                 let step1 = activeGroup.map(seg => [parseFloat(seg.start.toFixed(1)), parseFloat(seg.end.toFixed(1))]);
                 
-                // CRITICAL SAFEGUARD: Retain imported step2, step3, step4 if they exist
                 let headMarker = activeGroup[0];
-                let step2 = headMarker.origStep2;
-                let step3 = headMarker.origStep3;
-                let step4 = headMarker.origStep4;
+                let step2 = clearPreservationOnly ? null : headMarker.origStep2;
+                let step3 = clearPreservationOnly ? null : headMarker.origStep3;
+                let step4 = clearPreservationOnly ? null : headMarker.origStep4;
 
-                // Only generate defaults if no timeline database was previously imported
                 if (!step2) {
                     step2 = [];
                     for (let j = 0; j < step1.length; j += 2) {
-                        step2.push([step1[j][0], step1[j + 1] ? step1[j + 1][1] : step1[j][1]]);
+                        if(step1[j]) {
+                            step2.push([step1[j][0], step1[j + 1] ? step1[j + 1][1] : step1[j][1]]);
+                        }
                     }
                 }
                 if (!step3) {
                     step3 = [];
                     for (let k = 0; k < step2.length; k += 2) {
-                        step3.push([step2[k][0], step2[k + 1] ? step2[k + 1][1] : step2[k][1]]);
+                        if(step2[k]) {
+                            step3.push([step2[k][0], step2[k + 1] ? step2[k + 1][1] : step2[k][1]]);
+                        }
                     }
                 }
                 if (!step4) {
@@ -862,7 +862,7 @@
                 renderTimelineGridCanvas(true);
                 serializeWorkspaceStateToJsCodeblock();
                 alert(`Successfully mounted canvas timeline using ${window.rawMarkers.length} structural entries.`);
-            } catch(e) { alert("Import Fault: Verify code maps comply cleanly with schema structures.\nDetails: " + e.message); }
+            } catch(e) { alert("Import Fault: " + e.message); }
         }
 
         function rewindPlayback() { player.currentTime = Math.max(0, player.currentTime - 2); }
