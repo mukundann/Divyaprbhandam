@@ -231,7 +231,7 @@
                     <input type="text" id="stepsUrlInput" placeholder="Paste raw JavaScript timeline file link...">
                 </div>
 
-              
+
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
                     <button class="btn btn-primary" style="flex: 1;"
                         onclick="triggerUnifiedNetworkPipelineFetch()">Assemble Network Assets ⚡</button>
@@ -319,64 +319,30 @@
             livePasuramView = document.getElementById('livePasuramView');
             setupGlobalSyncLoop();
 
+            // Try restoring from localStorage cache snapshot
+            const cachedMarkers = localStorage.getItem('asm_saved_markers');
+            const cachedFilename = localStorage.getItem('asm_current_filename');
+
+            if (cachedMarkers) {
+                try {
+                    window.rawMarkers = JSON.parse(cachedMarkers);
+                    if (cachedFilename) currentFileName = cachedFilename;
+
+                    isSystemImportingData = true;
+                    renderTimelineGridCanvas(true);
+                    serializeWorkspaceStateToJsCodeblock();
+                    isSystemImportingData = false;
+                } catch (e) {
+                    console.error("Failed to restore canvas snapshot from localStorage", e);
+                }
+            }
+
             window.addEventListener('keydown', (e) => {
-                const active = document.activeElement;
-                if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
                 if (e.key.toLowerCase() === 'm') {
                     const active = document.activeElement;
                     if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
                     e.preventDefault();
                     captureLiveTimestamp();
-                }
-                // 2. Bounded Segment Play/Pause
-                if (e.key === ' ' || e.code === 'Space') {
-                    e.preventDefault();
-
-                    if (!player.paused) {
-                        // If hitting space while playing, stop immediately and clear monitoring loops
-                        player.pause();
-                        if (window.segmentPlaybackIntervalHandle) clearInterval(window.segmentPlaybackIntervalHandle);
-                        window.isTestingSegmentAudio = false;
-                    } else {
-                        // Start playing the current active highlighted segment
-                        if (currentHighlightIndex !== -1 && window.rawMarkers[currentHighlightIndex]) {
-                            const currentSegment = window.rawMarkers[currentHighlightIndex];
-
-                            // Enforce that we are running an isolated segment audition block
-                            window.isTestingSegmentAudio = true;
-
-                            // If the playback head is not already within the segment's boundaries, snap to its start
-                            if (player.currentTime < currentSegment.start || player.currentTime >= currentSegment.end) {
-                                player.currentTime = currentSegment.start;
-                            }
-
-                            player.play();
-
-                            // Clear any lingering interval checks
-                            if (window.segmentPlaybackIntervalHandle) clearInterval(window.segmentPlaybackIntervalHandle);
-
-                            // Monitor the playback line relative to this specific segment's end boundary
-                            window.segmentPlaybackIntervalHandle = setInterval(() => {
-                                if (player.currentTime >= currentSegment.end) {
-                                    player.pause();
-                                    clearInterval(window.segmentPlaybackIntervalHandle);
-                                    window.isTestingSegmentAudio = false;
-
-                                    // Advance focus to the next row automatically so the next Spacebar hit plays it
-                                    const nextIndex = currentHighlightIndex + 1;
-                                    if (nextIndex < window.rawMarkers.length) {
-                                        currentHighlightIndex = nextIndex;
-                                        focusRowScrollHighlight(nextIndex);
-                                        // Set player timeline head perfectly onto the start threshold of the incoming segment
-                                        player.currentTime = window.rawMarkers[nextIndex].start;
-                                    }
-                                }
-                            }, 20); // High-frequency polling (20ms) for frame-accurate boundary cutting
-                        } else {
-                            // Fallback if no valid segment context exists
-                            player.play();
-                        }
-                    }
                 }
             });
 
@@ -808,6 +774,10 @@
         function serializeWorkspaceStateToJsCodeblock() {
             if (!ioJson || window.rawMarkers.length === 0) return;
 
+            // Save active workspace memory array and metadata directly to local storage
+            localStorage.setItem('asm_saved_markers', JSON.stringify(window.rawMarkers));
+            localStorage.setItem('asm_current_filename', currentFileName);
+
             let timelineBlocks = [];
             let textBlocks = {};
 
@@ -920,15 +890,37 @@
 
         function clearWorkspaceState() {
             if (confirm("Clear active canvas context?")) {
+                // Wipe local storage backup registers completely
+                localStorage.removeItem('asm_saved_markers');
+                localStorage.removeItem('asm_current_filename');
+
                 window.rawMarkers = [];
                 window.MARKER_DATABASE = {};
-                window.text_bundle_ta = {};
+                if (window.text_bundle_ta) window.text_bundle_ta = {};
+
                 document.getElementById('audioUrlInput').value = '';
                 document.getElementById('textUrlInput').value = '';
                 document.getElementById('stepsUrlInput').value = '';
+
+                const fileInputs = document.querySelectorAll('input[type="file"]');
+                fileInputs.forEach(input => input.value = '');
+
                 document.getElementById('pipelineKeySelectorContainer').style.display = 'none';
-                renderTimelineGridCanvas(true);
-                serializeWorkspaceStateToJsCodeblock();
+
+                markerList.innerHTML = `
+                    <div style="text-align:center; color:#94a3b8; padding:50px 0;">
+                        Workspace clear. Ingest asset configurations to populate interactive canvas grids.
+                    </div>
+                `;
+
+                document.getElementById('status').innerText = "Markers: 0";
+                renderRunningLiveHighlightViewer(-1);
+                ioJson.value = '';
+
+                if (player) {
+                    player.pause();
+                    player.src = '';
+                }
             }
         }
     </script>
