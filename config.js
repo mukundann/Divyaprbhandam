@@ -19,7 +19,7 @@ const CONFIG = {
         // Listing a key here automatically activates BOTH the local high-fi audio track 
         // AND the corresponding custom chapter timeline file.
         availableContent: [
-            "3_1", "3_2", "3_3","3_4","3_5"
+            "3_1", "3_2", "3_3", "3_4", "3_5"
         ],
 
 
@@ -35,7 +35,7 @@ const CONFIG = {
             // Generate the unique key for this segment
             const lookupKey = `${chapter}_${subChapter}`;
 
-            return `markers/tvm/timeline_${chapter}.js`;
+            return `markers/TVM/timeline_${chapter}.js`;
 
         },
 
@@ -68,7 +68,7 @@ const CONFIG = {
             const lookupKey = `${chapter}_${subChapter}`;
 
 
-            return `markers/tvm/${chapter}_${lang}.js`;
+            return `markers/TVM/${chapter}_${lang}.js`;
 
         }
 
@@ -299,12 +299,292 @@ const CONFIG = {
             }
         }
     },
+    '1TA': {
+        structure: 'chapter_pasuram',
+        hasSub: false,
+        minCh: 0,
+        maxCh: 1,
+        defPas: 100,
+        ex: { '0': 1 },
+
+        getMarkerPath: (num) => {
+            return 'markers/marker_1ta_timelines.js';
+        },
+
+        getLanguagePath: (num, langCode) => {
+            return `markers/marker_1ta_${langCode}.js`;
+        },
+
+        getAudioSrc: (num) => {
+            const parts = num.split('.');
+            const chapter = parseInt(parts[0], 10);
+            const pasuram = parseInt(parts[1], 10);
+
+            // CASE 1: Thanians (Chapter 0) -> Plays individual files per Thaniyan
+            if (chapter === 0) {
+                return `audiofiles/1TA/1TA.${num}.ogg`;
+            }
+
+            // CASE 2: Main Pasurams (Chapter 1) -> Grouped in batches of 10
+            if (chapter === 1) {
+                // Automatically groups: 1-10 -> 1, 11-20 -> 11, 101-108 -> 101
+                let fileStart = Math.floor((pasuram - 1) / 10) * 10 + 1;
+                let fileEnd = fileStart + 9;
+
+                // Cap the final audio file window string at 100
+                if (fileEnd > 100) {
+                    fileEnd = 100;
+                }
+
+                return `audiofiles/1TA/1TA_${fileStart}_${fileEnd}.ogg`;
+            }
+        }
+    },
+    '2TA': {
+        structure: 'chapter_pasuram',
+        hasSub: false,
+        minCh: 0,
+        maxCh: 1,
+        defPas: 100,
+        ex: { '0': 1 },
+
+        getMarkerPath: (num) => {
+            return 'markers/marker_2ta_timelines.js';
+        },
+
+        getLanguagePath: (num, langCode) => {
+            return `markers/marker_2ta_${langCode}.js`;
+        },
+
+        getAudioSrc: (num) => {
+            const parts = num.split('.');
+            const chapter = parseInt(parts[0], 10);
+            const pasuram = parseInt(parts[1], 10);
+
+            // CASE 1: Thanians (Chapter 0) -> Plays individual files per Thaniyan
+            if (chapter === 0) {
+                return `audiofiles/2TA/2TA.${num}.ogg`;
+            }
+
+            // CASE 2: Main Pasurams (Chapter 1) -> Grouped in batches of 10
+            if (chapter === 1) {
+                // Automatically groups: 1-10 -> 1, 11-20 -> 11, 101-108 -> 101
+                let fileStart = Math.floor((pasuram - 1) / 10) * 10 + 1;
+                let fileEnd = fileStart + 9;
+
+                // Cap the final audio file window string at 100
+                if (fileEnd > 100) {
+                    fileEnd = 100;
+                }
+
+                return `audiofiles/2TA/2TA_${fileStart}_${fileEnd}.ogg`;
+            }
+        }
+    },
     '3TA': {
-        structure: 'flat_pasuram',
-        hasSub: false, maxPas: 100,
-        getMarkerPath: () => 'markers/marker_3ta_timeline.js',
-        getLanguagePath: () => (num, langCode) => `markers/marker_3ta_${langCode}.js`,
-        getAudioSrc: (num) => `https://www.uveda.org/media/recitation/MUT.${num}.mp3`
+        structure: 'chapter_pasuram',
+        hasSub: false,
+        minCh: 0,
+        maxCh: 1,
+        defPas: 100,
+        ex: { '0': 1 },
+
+        getMarkerPath: (num) => {
+            return 'markers/marker_3ta_timelines.js';
+        },
+
+        getLanguagePath: (num, langCode) => {
+            return `markers/marker_3ta_${langCode}.js`;
+        },
+
+        getAudioSrc: (num) => {
+            const parts = num.split('.');
+            const chapter = parseInt(parts[0], 10);
+            const pasuram = parseInt(parts[1], 10);
+
+            // CASE 1: Thanians (Chapter 0) -> Plays individual files per Thaniyan
+            if (chapter === 0) {
+                return `audiofiles/3TA/3TA.${num}.ogg`;
+            }
+
+            // CASE 2: Main Pasurams (Chapter 1) -> Grouped in batches of 10
+            if (chapter === 1) {
+                // Automatically groups: 1-10 -> 1, 11-20 -> 11, 101-108 -> 101
+                let fileStart = Math.floor((pasuram - 1) / 10) * 10 + 1;
+                let fileEnd = fileStart + 9;
+
+                // Cap the final audio file window string at 100
+                if (fileEnd > 100) {
+                    fileEnd = 100;
+                }
+
+                return `audiofiles/3TA/3TA_${fileStart}_${fileEnd}.ogg`;
+            }
+        }
+    },
+    '4TA': {
+        structure: 'chapter_pasuram',
+        hasSub: false,
+        minCh: 0,
+        maxCh: 1,
+        defPas: 97,
+        ex: { '0': 1 },
+
+        getMarkerPath: (num) => {
+            return 'markers/marker_4ta_timelines.js';
+        },
+
+        getLanguagePath: (num, langCode) => {
+            return `markers/marker_4ta_${langCode}.js`;
+        },
+
+        getAudioSrc: (num) => {
+            const parts = num.split('.');
+            const chapter = parseInt(parts[0], 10);
+            const pasuram = parseInt(parts[1], 10);
+
+            // CASE 1: Thanians (Chapter 0) -> Plays individual files per Thaniyan
+            if (chapter === 0) {
+                return `audiofiles/4TA/4TA.${num}.ogg`;
+            }
+
+            // CASE 2: Main Pasurams (Chapter 1) -> Grouped in batches of 10
+            if (chapter === 1) {
+                // Automatically groups: 1-10 -> 1, 11-20 -> 11, 101-108 -> 101
+                let fileStart = Math.floor((pasuram - 1) / 10) * 10 + 1;
+                let fileEnd = fileStart + 9;
+
+                // Cap the final audio file window string at 100
+                if (fileEnd > 97) {
+                    fileEnd = 97;
+                }
+
+                return `audiofiles/4TA/4TA_${fileStart}_${fileEnd}.ogg`;
+            }
+        }
+    },
+    'TVT': {
+        structure: 'chapter_pasuram',
+        hasSub: false,
+        minCh: 0,
+        maxCh: 1,
+        defPas: 100,
+        ex: { '0': 1 },
+
+        getMarkerPath: (num) => {
+            return 'markers/marker_tvt_timelines.js';
+        },
+
+        getLanguagePath: (num, langCode) => {
+            return `markers/marker_tvt_${langCode}.js`;
+        },
+
+        getAudioSrc: (num) => {
+            const parts = num.split('.');
+            const chapter = parseInt(parts[0], 10);
+            const pasuram = parseInt(parts[1], 10);
+
+            // CASE 1: Thanians (Chapter 0) -> Plays individual files per Thaniyan
+            if (chapter === 0) {
+                return `audiofiles/TVT/TVT.${num}.ogg`;
+            }
+
+            // CASE 2: Main Pasurams (Chapter 1) -> Grouped in batches of 10
+            if (chapter === 1) {
+                // Automatically groups: 1-10 -> 1, 11-20 -> 11, 101-108 -> 101
+                let fileStart = Math.floor((pasuram - 1) / 10) * 10 + 1;
+                let fileEnd = fileStart + 9;
+
+                // Cap the final audio file window string at 100
+                if (fileEnd > 100) {
+                    fileEnd = 100;
+                }
+
+                return `audiofiles/TVT/TVT_${fileStart}_${fileEnd}.ogg`;
+            }
+        }
+    },
+    'TVS': {
+        structure: 'chapter_pasuram',
+        hasSub: false,
+        minCh: 0,
+        maxCh: 1,
+        defPas: 7,
+        ex: { '0': 1 },
+
+        getMarkerPath: (num) => {
+            return 'markers/marker_tvs_timelines.js';
+        },
+
+        getLanguagePath: (num, langCode) => {
+            return `markers/marker_tvs_${langCode}.js`;
+        },
+
+        getAudioSrc: (num) => {
+            const parts = num.split('.');
+            const chapter = parseInt(parts[0], 10);
+            const pasuram = parseInt(parts[1], 10);
+
+            // CASE 1: Thanians (Chapter 0) -> Plays individual files per Thaniyan
+            if (chapter === 0) {
+                return `audiofiles/TVS/TVS.${num}.ogg`;
+            }
+
+            // CASE 2: Main Pasurams (Chapter 1) -> Grouped in batches of 10
+            if (chapter === 1) {
+                // Automatically groups: 1-10 -> 1, 11-20 -> 11, 101-108 -> 101
+                let fileStart = Math.floor((pasuram - 1) / 10) * 10 + 1;
+                let fileEnd = fileStart + 9;
+
+                // Cap the final audio file window string at 7
+                if (fileEnd > 7) {
+                    fileEnd = 7;
+                }
+
+                return `audiofiles/TVS/TVS_${fileStart}_${fileEnd}.ogg`;
+            }
+        }
+    },
+    'TVK': {
+        structure: 'chapter_pasuram',
+        hasSub: false,
+        minCh: 0,
+        maxCh: 1,
+        defPas: 8,
+        ex: { '0': 1 },
+
+        getMarkerPath: (num) => {
+            return 'markers/marker_tvk_timelines.js';
+        },
+
+        getLanguagePath: (num, langCode) => {
+            return `markers/marker_tvk_${langCode}.js`;
+        },
+
+        getAudioSrc: (num) => {
+            const parts = num.split('.');
+            const chapter = parseInt(parts[0], 10);
+            const pasuram = parseInt(parts[1], 10);
+
+            // CASE 1: Thanians (Chapter 0) -> Plays individual files per Thaniyan
+            if (chapter === 0) {
+                return `audiofiles/TVK/TVK.${num}.ogg`;
+            }
+
+            // CASE 2: Main Pasurams (Chapter 1) -> Grouped in batches of 10
+            if (chapter === 1) {
+                // Automatically groups: 1-10 -> 1, 11-20 -> 11, 101-108 -> 101
+                let fileStart = Math.floor((pasuram - 1) / 10) * 10 + 1;
+                let fileEnd = fileStart + 9;
+
+                // Cap the final audio file window string at 8
+                if (fileEnd > 8) {
+                    fileEnd = 8;
+                }
+
+                return `audiofiles/TVK/TVK_${fileStart}_${fileEnd}.ogg`;
+            }
+        }
     },
     'TPE': {
         structure: 'chapter_pasuram',
