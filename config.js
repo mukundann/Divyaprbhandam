@@ -35,7 +35,7 @@ const CONFIG = {
             // Generate the unique key for this segment
             const lookupKey = `${chapter}_${subChapter}`;
 
-            return `markers/TVM/timeline_${chapter}.js`;
+            return `markers/TVM/timelines_${chapter}.js`;
 
         },
 
