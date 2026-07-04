@@ -1,0 +1,86 @@
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy static content to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ==========================================
+      # TELEMETRY LOGGING CUSTOM STEPS
+      # ==========================================
+      - name: Calculate and Log Local Repository Size
+        run: |
+          echo "=== REPOSITORY STORAGE METRICS ==="
+          echo "Total Disk Space of Checked-Out Files:"
+          du -sh .
+          echo "----------------------------------"
+          echo "Top 10 Largest Files/Directories:"
+          du -ah . | sort -rh | head -n 11
+
+      - name: Calculate Total GitHub Actions Artifact Size
+        env:
+          # Uses the built-in token dynamically created for this run
+          API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 -c '
+          import os, sys, urllib.request, json
+          api_token = os.environ.get("API_TOKEN")
+          repo = "${{ github.repository }}"
+          url = f"https://api.github.com/repos/{repo}/actions/artifacts"
+          req = urllib.request.Request(url, headers={
+              "Authorization": f"token {api_token}",
+              "Accept": "application/vnd.github.v3+json",
+              "User-Agent": "Actions-Size-Script"
+          })
+          try:
+              with urllib.request.urlopen(req) as resp:
+                  data = json.loads(resp.read().decode())
+              artifacts = data.get("artifacts", [])
+              total_bytes = sum(a.get("size_in_bytes", 0) for a in artifacts)
+              print(f"=== GITHUB ARTIFACTS METRICS ===")
+              print(f"Total size of live artifacts: {round(total_bytes / (1024*1024))} MB")
+              print(f"Total number of active artifacts: {len(artifacts)}")
+          except Exception as e:
+              print(f"Could not fetch artifact data: {e}")
+          '
+      # ==========================================
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload entire repository
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
