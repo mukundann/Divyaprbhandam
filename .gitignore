@@ -7,3 +7,4 @@ scripts/reapply_star_to_pasurams.js
 scripts/target_file.txt
 scripts/reference_file_with_stars.txt
 scratch/
+scripts/get_artifact_size.py
