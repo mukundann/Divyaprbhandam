@@ -322,7 +322,7 @@ const CONFIG = {
 
             // CASE 1: Thanians (Chapter 0) -> Plays individual files per Thaniyan
             if (chapter === 0) {
-                return `audiofiles/1TA/1TA.${num}.ogg`;
+                return `audiofiles/1TA/1TA_${chapter}.ogg`;
             }
 
             // CASE 2: Main Pasurams (Chapter 1) -> Grouped in batches of 10
@@ -363,7 +363,7 @@ const CONFIG = {
 
             // CASE 1: Thanians (Chapter 0) -> Plays individual files per Thaniyan
             if (chapter === 0) {
-                return `audiofiles/2TA/2TA.${num}.ogg`;
+                return `audiofiles/2TA/2TA_${chapter}.ogg`;
             }
 
             // CASE 2: Main Pasurams (Chapter 1) -> Grouped in batches of 10
@@ -404,7 +404,7 @@ const CONFIG = {
 
             // CASE 1: Thanians (Chapter 0) -> Plays individual files per Thaniyan
             if (chapter === 0) {
-                return `audiofiles/3TA/3TA.${num}.ogg`;
+                return `audiofiles/3TA/3TA_${chapter}.ogg`;
             }
 
             // CASE 2: Main Pasurams (Chapter 1) -> Grouped in batches of 10
@@ -445,7 +445,7 @@ const CONFIG = {
 
             // CASE 1: Thanians (Chapter 0) -> Plays individual files per Thaniyan
             if (chapter === 0) {
-                return `audiofiles/4TA/4TA.${num}.ogg`;
+                return `audiofiles/4TA/4TA_${chapter}.ogg`;
             }
 
             // CASE 2: Main Pasurams (Chapter 1) -> Grouped in batches of 10

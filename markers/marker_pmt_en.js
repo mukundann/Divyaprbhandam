@@ -69,7 +69,7 @@ window.mergeLanguageTexts = function () {
       7: "eththanaiyum vAn maRandha kAlaththum * paingUzhgaL * maiththezhundha mAmugilE * pArththirukkum maRRavai pOl *** meyththuyar vIttAvidinum * viththuvakkOttammA! * en siththam miga un pAlE * vaippan Adilene *",
       8: "thokkilanguyARellAm * parandhOdi * thodukadalE pukkanRip puRam niRka * mAttAdha maRRavai pOl *** mikkilangu mugilniRaththAy! * viththuvakkOttammA! * un pukkilangu sIrallAl * pukkilan kAN puNNiyanE! *",
       9: "ninnaiyE thAn vENdi * nILselvam vENdAdhAn thannaiyE * thAn vENdum * selvam pOl mAyaththAl *** minnaiyE sEr thigiri * viththuvakkOttammA! * ninnaiyE thAn vENdi * niRpan adiyEnE *",
-      10: "viththuvakkOttammA! * nI vENdAyE Ayidinum * maRRArum paRRillEn enRu * avanaith thAL nayandha *** koRRavEl thAnaik * kulasEkaran sonna * naRRamizh paththum vallAr * naNNAr naragamE *",
+      10: "viththuvakkOttammA! * nI vENdAyE Ayidinum * maRRArum paRRillEn enRu * avanaith thAL nayandhu *** koRRavEl thAnaik * kulasEkaran sonna * naRRamizh paththum vallAr * naNNAr naragamE *",
       11: "* adivaravu: tharu kaNdAr * mIn vALAl * vengaN sendhazhal * eththanai thokku * ninnaiyE viththuvakkOttammA *"
     },
     'PMT.6.steps': {
