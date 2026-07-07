@@ -99,7 +99,7 @@ const CONFIG = {
             // Generate the unique key for this segment
             const lookupKey = `${chapter}_${subChapter}`;
 
-            return `markers/PTM/timeline_${chapter}.js`;
+            return `markers/PTM/timelines_${chapter}.js`;
 
         },
 
@@ -163,7 +163,7 @@ const CONFIG = {
             // Generate the unique key for this segment
             const lookupKey = `${chapter}_${subChapter}`;
 
-            return `markers/PAT/timeline_${chapter}.js`;
+            return `markers/PAT/timelines_${chapter}.js`;
 
         },
 
