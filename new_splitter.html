@@ -6,80 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Marker Studio - Native Script Pipeline</title>
     <style>
-        /* Define theme design tokens using CSS variables for high-fidelity switching */
-        :root {
-            --bg-color: #f4f6f9;
-            --text-color: #333333;
-            --text-heading: #1e293b;
-            --text-muted: #64748b;
-            --card-bg: #ffffff;
-            --card-border: #e2e8f0;
-            --input-border: #cbd5e0;
-            --input-bg: #ffffff;
-            --input-text: #333333;
-            --marker-list-bg: #f8fafc;
-            --marker-item-bg: #ffffff;
-            --marker-item-border: #edf2f7;
-            --marker-item-active: #eff6ff;
-            --live-view-bg: #1e1e24;
-            --live-view-text: #f8f9fa;
-            --textarea-bg: #fafafa;
-            --textarea-text: #333333;
-            
-            --primary-color: #007bff;
-            --primary-hover: #0056b3;
-            --success-color: #28a745;
-            --success-hover: #218838;
-            --danger-color: #dc3545;
-            --danger-hover: #c82333;
-        }
-
-        body.dark-theme {
-            --bg-color: #0f172a;
-            --text-color: #cbd5e0;
-            --text-heading: #f1f5f9;
-            --text-muted: #94a3b8;
-            --card-bg: #1e293b;
-            --card-border: #334155;
-            --input-border: #475569;
-            --input-bg: #0f172a;
-            --input-text: #f1f5f9;
-            --marker-list-bg: #0f172a;
-            --marker-item-bg: #1e293b;
-            --marker-item-border: #334155;
-            --marker-item-active: #1e3a8a;
-            --live-view-bg: #020617;
-            --live-view-text: #f8fafc;
-            --textarea-bg: #0f172a;
-            --textarea-text: #cbd5e0;
-            
-            --primary-color: #3b82f6;
-            --primary-hover: #2563eb;
-            --success-color: #10b981;
-            --success-hover: #059669;
-            --danger-color: #ef4444;
-            --danger-hover: #dc2626;
-        }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 15px;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: background-color 0.25s, color 0.25s;
+            background-color: #f4f6f9;
+            color: #333;
         }
 
         .container {
             max-width: 1550px;
             margin: 0 auto;
-            background: var(--card-bg);
+            background: #fff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             display: flex;
             gap: 25px;
-            border: 1px solid var(--card-border);
-            transition: background-color 0.25s, border-color 0.25s;
         }
 
         .left-panel {
@@ -94,7 +36,7 @@
         .right-panel {
             flex: 1.4;
             min-width: 550px;
-            border-left: 1px solid var(--card-border);
+            border-left: 1px solid #e0e0e0;
             padding-left: 25px;
             display: flex;
             flex-direction: column;
@@ -102,11 +44,10 @@
         }
 
         .card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
+            background: #fff;
+            border: 1px solid #e2e8f0;
             border-radius: 6px;
             padding: 16px;
-            transition: background-color 0.25s, border-color 0.25s;
         }
 
         .form-group {
@@ -118,20 +59,16 @@
             font-weight: 600;
             margin-bottom: 6px;
             font-size: 13px;
-            color: var(--text-heading);
-            transition: color 0.25s;
+            color: #4a5568;
         }
 
         .form-group input[type="text"] {
             width: 100%;
             padding: 8px;
-            border: 1px solid var(--input-border);
+            border: 1px solid #cbd5e0;
             border-radius: 4px;
             font-size: 13px;
             box-sizing: border-box;
-            background-color: var(--input-bg);
-            color: var(--input-text);
-            transition: background-color 0.25s, border-color 0.25s, color 0.25s;
         }
 
         .btn {
@@ -141,38 +78,34 @@
             cursor: pointer;
             font-weight: 600;
             font-size: 13px;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        
-        .btn:active {
-            transform: scale(0.98);
+            transition: background 0.2s;
         }
 
         .btn-primary {
-            background-color: var(--primary-color);
+            background-color: #007bff;
             color: white;
         }
 
         .btn-primary:hover {
-            background-color: var(--primary-hover);
+            background-color: #0056b3;
         }
 
         .btn-success {
-            background-color: var(--success-color);
+            background-color: #28a745;
             color: white;
         }
 
         .btn-success:hover {
-            background-color: var(--success-hover);
+            background-color: #218838;
         }
 
         .btn-danger {
-            background-color: var(--danger-color);
+            background-color: #dc3545;
             color: white;
         }
 
         .btn-danger:hover {
-            background-color: var(--danger-hover);
+            background-color: #c82333;
         }
 
         audio {
@@ -180,19 +113,13 @@
             margin-top: 10px;
         }
 
-        /* Customize native audio player elements in dark theme */
-        body.dark-theme audio {
-            filter: invert(0.9) hue-rotate(180deg);
-        }
-
         #marker-list {
             max-height: 620px;
             overflow-y: auto;
-            border: 1px solid var(--card-border);
+            border: 1px solid #e2e8f0;
             border-radius: 6px;
             padding: 10px;
-            background: var(--marker-list-bg);
-            transition: background-color 0.25s, border-color 0.25s;
+            background: #f8fafc;
         }
 
         .marker-item {
@@ -200,33 +127,26 @@
             align-items: center;
             gap: 8px;
             padding: 8px;
-            background: var(--marker-item-bg);
-            border: 1px solid var(--marker-item-border);
+            background: #fff;
+            border: 1px solid #edf2f7;
             border-radius: 4px;
             margin-bottom: 6px;
-            transition: background-color 0.25s, border-color 0.25s;
         }
 
         .marker-item input[type="number"] {
             width: 70px;
             padding: 6px;
-            border: 1px solid var(--input-border);
+            border: 1px solid #cbd5e0;
             border-radius: 4px;
             font-size: 12px;
-            background-color: var(--input-bg);
-            color: var(--input-text);
-            transition: background-color 0.25s, border-color 0.25s, color 0.25s;
         }
 
         .marker-item input[type="text"] {
             flex: 1;
             padding: 6px;
-            border: 1px solid var(--input-border);
+            border: 1px solid #cbd5e0;
             border-radius: 4px;
             font-size: 12px;
-            background-color: var(--input-bg);
-            color: var(--input-text);
-            transition: background-color 0.25s, border-color 0.25s, color 0.25s;
         }
 
         .checkbox-label {
@@ -236,20 +156,17 @@
             gap: 3px;
             cursor: pointer;
             white-space: nowrap;
-            color: var(--text-color);
         }
 
         #livePasuramView {
-            background: var(--live-view-bg);
-            color: var(--live-view-text);
+            background: #1e1e24;
+            color: #f8f9fa;
             padding: 15px;
             border-radius: 6px;
             font-size: 15px;
             line-height: 1.8;
             max-height: 220px;
             overflow-y: auto;
-            border: 1px solid var(--card-border);
-            transition: background-color 0.25s, color 0.25s, border-color 0.25s;
         }
 
         #livePasuramView hr {
@@ -266,7 +183,7 @@
         }
 
         .normal-phrase {
-            color: var(--live-view-text);
+            color: #e0e0e0;
             opacity: 0.85;
         }
 
@@ -275,79 +192,45 @@
             font-family: 'Courier New', Courier, monospace;
             font-size: 12px;
             padding: 10px;
-            border: 1px solid var(--input-border);
+            border: 1px solid #cbd5e0;
             border-radius: 4px;
             box-sizing: border-box;
-            background: var(--textarea-bg);
-            color: var(--textarea-text);
+            background: #fafafa;
             white-space: pre;
             overflow-x: auto;
-            transition: background-color 0.25s, color 0.25s, border-color 0.25s;
-        }
-
-        /* Top Header and Theme bar layout formatting */
-        .app-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            max-width: 1550px;
-            margin: 0 auto 15px auto;
-        }
-
-        .app-title-group h1 {
-            margin: 0;
-            font-size: 20px;
-            color: var(--text-heading);
-        }
-
-        .app-title-group p {
-            margin: 2px 0 0 0;
-            font-size: 12px;
-            color: var(--text-muted);
         }
     </style>
 </head>
 
 <body>
 
-    <div class="app-header">
-        <div class="app-title-group">
-            <h1>🕉️ Audio Marker Studio</h1>
-            <p>Native Script Ingestion & Waveform Synchronization Pipeline</p>
-        </div>
-        <div>
-            <button id="themeToggleBtn" class="btn btn-primary" onclick="toggleActiveAppTheme()" style="background-color: var(--primary-color);">
-                🌙 Dark Mode
-            </button>
-        </div>
-    </div>
-
     <div class="container">
         <div class="left-panel">
-            <div class="card" style="background: var(--marker-list-bg); border: 1px solid var(--input-border);">
-                <h3 style="margin-top:0; color: var(--text-heading); border-bottom:2px solid var(--primary-color); padding-bottom:6px;">📥 Ingestion Interface</h3>
+            <div class="card" style="background: #f8fafc; border: 1px solid #cbd5e0;">
+                <h3 style="margin-top:0; color:#1e293b; border-bottom:2px solid #3b82f6; padding-bottom:6px;">📥 Native
+                    Script Ingestion Pipeline</h3>
 
                 <div class="form-group">
                     <label>1. Audio Stream Target</label>
                     <input type="file" accept="audio/*" onchange="loadLocalAudio(this)"
-                        style="margin-bottom:6px; display:block; font-size:12px; color: var(--text-color);">
+                        style="margin-bottom:6px; display:block; font-size:12px;">
                     <input type="text" id="audioUrlInput" placeholder="Paste raw audio link...">
                 </div>
 
                 <div class="form-group">
-                    <label>2. Text Companion Script File <span style="font-weight:normal; color: var(--text-muted);">(auto-filled from audio)</span></label>
+                    <label>2. Text Companion Script File <span style="font-weight:normal; color:#64748b;">(auto-filled from audio)</span></label>
                     <input type="file" accept=".js" onchange="injectLocalScriptAsset(this)"
-                        style="margin-bottom:6px; display:block; font-size:12px; color: var(--text-color);">
+                        style="margin-bottom:6px; display:block; font-size:12px;">
                     <input type="text" id="textUrlInput" placeholder="Auto-filled on audio select, or paste URL...">
                 </div>
 
                 <div class="form-group">
-                    <label>3. Timeline File <span style="font-weight:normal; color: var(--text-muted);">(auto-filled from audio)</span></label>
+                    <label>3. Timeline File <span style="font-weight:normal; color:#64748b;">(auto-filled from audio)</span></label>
                     <input type="file" accept=".js" onchange="injectLocalScriptAsset(this)"
-                        style="margin-bottom:6px; display:block; font-size:12px; color: var(--text-color);">
+                        style="margin-bottom:6px; display:block; font-size:12px;">
                     <input type="text" id="stepsUrlInput" placeholder="Auto-filled on audio select, or paste URL...">
                 </div>
+
 
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
                     <button class="btn btn-primary" style="flex: 1;"
@@ -358,27 +241,30 @@
                 <div style="margin-top: 12px; display: flex; align-items: center; gap: 6px;">
                     <input type="checkbox" id="rippleTimeAdjustmentsToggle" checked style="cursor: pointer;">
                     <label for="rippleTimeAdjustmentsToggle"
-                        style="font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; user-select: none;">
+                        style="font-size: 12px; font-weight: 600; color: #475569; cursor: pointer; user-select: none;">
                         🔄 Ripple changes to subsequent segments
                     </label>
                 </div>
+
             </div>
 
             <div id="pipelineKeySelectorContainer" class="card"
-                style="display:none; background: var(--marker-item-active); border:1px solid var(--input-border);"></div>
+                style="display:none; background:#ecfdf5; border:1px solid #a7f3d0;"></div>
 
             <div class="card">
-                <h4 style="margin:0 0 8px 0; color: var(--text-heading);">🎧 Media Playback Controls</h4>
-                <div id="timeDisplay" style="font-size:24px; font-weight:bold; color: var(--text-heading); margin-bottom:4px;">0.0s</div>
+                <h4 style="margin:0 0 8px 0; color:#334155;">🎧 Media Playback Controls</h4>
+                <div id="timeDisplay" style="font-size:24px; font-weight:bold; color:#0f172a; margin-bottom:4px;">0.0s
+                </div>
                 <audio id="player" controls></audio>
                 <div style="display:flex; gap:8px; margin-top:8px;">
                     <button class="btn btn-primary" onclick="rewindPlayback()">↩ Rewind 2s</button>
-                    <button id="captureBtn" class="btn btn-success" onclick="captureLiveTimestamp()" disabled>Capture Stamp (M)</button>
+                    <button id="captureBtn" class="btn btn-success" onclick="captureLiveTimestamp()" disabled>Capture
+                        Stamp (M)</button>
                 </div>
             </div>
 
             <div class="card">
-                <h4 style="margin:0 0 8px 0; color: var(--text-heading);"># Live Verse Synchronizer View</h4>
+                <h4 style="margin:0 0 8px 0; color:#334155;"># Live Verse Synchronizer View</h4>
                 <div id="livePasuramView"><em>Load assets to generate dynamic highlighter canvas...</em></div>
             </div>
         </div>
@@ -386,53 +272,32 @@
         <div class="right-panel">
             <div class="card" style="flex: 1; display:flex; flex-direction:column; gap:10px;">
                 <div style="display:flex; justify-content:between; align-items:center;">
-                    <h3 id="status" style="margin:0; color: var(--text-heading);">Markers: 0</h3>
+                    <h3 id="status" style="margin:0; color:#1e293b;">Markers: 0</h3>
                     <div style="margin-left:auto;">
-                        <button class="btn btn-primary" onclick="reproportionalizeTimelineDist()">Distribute Uniformly</button>
+                        <button class="btn btn-primary" onclick="reproportionalizeTimelineDist()">Distribute
+                            Uniformly</button>
                     </div>
                 </div>
 
                 <div id="marker-list">
-                    <div style="text-align:center; color: var(--text-muted); padding:50px 0;">Workspace clear. Ingest asset configurations to populate interactive canvas grids.</div>
+                    <div style="text-align:center; color:#94a3b8; padding:50px 0;">Workspace clear. Ingest asset
+                        configurations to populate interactive canvas grids.</div>
                 </div>
             </div>
 
             <div class="card">
-                <h4 style="margin:0 0 6px 0; color: var(--text-heading);">💾 Compiled Database Configuration File Output</h4>
+                <h4 style="margin:0 0 6px 0; color:#334155;">💾 Compiled Database Configuration File Output</h4>
                 <textarea id="ioJson" rows="10"
                     placeholder="Valid JavaScript payload arrays auto-serialize here..."></textarea>
                 <div style="margin-top:8px; display:flex; gap:10px;">
-                    <button class="btn btn-success" onclick="importFromRawConfigSnippet()">Import Structured Configuration Code Block</button>
+                    <button class="btn btn-success" onclick="importFromRawConfigSnippet()">Import Structured
+                        Configuration Code Block</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Apply persisted theme preference before full DOM compilation to minimize load flashes
-        (function() {
-            const savedTheme = localStorage.getItem('asm_studio_theme');
-            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.body.classList.add('dark-theme');
-            }
-        })();
-
-        // Global theme toggle controllers
-        function toggleActiveAppTheme() {
-            const body = document.body;
-            body.classList.toggle('dark-theme');
-            const isDark = body.classList.contains('dark-theme');
-            localStorage.setItem('asm_studio_theme', isDark ? 'dark' : 'light');
-            updateThemeToggleButtonUI(isDark);
-        }
-
-        function updateThemeToggleButtonUI(isDark) {
-            const btn = document.getElementById('themeToggleBtn');
-            if (btn) {
-                btn.innerHTML = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
-            }
-        }
-
         // Initialize global structures if not loaded yet
         window.MARKER_DATABASE = window.MARKER_DATABASE || {};
         window.rawMarkers = [];
@@ -453,11 +318,6 @@
             markerList = document.getElementById('marker-list');
             ioJson = document.getElementById('ioJson');
             livePasuramView = document.getElementById('livePasuramView');
-            
-            // Align theme control button text on load
-            const hasDarkThemeActive = document.body.classList.contains('dark-theme');
-            updateThemeToggleButtonUI(hasDarkThemeActive);
-            
             setupGlobalSyncLoop();
 
             // Try restoring from localStorage cache snapshot
@@ -506,7 +366,18 @@
             autoFillCompanionPaths(file.name);
         }
 
-        // Parse audio filenames into structural book patterns
+        /**
+         * Derives the book key from the audio filename and auto-fills the text
+         * and timeline URL fields with their standard relative paths.
+         * e.g. "RN_11_20.ogg" → book=RN → fills marker_rn_ta.js + marker_rn_timelines.js
+         */
+        /**
+         * Parse audio filename into components.
+         * Returns: { book, chapter, subChapter, type }
+         *   type: 'grouped'     e.g. RN_11_20    → chapter=null, range via parseRangeFromFilename
+         *         'simple'      e.g. AAP_1        → chapter=1, subChapter=null
+         *         'subchapter'  e.g. PAT_3.1      → chapter=3, subChapter=1
+         */
         function parseAudioFilename(audioFilename) {
             const base = audioFilename.replace(/\.[^.]+$/, ''); // strip extension
 
@@ -536,9 +407,11 @@
             let textPath, timelinePath;
 
             if (type === 'subchapter') {
+                // PAT_3.1 → text/3_ta.js, markers/timelines_3.js
                 textPath     = `${root}/${book}/text/${chapter}_ta.js`;
                 timelinePath = `${root}/${book}/markers/timelines_${chapter}.js`;
             } else {
+                // grouped (RN_11_20) or simple (AAP_1) → flat marker files
                 textPath     = `${root}/${book}/text/marker_${bLow}_ta.js`;
                 timelinePath = `${root}/${book}/markers/marker_${bLow}_timelines.js`;
             }
@@ -554,6 +427,7 @@
 
         function initiateAudioStreamingNode(url, targetFilename = "") {
             const rawName = targetFilename || url.split('/').pop().split('?')[0] || "audio_track";
+            // Strip only the final extension (.ogg) — preserve dots in sub-chapter names like PAT_3.1
             currentAudioFileName = rawName.replace(/\.[^.]+$/, '');
             currentFileName = currentAudioFileName;
             player.src = url;
@@ -570,6 +444,7 @@
             if (!input || !input.files || input.files.length === 0) return;
             const scriptUrl = URL.createObjectURL(input.files[0]);
             appendScriptNodeToDOM(scriptUrl, () => {
+                // Check if text bundle engine merge function is present inside language definitions
                 if (typeof window.mergeLanguageTexts === 'function') {
                     window.mergeLanguageTexts();
                 }
@@ -614,15 +489,25 @@
             const targetKeys = Object.keys(window.MARKER_DATABASE || {});
             if (targetKeys.length === 0) return;
 
+            // Auto-detect best matching key from audio filename
             const bestKey = pickBestMarkerKey(targetKeys, currentAudioFileName);
 
             if (bestKey) {
+                // Auto-load without showing dropdown
                 autoLoadMarkerKey(bestKey, targetKeys);
             } else {
+                // Multiple ambiguous keys — show selector
                 renderPipelineSelectorDropdownPanel(targetKeys);
             }
         }
 
+        /**
+         * Picks the best MARKER_DATABASE key for the current audio file.
+         *
+         * RN_11_20    → keys like "RN.1.steps"    → match on book "RN"
+         * AAP_1       → keys like "AAP.1.steps"   → match on book + chapter "AAP.1"
+         * PAT_3.1     → keys like "PAT.3.10.steps"→ match on book + chapter "PAT.3"
+         */
         function pickBestMarkerKey(keys, audioFilename) {
             if (!audioFilename) return keys.length === 1 ? keys[0] : null;
 
@@ -633,37 +518,42 @@
             const bLow = book.toLowerCase();
 
             if (type === 'subchapter' && chapter !== null) {
+                // Match keys containing book + chapter: "PAT.3."
                 const prefix = `${bLow}.${chapter}.`;
                 const matching = keys.filter(k => k.toLowerCase().includes(prefix));
                 if (matching.length === 1) return matching[0];
-                if (matching.length > 1) return matching[0];
+                if (matching.length > 1) return matching[0]; // pick first (most likely steps key)
             }
 
             if (type === 'simple' && chapter !== null) {
+                // Match keys containing book + chapter: "AAP.1."
                 const prefix = `${bLow}.${chapter}.`;
                 const matching = keys.filter(k => k.toLowerCase().includes(prefix));
                 if (matching.length === 1) return matching[0];
             }
 
+            // grouped or fallback: match on book name only
             const matching = keys.filter(k => k.toLowerCase().includes(bLow));
             if (matching.length === 1) return matching[0];
             if (keys.length === 1) return keys[0];
-            return null;
+            return null; // ambiguous — show dropdown
         }
 
         function autoLoadMarkerKey(key, allKeys) {
+            // Pre-select in dropdown (in case user needs to change it)
             renderPipelineSelectorDropdownPanel(allKeys, key);
+            // Then immediately load
             buildActiveWorkspaceCanvasTimeline(key);
         }
 
         function renderPipelineSelectorDropdownPanel(keys, selectedKey = null) {
             const container = document.getElementById('pipelineKeySelectorContainer');
             container.innerHTML = `
-                <label style="color: var(--text-heading); font-size:13px; font-weight:bold; display:block; margin-bottom:5px;">
+                <label style="color:#065f46; font-size:13px; font-weight:bold; display:block; margin-bottom:5px;">
                     🎯 Marker Key
                 </label>
                 <div style="display:flex; gap:10px; align-items:center;">
-                    <select id="selectedPipelineTargetNamespace" style="flex:1; padding:6px; font-size:12px; border:1px solid var(--input-border); background-color: var(--input-bg); color: var(--input-text); border-radius:4px; height:32px;">
+                    <select id="selectedPipelineTargetNamespace" style="flex:1; padding:6px; font-size:12px; border:1px solid #10b981; border-radius:4px; height:32px;">
                         ${keys.map(k => `<option value="${k}" ${k === selectedKey ? 'selected' : ''}>${k}</option>`).join('')}
                     </select>
                     <button class="btn btn-success" style="padding:6px 14px;" onclick="buildActiveWorkspaceCanvasTimeline()">Load</button>
@@ -672,15 +562,27 @@
             container.style.display = 'block';
         }
 
+        /**
+         * Parse the pasuram range from the audio filename.
+         * "RN_11_20"   → { start: 11, end: 20, type: 'grouped' }
+         * "AAP_1"      → { start: null, end: null, type: 'simple' }   load all
+         * "PAT_3.1"    → { start: null, end: null, type: 'subchapter' } load all for that chapter
+         * Returns null if unparseable (load all).
+         */
         function parseRangeFromFilename(filename) {
             const parsed = parseAudioFilename(filename);
             if (!parsed) return null;
 
             if (parsed.type === 'grouped') {
+                // Extract start/end from BOOK_START_END
                 const m = filename.match(/_(\d+)_(\d+)/);
                 if (m) return { start: parseInt(m[1], 10), end: parseInt(m[2], 10), type: 'grouped' };
             }
+
+            // simple and subchapter: load all entries (no pasuram filtering needed)
             return null;
+
+            return null; // no range info — load all
         }
 
         function buildActiveWorkspaceCanvasTimeline(overrideKey = null) {
@@ -690,15 +592,18 @@
 
             currentFileName = targetNamespaceKey;
 
+            // Determine pasuram range from audio filename (not the namespace key)
             const audioRange = parseRangeFromFilename(currentAudioFileName);
             console.log(`[Splitter] Audio file: "${currentAudioFileName}" → Range: ${audioRange ? `p${audioRange.start}–${audioRange.end}` : 'all'}`);
 
+            // 1. Trace and extract text directly from the native nested script engine structure
             let textSourceMap = {};
             if (window.text_bundle_ta && window.text_bundle_ta[targetNamespaceKey]) {
                 textSourceMap = window.text_bundle_ta[targetNamespaceKey];
             } else if (window.MARKER_DATABASE[targetNamespaceKey] && window.MARKER_DATABASE[targetNamespaceKey]._textSourceMap) {
                 textSourceMap = window.MARKER_DATABASE[targetNamespaceKey]._textSourceMap;
             } else if (Array.isArray(window.MARKER_DATABASE[targetNamespaceKey])) {
+                // Check if text is attached directly onto array items
                 window.MARKER_DATABASE[targetNamespaceKey].forEach(block => {
                     if (block && block.p && block.text && block.text.ta) {
                         textSourceMap[block.p] = block.text.ta;
@@ -708,10 +613,12 @@
 
             const allSteps = window.MARKER_DATABASE[targetNamespaceKey] || [];
 
+            // Filter to only the pasurums covered by the loaded audio file
             const stepsSourceTimelineArray = audioRange
                 ? allSteps.filter(b => b.p >= audioRange.start && b.p <= audioRange.end)
                 : allSteps;
 
+            // Also filter textSourceMap to the same range
             if (audioRange) {
                 const filteredTextMap = {};
                 Object.keys(textSourceMap).forEach(k => {
@@ -723,11 +630,13 @@
 
             let unifiedCompiledMarkers = [];
 
+            // Check if we actually have valid step timing blocks
             let hasTimings = Array.isArray(stepsSourceTimelineArray) &&
                 stepsSourceTimelineArray.length > 0 &&
                 stepsSourceTimelineArray.some(b => b.step1 && b.step1.length > 0);
 
             if (hasTimings) {
+                // Path A: Parse standard existing timeline steps
                 stepsSourceTimelineArray.forEach((pasuramBlock, blockIdx) => {
                     if (!pasuramBlock || typeof pasuramBlock !== 'object') return;
 
@@ -758,8 +667,10 @@
                     }
                 });
             } else {
+                // Path B: Timeline is missing/empty -> Extract text phrases and distribute evenly
                 let allPhrases = [];
 
+                // Collect phrases from the text map
                 Object.keys(textSourceMap).sort((a, b) => parseInt(a) - parseInt(b)).forEach(pKey => {
                     let rawText = textSourceMap[pKey] || "";
                     let splitPhrases = rawText.split('*').map(t => t.trim()).filter(t => t.length > 0);
@@ -774,6 +685,7 @@
                 });
 
                 if (allPhrases.length > 0) {
+                    // Use audio duration if loaded, default to a 5-minute workspace canvas if not
                     let totalDuration = detectedDuration || 300;
                     let incrementStep = totalDuration / allPhrases.length;
 
@@ -830,7 +742,7 @@
             markerList.innerHTML = window.rawMarkers.map((marker, i) => {
                 return `
             <div class="marker-item" id="item-${i}">
-                <span style="font-weight:bold; min-width:35px; font-size:11px; color: var(--text-muted);">P.${marker.pIndex || 1} #${i + 1}</span>
+                <span style="font-weight:bold; min-width:35px; font-size:11px; color:#64748b;">P.${marker.pIndex || 1} #${i + 1}</span>
                 <input type="number" step="0.1" value="${marker.start}" 
                        onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
                        onblur="window.isUserEditingActiveCell = false;" 
@@ -847,6 +759,7 @@
                     <input type="checkbox" ${marker.forceEndBlock ? 'checked' : ''} onchange="toggleSegmentBlockBoundary(${i}, this.checked)"> Break
                 </label>
                 <div style="display:flex; gap:3px; margin-left:auto;">
+                   <!-- <button class="btn btn-primary" style="padding:4px 8px; font-size:11px;" onclick="snapSegmentBoundaryToPlaybackTime(${i})">Snap</button> -->
                     <button class="btn btn-success" style="padding:4px 8px; font-size:11px;" onclick="testSegmentAudioPlaybackInterval(${i})">▶</button>
                     <button class="btn btn-danger" style="padding:4px 8px; font-size:11px;" onclick="deleteSegmentRow(${i})">×</button>
                 </div>
@@ -875,6 +788,7 @@
 
             window.rawMarkers[index][field] = parsedNum;
 
+            // Maintain back-to-back continuity with immediate neighbors
             if (field === 'start' && window.rawMarkers[index - 1]) {
                 window.rawMarkers[index - 1].end = parsedNum;
             }
@@ -882,6 +796,7 @@
                 window.rawMarkers[index + 1].start = parsedNum;
             }
 
+            // Only cascade the shift down the timeline if the ripple checkbox is enabled
             const shouldRipple = document.getElementById('rippleTimeAdjustmentsToggle').checked;
 
             if (deltaOffset !== 0 && shouldRipple && !isSystemImportingData && window.isUserEditingActiveCell) {
@@ -892,6 +807,7 @@
                 }
             }
 
+            // Enforce maximum track boundary safety ceiling safely
             const lastIdx = window.rawMarkers.length - 1;
             if (window.rawMarkers[lastIdx].end > detectedDuration && detectedDuration > 0) {
                 window.rawMarkers[lastIdx].end = parseFloat(detectedDuration.toFixed(1));
@@ -909,6 +825,14 @@
                 serializeWorkspaceStateToJsCodeblock();
             }
         }
+
+        // function snapSegmentBoundaryToPlaybackTime(index) {
+        //     const time = player.currentTime;
+        //     window.rawMarkers[index].end = parseFloat(time.toFixed(1));
+        //     if (window.rawMarkers[index + 1]) window.rawMarkers[index + 1].start = parseFloat(time.toFixed(1));
+        //     renderTimelineGridCanvas(false);
+        //     serializeWorkspaceStateToJsCodeblock();
+        // }
 
         function captureLiveTimestamp() {
             const time = parseFloat(player.currentTime.toFixed(1));
@@ -1006,6 +930,7 @@
                     clearInterval(window.segmentPlaybackIntervalHandle);
                     window.isTestingSegmentAudio = false;
 
+                    // Advance focus pointer automatically here too
                     const nextIndex = id + 1;
                     if (nextIndex < window.rawMarkers.length) {
                         currentHighlightIndex = nextIndex;
@@ -1031,10 +956,10 @@
         }
 
         function focusRowScrollHighlight(index) {
-            document.querySelectorAll('.marker-item').forEach(el => el.style.background = 'var(--marker-item-bg)');
+            document.querySelectorAll('.marker-item').forEach(el => el.style.background = '#ffffff');
             let row = document.getElementById(`item-${index}`);
             if (row) {
-                row.style.background = 'var(--marker-item-active)';
+                row.style.background = '#eff6ff';
                 let midPointScroll = row.offsetTop - markerList.offsetTop - (markerList.clientHeight / 2) + (row.offsetHeight / 2);
                 markerList.scrollTo({ top: Math.max(0, midPointScroll), behavior: 'smooth' });
             }
@@ -1058,7 +983,15 @@
             requestAnimationFrame(monitor);
         }
 
+        /**
+         * Distribute n items into 4 groups.
+         * Start from [2,2,2,2]=8. Subtract deficit from inner positions first (2,1,0), outer last (3).
+         * n=8→[2,2,2,2], n=7→[2,2,1,2], n=6→[2,1,1,2], n=5→[1,1,1,2], n=4→[1,1,0,2]...
+         * For n<4 collapses gracefully.
+         */
         function distributeInto4(n) {
+            // Start from [2,2,2,2]=8, subtract 1 at a time cycling through positions 2,1,0,3
+            // n=8→[2,2,2,2], n=7→[2,2,1,2], n=6→[2,1,1,2], n=5→[1,1,1,2]
             const g = [2, 2, 2, 2];
             const order = [2, 1, 0, 3];
             let deficit = 8 - n;
@@ -1071,6 +1004,7 @@
             return g;
         }
 
+        /** Build step2: merge step1 segments according to 4-group distribution */
         function buildStep2(step1) {
             const n = step1.length;
             if (n === 0) return [];
@@ -1086,6 +1020,7 @@
             return step2;
         }
 
+        /** Build step3: pair up step2 entries (groups of 2) */
         function buildStep3(step2) {
             const step3 = [];
             for (let i = 0; i < step2.length; i += 2) {
@@ -1099,6 +1034,7 @@
         function serializeWorkspaceStateToJsCodeblock() {
             if (!ioJson || window.rawMarkers.length === 0) return;
 
+            // Save active workspace memory array and metadata directly to local storage
             localStorage.setItem('asm_saved_markers', JSON.stringify(window.rawMarkers));
             localStorage.setItem('asm_current_filename', currentFileName);
 
@@ -1116,6 +1052,7 @@
                 let activeGroup = groupedByP[pKey];
                 let step1 = activeGroup.map(seg => [parseFloat(seg.start.toFixed(1)), parseFloat(seg.end.toFixed(1))]);
 
+                // Always recompute steps 2/3/4 from step1 so edits propagate correctly.
                 const step2 = buildStep2(step1);
                 const step3 = buildStep3(step2);
                 const step4 = [step1[0][0], step1[step1.length - 1][1]];
@@ -1193,6 +1130,7 @@
 
         function clearWorkspaceState() {
             if (confirm("Clear active canvas context?")) {
+                // Wipe local storage backup registers completely
                 localStorage.removeItem('asm_saved_markers');
                 localStorage.removeItem('asm_current_filename');
 
@@ -1210,7 +1148,7 @@
                 document.getElementById('pipelineKeySelectorContainer').style.display = 'none';
 
                 markerList.innerHTML = `
-                    <div style="text-align:center; color: var(--text-muted); padding:50px 0;">
+                    <div style="text-align:center; color:#94a3b8; padding:50px 0;">
                         Workspace clear. Ingest asset configurations to populate interactive canvas grids.
                     </div>
                 `;
