@@ -17,41 +17,234 @@ function shouldAutoPlayFromUrl() {
 }
 
 /**
- * Rebuild #number select from CONFIG limits for the current (or given) book.
- * Selects preferredValue when it exists; otherwise keeps first option.
+ * Friendly hierarchical pasuram pickers (Part / optional Sub / Verse number).
+ * Canonical coordinate stays in hidden #number for playback + deep links.
+ * Users never need to know "0.1" / "1.20" notation.
  */
-function rebuildPasuramDropdown(preferredValue) {
-    const select = document.getElementById('number');
+function bookUsesSubchapters(c) {
+    return !!(c && (c.hasSub || c.structure === 'chapter_sub_pasuram'));
+}
+
+function setSubPickerVisible(visible) {
+    const subEl = document.getElementById('pasSub');
+    const subField = document.getElementById('pasSubField');
+    const pickers = document.getElementById('pasuramPickers');
+    if (subEl) subEl.classList.toggle('hidden', !visible);
+    if (subField) subField.classList.toggle('hidden', !visible);
+    if (pickers) pickers.classList.toggle('no-sub', !visible);
+}
+
+function fillSelectOptions(selectEl, items) {
+    if (!selectEl) return;
+    const prev = selectEl.value;
+    selectEl.innerHTML = '';
+    items.forEach(({ value, label }) => {
+        const opt = document.createElement('option');
+        opt.value = String(value);
+        opt.textContent = label;
+        selectEl.appendChild(opt);
+    });
+    if (items.some((i) => String(i.value) === prev)) {
+        selectEl.value = prev;
+    } else if (items.length) {
+        selectEl.value = String(items[0].value);
+    }
+}
+
+function sectionPasuramCountSafe(pre, sectionId) {
+    if (typeof Navigation !== 'undefined' && typeof Navigation.sectionPasuramCount === 'function') {
+        return Navigation.sectionPasuramCount(pre, sectionId);
+    }
+    const c = typeof CONFIG !== 'undefined' ? CONFIG[pre] : null;
+    if (!c) return 10;
+    const ex = c.ex || {};
+    const sid = String(sectionId);
+    if (typeof ex[sid] !== 'undefined') return ex[sid];
+    return c.defPas || 10;
+}
+
+function rebuildPasuramPickers(preferredValue) {
     const prefixEl = document.getElementById('prefix');
-    if (!select || !prefixEl) return;
+    const partEl = document.getElementById('pasPart');
+    const subEl = document.getElementById('pasSub');
+    const verseEl = document.getElementById('pasVerse');
+    const numberEl = document.getElementById('number');
+    if (!prefixEl || !partEl || !subEl || !verseEl || !numberEl) return;
 
     const pre = prefixEl.value;
-    const options = (typeof Navigation !== 'undefined' && Navigation.listPasuramOptions)
-        ? Navigation.listPasuramOptions(pre)
-        : [];
-
-    select.innerHTML = '';
-    let currentGroup = null;
-    let optgroup = null;
-
-    options.forEach((opt) => {
-        if (opt.group !== currentGroup) {
-            currentGroup = opt.group;
-            optgroup = document.createElement('optgroup');
-            optgroup.label = currentGroup;
-            select.appendChild(optgroup);
-        }
-        const optionEl = document.createElement('option');
-        optionEl.value = opt.value;
-        optionEl.textContent = opt.label;
-        (optgroup || select).appendChild(optionEl);
-    });
-
-    if (preferredValue && [...select.options].some((o) => o.value === preferredValue)) {
-        select.value = preferredValue;
-    } else if (select.options.length > 0) {
-        select.selectedIndex = 0;
+    const c = (typeof CONFIG !== 'undefined') ? CONFIG[pre] : null;
+    if (!c) {
+        fillSelectOptions(partEl, [{ value: '0', label: 'Taniyans' }, { value: '1', label: 'Chapter 1' }]);
+        setSubPickerVisible(false);
+        verseEl.min = 1;
+        verseEl.max = 10;
+        verseEl.value = 1;
+        numberEl.value = numberEl.value || '0.1';
+        const hintEl = document.getElementById('pasuramHint');
+        if (hintEl) hintEl.textContent = 'Select a prabandham';
+        return;
     }
+
+    const preferred = preferredValue != null ? String(preferredValue).trim() : (numberEl.value || '');
+    const coords = (typeof Navigation !== 'undefined' && Navigation.parseCoords)
+        ? Navigation.parseCoords(preferred || '1.1', c.hasSub)
+        : { ch: 0, sub: 1, pas: 1 };
+
+    if (bookUsesSubchapters(c)) {
+        const maxCh = c.maxCh || 10;
+        const parts = [];
+        for (let ch = 1; ch <= maxCh; ch++) {
+            parts.push({ value: ch, label: String(ch) });
+        }
+        fillSelectOptions(partEl, parts);
+        partEl.value = String(Math.min(Math.max(coords.ch || 1, 1), maxCh));
+
+        const maxSub = (typeof Navigation !== 'undefined' && Navigation.getSubLimit)
+            ? (Navigation.getSubLimit(pre, parseInt(partEl.value, 10)) || c.maxSub || 10)
+            : (c.maxSub || 10);
+        const subs = [];
+        for (let s = 1; s <= maxSub; s++) {
+            subs.push({ value: s, label: String(s) });
+        }
+        fillSelectOptions(subEl, subs);
+        setSubPickerVisible(true);
+        const wantSub = coords.sub || 1;
+        subEl.value = String(Math.min(Math.max(wantSub, 1), maxSub));
+
+        const n = sectionPasuramCountSafe(pre, `${partEl.value}.${subEl.value}`);
+        verseEl.min = 1;
+        verseEl.max = Math.max(1, n);
+        verseEl.value = Math.min(Math.max(coords.pas || 1, 1), n);
+    } else if (c.structure === 'flat_pasuram') {
+        fillSelectOptions(partEl, [{ value: '1', label: 'Pasurams' }]);
+        partEl.value = '1';
+        setSubPickerVisible(false);
+        const n = c.maxPas || c.defPas || 10;
+        verseEl.min = 1;
+        verseEl.max = n;
+        verseEl.value = Math.min(Math.max(coords.pas || 1, 1), n);
+    } else {
+        // chapter_pasuram (incl. taniyans as chapter 0)
+        const minCh = typeof c.minCh !== 'undefined' ? c.minCh : 0;
+        const maxCh = typeof c.maxCh !== 'undefined' ? c.maxCh : 1;
+        const parts = [];
+        for (let ch = minCh; ch <= maxCh; ch++) {
+            parts.push({
+                value: ch,
+                label: ch === 0 ? 'Taniyan' : String(ch)
+            });
+        }
+        fillSelectOptions(partEl, parts);
+        const wantCh = typeof coords.ch === 'number' ? coords.ch : minCh;
+        partEl.value = String(Math.min(Math.max(wantCh, minCh), maxCh));
+        setSubPickerVisible(false);
+
+        const n = sectionPasuramCountSafe(pre, partEl.value);
+        verseEl.min = 1;
+        verseEl.max = Math.max(1, n);
+        const wantPas = coords.pas || 1;
+        verseEl.value = Math.min(Math.max(wantPas, 1), n);
+    }
+
+    syncNumberFromPickers();
+}
+
+function syncNumberFromPickers() {
+    const prefixEl = document.getElementById('prefix');
+    const partEl = document.getElementById('pasPart');
+    const subEl = document.getElementById('pasSub');
+    const verseEl = document.getElementById('pasVerse');
+    const numberEl = document.getElementById('number');
+    const hintEl = document.getElementById('pasuramHint');
+    if (!prefixEl || !partEl || !verseEl || !numberEl) return;
+
+    const c = CONFIG[prefixEl.value];
+    if (!c) return;
+
+    let pas = parseInt(verseEl.value, 10);
+    if (isNaN(pas) || pas < 1) pas = 1;
+
+    let value;
+    let hint;
+
+    if (bookUsesSubchapters(c)) {
+        const ch = parseInt(partEl.value, 10) || 1;
+        const sub = parseInt(subEl.value, 10) || 1;
+        const n = sectionPasuramCountSafe(prefixEl.value, `${ch}.${sub}`);
+        if (pas > n) pas = n;
+        verseEl.max = n;
+        verseEl.value = pas;
+        value = `${ch}.${sub}.${pas}`;
+        hint = `Chapter ${ch} · Decad ${sub} · Pasuram ${pas}`;
+    } else if (c.structure === 'flat_pasuram') {
+        const n = c.maxPas || c.defPas || 10;
+        if (pas > n) pas = n;
+        verseEl.max = n;
+        verseEl.value = pas;
+        value = `${pas}`;
+        hint = `Pasuram ${pas}`;
+    } else {
+        const ch = parseInt(partEl.value, 10);
+        const n = sectionPasuramCountSafe(prefixEl.value, String(ch));
+        if (pas > n) pas = n;
+        verseEl.max = n;
+        verseEl.value = pas;
+        value = `${ch}.${pas}`;
+        hint = ch === 0 ? `Taniyan ${pas}` : `Chapter ${ch} · Pasuram ${pas}`;
+    }
+
+    numberEl.value = value;
+    if (hintEl) hintEl.textContent = hint;
+}
+
+function syncPickersFromNumber() {
+    const numberEl = document.getElementById('number');
+    if (!numberEl) return;
+    rebuildPasuramPickers(numberEl.value);
+}
+
+function setPasuramValue(preferredValue) {
+    const numberEl = document.getElementById('number');
+    if (!numberEl) return;
+    if (preferredValue != null && String(preferredValue).trim() !== '') {
+        numberEl.value = String(preferredValue).trim();
+    }
+    rebuildPasuramPickers(numberEl.value);
+}
+
+function onPasuramPickerChange() {
+    const prefixEl = document.getElementById('prefix');
+    const partEl = document.getElementById('pasPart');
+    const subEl = document.getElementById('pasSub');
+    const verseEl = document.getElementById('pasVerse');
+    if (!prefixEl || !partEl || !verseEl) return;
+
+    const c = CONFIG[prefixEl.value];
+    // When part/sub changes, clamp verse to the new section's length
+    if (bookUsesSubchapters(c)) {
+        const n = sectionPasuramCountSafe(prefixEl.value, `${partEl.value}.${subEl.value}`);
+        // Rebuild sub list if chapter changed (sub count can vary)
+        const maxSub = (typeof Navigation !== 'undefined' && Navigation.getSubLimit)
+            ? (Navigation.getSubLimit(prefixEl.value, parseInt(partEl.value, 10)) || c.maxSub || 10)
+            : (c.maxSub || 10);
+        const subs = [];
+        for (let s = 1; s <= maxSub; s++) {
+            subs.push({ value: s, label: String(s) });
+        }
+        const keepSub = subEl.value;
+        fillSelectOptions(subEl, subs);
+        if ([...subEl.options].some((o) => o.value === keepSub)) subEl.value = keepSub;
+        verseEl.max = Math.max(1, n);
+        if (parseInt(verseEl.value, 10) > n) verseEl.value = n;
+    } else if (c && c.structure !== 'flat_pasuram') {
+        const n = sectionPasuramCountSafe(prefixEl.value, partEl.value);
+        verseEl.max = Math.max(1, n);
+        if (parseInt(verseEl.value, 10) > n) verseEl.value = n;
+    }
+
+    syncNumberFromPickers();
+    resetLineTracking();
+    syncUrlToPrefs();
 }
 
 /**
@@ -71,7 +264,7 @@ function applyDeepLinkFromUrl() {
     }
 
     const pas = params.get('pas');
-    rebuildPasuramDropdown(pas || undefined);
+    setPasuramValue(pas || undefined);
 
     const step = params.get('step');
     if (step && VALID_STEPS.has(step)) {
@@ -202,18 +395,26 @@ function onSessionPrefChange() {
     syncUrlToPrefs();
 }
 
+function initPasuramPickers() {
+    try {
+        if (hasDeepLinkParams()) {
+            applyDeepLinkFromUrl();
+        } else {
+            setPasuramValue(document.getElementById('number')?.value);
+        }
+        syncUrlToPrefs();
+    } catch (err) {
+        console.error('Pasuram picker init failed:', err);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const audioPlayer = document.getElementById('audioPlayer');
     if (audioPlayer) {
         LearningEngine.init(audioPlayer);
     }
 
-    if (hasDeepLinkParams()) {
-        applyDeepLinkFromUrl();
-    } else {
-        rebuildPasuramDropdown();
-    }
-    syncUrlToPrefs();
+    initPasuramPickers();
 
     if (shouldAutoPlayFromUrl()) {
         setTimeout(() => startLearningAndFocus(), 600);
@@ -553,6 +754,7 @@ function navigate(dir) {
             input.value = `${coords.ch}.${coords.sub}.${coords.pas}`;
             break;
     }
+    syncPickersFromNumber();
     syncUrlToPrefs();
     startLearning();
 }
@@ -592,7 +794,7 @@ function resetToStart() {
         }
     }
 
-    rebuildPasuramDropdown(initialValue);
+    setPasuramValue(initialValue);
 
     const displayPanel = document.getElementById('pasuramDisplay');
     if (displayPanel) {
@@ -605,9 +807,17 @@ function resetToStart() {
 window.copyShareLink = copyShareLink;
 window.getShareUrl = getShareUrl;
 window.applyDeepLinkFromUrl = applyDeepLinkFromUrl;
-window.rebuildPasuramDropdown = rebuildPasuramDropdown;
 window.syncUrlToPrefs = syncUrlToPrefs;
+window.setPasuramValue = setPasuramValue;
+window.onPasuramPickerChange = onPasuramPickerChange;
+window.syncPickersFromNumber = syncPickersFromNumber;
+window.initPasuramPickers = initPasuramPickers;
 window.renderCurrentPasuramText = renderCurrentPasuramText;
 window.onLearningStepChange = onLearningStepChange;
 window.onPasuramNumberChange = onPasuramNumberChange;
 window.onSessionPrefChange = onSessionPrefChange;
+
+// Fill pickers even if this script was hot-swapped after DOMContentLoaded (sync_engine).
+if (document.readyState !== 'loading') {
+    initPasuramPickers();
+}

@@ -58,6 +58,11 @@ HTTP_PATHS = [
 INDEX_MARKERS = [
     'id="prefix"',
     'id="number"',
+    'id="pasuramPickers"',
+    'id="pasPart"',
+    'id="pasSub"',
+    'id="pasVerse"',
+    'id="pasuramHint"',
     'id="learningStep"',
     'id="pasuramDisplay"',
     'id="toggleBtn"',
@@ -66,6 +71,15 @@ INDEX_MARKERS = [
     'src="playerEngine.js"',
     'src="learningEngine.js"',
 ]
+
+PASURAM_PICKER_HELPERS = (
+    "rebuildPasuramPickers",
+    "syncNumberFromPickers",
+    "syncPickersFromNumber",
+    "setPasuramValue",
+    "onPasuramPickerChange",
+    "initPasuramPickers",
+)
 
 # Books that should exist under aruLicheyal/ with at least markers or audio
 SAMPLE_BOOKS = ("PMT", "NAT", "TPL", "RN", "TVM")
@@ -159,6 +173,30 @@ def check_deep_links(errors: list[str]) -> None:
             errors.append(f"playerEngine.js missing deep-link helper: {name}")
         else:
             ok(f"deep link: {name}")
+
+
+def check_pasuram_pickers(errors: list[str]) -> None:
+    """Hierarchical Chapter/Decad/No. pickers wiring."""
+    engine = ROOT / "playerEngine.js"
+    if not engine.is_file():
+        errors.append("Missing playerEngine.js")
+        return
+    text = engine.read_text(encoding="utf-8")
+    for name in PASURAM_PICKER_HELPERS:
+        if f"function {name}" not in text:
+            errors.append(f"playerEngine.js missing pasuram picker helper: {name}")
+        else:
+            ok(f"pasuram picker: {name}")
+
+    sync = ROOT / "sync_engine.js"
+    if not sync.is_file():
+        errors.append("Missing sync_engine.js")
+        return
+    sync_text = sync.read_text(encoding="utf-8")
+    if "initPasuramPickers" not in sync_text:
+        errors.append("sync_engine.js does not re-init pasuram pickers after hot-swap")
+    else:
+        ok("sync_engine.js re-inits pasuram pickers after hot-swap")
 
 
 def check_index_html(errors: list[str]) -> None:
@@ -432,6 +470,7 @@ def main() -> int:
     check_sync_check(errors)
     check_config(errors)
     check_deep_links(errors)
+    check_pasuram_pickers(errors)
     check_index_html(errors)
     check_arulicheyal_layout(errors)
     check_offline_manifest_tool(errors)
