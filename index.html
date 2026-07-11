@@ -141,6 +141,36 @@
             background-color: #005a96;
         }
 
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 4px;
+        }
+
+        .header-row h2 {
+            margin: 0;
+            flex: 1;
+        }
+
+        .copy-link-btn {
+            flex-shrink: 0;
+            min-height: 36px;
+            padding: 8px 12px;
+            background-color: #e4e6eb;
+            color: #050505;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .copy-link-btn:hover {
+            background-color: #d8dadf;
+        }
+
         .btn-nav {
 
             padding: 14px 10px;
@@ -224,7 +254,10 @@
 <body>
 
     <div id="mainCard" class="card">
-        <h2>AruLicheyal Sandhai Player</h2>
+        <div class="header-row">
+            <h2>AruLicheyal Sandhai Player</h2>
+            <button type="button" id="copyLinkBtn" class="copy-link-btn" onclick="copyShareLink()" title="Copy shareable link to this prabandham and pasuram">Copy link</button>
+        </div>
 
         <div class="config-grid">
             <div class="input-group">
@@ -265,12 +298,12 @@
 
             <div class="input-group">
                 <label id="numLabel">Paasuram</label>
-                <input title="(Ch.Sub.Pas) - eg: For TVM - 1.1.1" type="text" id="number" value="0.1" inputmode="decimal" placeholder="e.g. 1.1">
+                <select id="number" title="Pasuram or Taniyan for the selected Prabandham" onchange="onPasuramNumberChange()"></select>
             </div>
 
             <div class="input-group">
                 <label>Learning Mode</label>
-                <select id="learningStep" onchange="resetLineTracking()">
+                <select id="learningStep" onchange="onLearningStepChange()">
                     <option value="step1" selected>Step 1: Half-Line</option>
                     <option value="step2">Step 2: One-Line</option>
                     <option value="step3">Step 3: Two-Line</option>
@@ -291,7 +324,7 @@
 
             <div class="input-group">
                 <label>Repeat</label>
-                <input type="number" id="repeatLimit" value="3" min="1">
+                <input type="number" id="repeatLimit" value="3" min="1" onchange="onSessionPrefChange()">
             </div>
             <div class="input-group">
                 <label>Language</label>
@@ -303,7 +336,7 @@
 
             <div class="input-group">
                 <label>Auto-Advance</label>
-                <select id="autoNext">
+                <select id="autoNext" onchange="onSessionPrefChange()">
                     <option value="true">Yes</option>
                     <option value="false">No</option>
                 </select>
