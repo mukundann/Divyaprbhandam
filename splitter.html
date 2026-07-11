@@ -89,6 +89,23 @@
             cursor: not-allowed;
         }
 
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            min-width: 28px;
+            min-height: 28px;
+            line-height: 0;
+        }
+
+        .btn-icon img {
+            width: 18px;
+            height: 18px;
+            display: block;
+            object-fit: contain;
+        }
+
         audio {
             width: 100%;
             margin-top: 10px;
@@ -175,6 +192,59 @@
             color: #212121;
         }
 
+        .marker-item-invalid {
+            background: #ffebee !important;
+            border-color: #ef9a9a !important;
+        }
+
+        .marker-item-warn {
+            background: #fff8e1 !important;
+            border-color: #ffe082 !important;
+        }
+
+        .marker-item-active {
+            background: #e1f5fe !important;
+        }
+
+        .issue-badge {
+            font-size: 10px;
+            font-weight: bold;
+            color: #c62828;
+            margin-right: 4px;
+            white-space: nowrap;
+        }
+
+        .status-issues {
+            color: #c62828;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        #deleteModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #deleteModal .modal-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 420px;
+            width: 90%;
+        }
+
+        #deleteModal .modal-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            justify-content: flex-end;
+        }
+
         /* Responsive Mobile Breakpoint Overrides */
         @media (max-width: 768px) {
             body {
@@ -221,7 +291,56 @@
                 font-size: 12px;
             }
         }
+
+        /* Waveform prototype */
+        .wf-overview-wrap {
+            margin-top: 8px;
+            border: 1px solid #cfd8dc;
+            border-radius: 4px;
+            background: #fafafa;
+            padding: 6px 8px 8px;
+        }
+
+        .wf-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #546e7a;
+            margin-bottom: 4px;
+        }
+
+        .wf-overview-canvas {
+            width: 100%;
+            height: 72px;
+            display: block;
+            cursor: crosshair;
+            border-radius: 3px;
+            background: #eceff1;
+        }
+
+        .wf-segment-canvas {
+            width: 100%;
+            height: 32px;
+            display: block;
+            cursor: ew-resize;
+            border-radius: 3px;
+            background: #eceff1;
+            margin-top: 4px;
+        }
+
+        .wf-segment-canvas.wf-expanded {
+            height: 80px;
+        }
+
+        .wf-unavailable {
+            font-size: 12px;
+            color: #888;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
     </style>
+    <script src="audioWaveform.js"></script>
     <script src="https://www.youtube.com/iframe_api" async></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 </head>
@@ -264,7 +383,8 @@
                 <audio id="player" controls></audio>
                 <div id="timeDisplay"
                     style="font-family: monospace; font-size: 14px; font-weight: bold; color: #333; margin-top: 4px; padding-left: 2px;">
-                    0.0s</div>
+                    0.00s</div>
+                <div id="waveformOverview"></div>
                 <div id="yt-container">
                     <div id="yt-player"></div>
                 </div>
@@ -273,10 +393,22 @@
             <div class="form-group" style="display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap;">
                 <button class="btn" id="recordBtn" style="background-color: #28a745; flex: 1; min-width: 130px;"
                     disabled onclick="captureTimestampAtCurrent()">Capture Stamp (M)</button>
+                <label class="checkbox-label" style="flex: 1; min-width: 140px; padding: 8px 4px;" title="When enabled, M snaps to nearest silence valley within ±250ms">
+                    <input type="checkbox" id="silenceSnapOnM"> Silence snap on M
+                </label>
                 <button class="btn" style="background-color: #6c757d; flex: 1;" onclick="rewind()">Rewind 2s</button>
                 <button class="btn" style="background-color: #17a2b8; flex: 1;"
                     onclick="distributeTimelineProrally()">Even Distribute</button>
+                <button class="btn" style="background-color: #e67e22; flex: 1;" onclick="repairTimeline()">Repair Timeline</button>
                 <button class="btn" style="background-color: #dc3545; flex: 1;" onclick="clearAllState()">Reset</button>
+            </div>
+
+            <div class="form-group" style="display:flex; gap:12px; align-items:center; background:#eef7ee; padding:10px; border-radius:4px; border:1px solid #c3e6cb; flex-wrap:wrap;">
+                <label style="margin:0; display:inline-flex; align-items:center; gap:6px; font-size:0.9rem;">
+                    <input type="checkbox" id="markReviewed" onchange="onReviewFlagChanged()">
+                    Mark reviewed (listen-verified)
+                </label>
+                <span id="markerSourceLabel" style="font-size:12px; color:#555;">Source: capture</span>
             </div>
 
             <div class="form-group" style="display:flex; gap:8px; align-items:center; background:#f1f3f4; padding:10px; border-radius:4px; flex-wrap:wrap;">
@@ -314,20 +446,50 @@
         </div>
 
         <div class="right-panel">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
                 <h3 style="margin: 0;">Interactive Segment Sequence Grid</h3>
-                <span id="status" style="font-size: 13px; font-weight: bold; color: #666;">Markers: 0</span>
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                    <button class="btn" id="undoBtn" style="padding: 6px 10px; font-size: 12px; background-color: #6c757d;"
+                        disabled onclick="undoMarkers()" title="Undo (Ctrl+Z)">Undo</button>
+                    <button class="btn" id="redoBtn" style="padding: 6px 10px; font-size: 12px; background-color: #6c757d;"
+                        disabled onclick="redoMarkers()" title="Redo (Ctrl+Shift+Z)">Redo</button>
+                    <button class="btn" id="restoreCheckpointBtn" style="padding: 6px 10px; font-size: 12px; background-color: #5c35a0;"
+                        onclick="restoreCheckpoint()" title="Restore last autosaved checkpoint">Restore checkpoint</button>
+                    <button class="btn" id="reviewPlayBtn" style="padding: 6px 12px; font-size: 12px; background-color: #28a745;"
+                        disabled onclick="startReviewPlayback()">Review All</button>
+                    <button class="btn" id="reviewPauseBtn" style="padding: 6px 12px; font-size: 12px; background-color: #fd7e14;"
+                        disabled onclick="pauseReviewPlayback()">Pause Review</button>
+                    <span id="status" style="font-size: 13px; font-weight: bold; color: #666;">Markers: 0</span>
+                </div>
             </div>
 
             <div class="live-display-box" id="livePasuramView">
                 <em>Load or parse script text content to visualize running live display...</em>
             </div>
-            <p style="font-size: 11px; color:#777; margin: 4px 0 10px 0;">💡 Tip: Press <strong>Shift + Enter</strong>
-                within any input cell row above to split and insert a fresh segment immediately below it.</p>
+            <p style="font-size: 11px; color:#777; margin: 4px 0 10px 0;">💡 Tip: <strong>Undo</strong> (Ctrl+Z) recovers deleted segments. Invalid rows are highlighted in red — use <strong>Repair Timeline</strong>. <strong>Review All</strong> plays every segment in sequence.</p>
 
             <div class="marker-list" id="marker-list">
                 <div style="text-align: center; color: #999; padding-top: 40px;">No segment nodes compiled. Paste text
                     code maps above or parse script sources to begin canvas adjustments.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal">
+        <div class="modal-box">
+            <p style="margin: 0 0 8px 0; font-weight: bold; font-size: 15px;">Delete segment?</p>
+            <p id="deleteModalText" style="margin: 0 0 12px 0; font-size: 13px; color: #444;"></p>
+            <div id="deleteMergeOptions" style="font-size: 13px; margin-bottom: 8px;">
+                <label style="display: block; margin-bottom: 6px; font-weight: normal;">
+                    <input type="radio" name="deleteTextAction" value="merge" checked> Merge text into previous segment
+                </label>
+                <label style="display: block; font-weight: normal;">
+                    <input type="radio" name="deleteTextAction" value="discard"> Discard text
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" style="background-color: #6c757d;" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn" style="background-color: #dc3545;" onclick="confirmDeleteSegment()">Delete</button>
             </div>
         </div>
     </div>
@@ -343,9 +505,175 @@
         // Global Editing Locks and Storage Configuration
         window.isUserEditingActiveCell = false;
         window.isTestingSegmentAudio = false;
+        window.isReviewPlayback = false;
+        window.reviewPaused = false;
+        window.reviewSegmentIndex = 0;
+        window.markerSource = localStorage.getItem('asm_marker_source') || 'capture';
+        window.markersReviewed = localStorage.getItem('asm_markers_reviewed') === 'true';
+
+        const MARKER_HISTORY_LIMIT = 25;
+        let markerHistory = [];
+        let markerRedoStack = [];
+        let historyMuted = false;
+        let timeEditHistoryPushed = false;
+        let pendingDeleteIndex = -1;
+        let lastValidationIssues = [];
+        let serializeSaveCount = 0;
+        let lastCheckpointTime = 0;
+        const CHECKPOINT_INTERVAL_MS = 120000;
+        const CHECKPOINT_SAVE_EVERY = 10;
+
         let repoChapterDatabase = {};
 
         let player, markerList, ioJson, livePasuramView;
+        let waveformReady = false;
+        let expandedWaveformIndex = -1;
+        let waveformDragHistoryPushed = false;
+
+        function setMarkerSource(source) {
+            window.markerSource = source || 'capture';
+            localStorage.setItem('asm_marker_source', window.markerSource);
+            const label = document.getElementById('markerSourceLabel');
+            if (label) label.textContent = 'Source: ' + window.markerSource;
+        }
+
+        function onReviewFlagChanged() {
+            const box = document.getElementById('markReviewed');
+            window.markersReviewed = !!(box && box.checked);
+            localStorage.setItem('asm_markers_reviewed', window.markersReviewed ? 'true' : 'false');
+            serializeStateToJS();
+        }
+
+        function syncReviewUi() {
+            const box = document.getElementById('markReviewed');
+            if (box) box.checked = !!window.markersReviewed;
+            const label = document.getElementById('markerSourceLabel');
+            if (label) label.textContent = 'Source: ' + (window.markerSource || 'capture');
+        }
+
+        function buildExportMeta() {
+            const meta = {
+                source: window.markerSource || 'capture',
+                reviewed: !!window.markersReviewed,
+                tool: 'splitter'
+            };
+            if (window.markersReviewed) {
+                meta.reviewedAt = new Date().toISOString().slice(0, 10);
+            }
+            return meta;
+        }
+
+        function roundMarkerTime(t) {
+            if (window.AudioWaveform && waveformReady) return AudioWaveform.roundTime(t);
+            return parseFloat(Number(t).toFixed(1));
+        }
+
+        function timeStepAttr() {
+            return waveformReady ? '0.01' : '0.1';
+        }
+
+        function formatTimeDisplay(t) {
+            return waveformReady ? t.toFixed(2) : t.toFixed(1);
+        }
+
+        function seekPlayback(time) {
+            const t = roundMarkerTime(time);
+            if (isYouTube && ytPlayer) ytPlayer.seekTo(t);
+            else if (player) player.currentTime = t;
+        }
+
+        function initWaveformForAudio(url) {
+            const container = document.getElementById('waveformOverview');
+            if (!container || !window.AudioWaveform) return;
+            waveformReady = false;
+            expandedWaveformIndex = -1;
+            AudioWaveform.clearSegmentBars();
+            AudioWaveform.destroyOverview();
+            container.innerHTML = '<div class="wf-unavailable">Decoding waveform…</div>';
+            AudioWaveform.decode(url).then((ok) => {
+                if (!ok) {
+                    AudioWaveform.showUnavailable(container, 'Waveform unavailable (CORS or decode error). Ear-only marking still works.');
+                    return;
+                }
+                waveformReady = true;
+                AudioWaveform.mountOverview(container, {
+                    getMarkers: () => window.rawMarkers,
+                    getIssues: () => validateMarkers(),
+                    onSeek: (t) => seekPlayback(t),
+                    onSegmentClick: (idx) => highlightUIRow(idx)
+                });
+                // The grid may already be rendered in pre-waveform mode.
+                renderInteractiveGrid(true);
+                refreshWaveformViews();
+            });
+        }
+
+        function onWaveformBoundaryChange(index, field, time) {
+            if (!window.rawMarkers[index]) return;
+            if (!waveformDragHistoryPushed) {
+                pushHistory();
+                waveformDragHistoryPushed = true;
+            }
+            const t = roundMarkerTime(time);
+            const m = window.rawMarkers[index];
+            const minGap = 0.01;
+            if (window.markerSource === 'evenDistribute') {
+                setMarkerSource('capture');
+            }
+            if (field === 'start') {
+                const floor = index > 0 ? window.rawMarkers[index - 1].start + minGap : 0;
+                const ceil = m.end - minGap;
+                const clamped = Math.max(floor, Math.min(ceil, t));
+                m.start = clamped;
+                if (window.rawMarkers[index - 1]) window.rawMarkers[index - 1].end = clamped;
+            } else {
+                const floor = m.start + minGap;
+                const ceil = index < window.rawMarkers.length - 1
+                    ? window.rawMarkers[index + 1].end - minGap
+                    : (detectedDuration || m.end + 1);
+                const clamped = Math.max(floor, Math.min(ceil, t));
+                m.end = clamped;
+                if (window.rawMarkers[index + 1]) window.rawMarkers[index + 1].start = clamped;
+            }
+            localStorage.setItem('asm_saved_markers', JSON.stringify(window.rawMarkers));
+            renderInteractiveGrid(false);
+            serializeStateToJS();
+            AudioWaveform.refreshAll();
+        }
+
+        function onWaveformDragEnd() {
+            waveformDragHistoryPushed = false;
+        }
+
+        function mountSegmentWaveforms() {
+            if (!waveformReady || !window.AudioWaveform) return;
+            AudioWaveform.clearSegmentBars();
+            window.rawMarkers.forEach((m, i) => {
+                const canvas = document.getElementById('wf-seg-' + i);
+                if (!canvas) return;
+                const expanded = expandedWaveformIndex === i;
+                canvas.classList.toggle('wf-expanded', expanded);
+                AudioWaveform.createSegmentBar(canvas, i, {
+                    getMarkers: () => window.rawMarkers,
+                    onSeek: (t) => seekPlayback(t),
+                    onBoundaryChange: onWaveformBoundaryChange,
+                    onDragStart: () => { waveformDragHistoryPushed = false; },
+                    onDragEnd: onWaveformDragEnd,
+                    onToggleExpand: (idx) => {
+                        expandedWaveformIndex = expandedWaveformIndex === idx ? -1 : idx;
+                        mountSegmentWaveforms();
+                    }
+                }, expanded);
+            });
+            AudioWaveform.setActiveSegment(currentHighlightIndex);
+            AudioWaveform.refreshAll();
+        }
+
+        function refreshWaveformViews() {
+            if (!waveformReady || !window.AudioWaveform) return;
+            AudioWaveform.refreshAll();
+            mountSegmentWaveforms();
+        }
 
         window.loadLocalFile = function (input) {
             if (!input || !input.files || input.files.length === 0) return;
@@ -369,14 +697,24 @@
             ioJson = document.getElementById('ioJson');
             livePasuramView = document.getElementById('livePasuramView');
             setupSyncLoop();
+            syncReviewUi();
+            updateReviewButtons();
+            try {
+                const savedHistory = localStorage.getItem('asm_marker_history');
+                if (savedHistory) markerHistory = JSON.parse(savedHistory);
+            } catch (e) { markerHistory = []; }
+            updateUndoRedoButtons();
 
             document.getElementById('textGuidedContent').addEventListener('input', (e) => {
                 localStorage.setItem('asm_saved_text', e.target.value);
             });
 
-            // Event listeners to release segment preview locks on manual tracking interaction
-            player.addEventListener('play', () => { window.isTestingSegmentAudio = false; });
-            player.addEventListener('seeking', () => { window.isTestingSegmentAudio = false; });
+            player.addEventListener('play', () => {
+                if (!window.isReviewPlayback) window.isTestingSegmentAudio = false;
+            });
+            player.addEventListener('seeking', () => {
+                if (!window.isReviewPlayback) window.isTestingSegmentAudio = false;
+            });
 
             // Hash-based handoff takes priority over localStorage restore
             const restoredFromHash = restoreFromHash();
@@ -407,6 +745,20 @@
             }
 
             window.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+                    const active = document.activeElement;
+                    if (active && active.tagName === 'TEXTAREA') return;
+                    e.preventDefault();
+                    undoMarkers();
+                    return;
+                }
+                if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'z') {
+                    const active = document.activeElement;
+                    if (active && active.tagName === 'TEXTAREA') return;
+                    e.preventDefault();
+                    redoMarkers();
+                    return;
+                }
                 if (e.key.toLowerCase() === 'm') {
                     const active = document.activeElement;
                     if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
@@ -417,12 +769,12 @@
 
             if (markerList) {
                 markerList.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && e.shiftKey) {
+                    if (e.key === 'Delete') {
                         const activeRow = e.target.closest('.marker-item');
                         if (activeRow) {
                             e.preventDefault();
                             const index = parseInt(activeRow.id.replace('item-', ''), 10);
-                            if (!isNaN(index)) insertSegmentInBetween(index);
+                            if (!isNaN(index)) openDeleteModal(index);
                         }
                     }
                 });
@@ -836,6 +1188,11 @@
             isYouTube = true; currentFileName = videoId;
             player.style.display = 'none';
             document.getElementById('yt-container').style.display = 'block';
+            waveformReady = false;
+            const wfContainer = document.getElementById('waveformOverview');
+            if (wfContainer && window.AudioWaveform) {
+                AudioWaveform.showUnavailable(wfContainer, 'Waveform not available for YouTube streams.');
+            }
 
             if (ytPlayer) {
                 ytPlayer.loadVideoById(videoId);
@@ -857,6 +1214,7 @@
             player.src = url; player.load();
             document.getElementById('recordBtn').disabled = false;
             player.onloadedmetadata = function () { extractDuration(); };
+            initWaveformForAudio(url);
         }
 
         function extractDuration() {
@@ -864,9 +1222,244 @@
             if (!detectedDuration || isNaN(detectedDuration)) detectedDuration = 300;
         }
 
+        function extractDuration() {
+            detectedDuration = isYouTube ? ytPlayer.getDuration() : player.duration;
+            if (!detectedDuration || isNaN(detectedDuration)) detectedDuration = 300;
+        }
+
+        // ─── TIMELINE SAFETY: history, validation, repair ───────────────────────
+
+        function snapshotMarkers() {
+            return JSON.stringify(window.rawMarkers);
+        }
+
+        function restoreMarkersSnapshot(json) {
+            historyMuted = true;
+            window.rawMarkers = JSON.parse(json);
+            historyMuted = false;
+            renderInteractiveGrid(true);
+            serializeStateToJS();
+            updateUndoRedoButtons();
+        }
+
+        function persistHistoryStack() {
+            try {
+                localStorage.setItem('asm_marker_history', JSON.stringify(markerHistory.slice(-5)));
+            } catch (e) { /* quota */ }
+        }
+
+        function pushHistory() {
+            if (historyMuted || !window.rawMarkers) return;
+            markerHistory.push(snapshotMarkers());
+            if (markerHistory.length > MARKER_HISTORY_LIMIT) markerHistory.shift();
+            markerRedoStack = [];
+            persistHistoryStack();
+            updateUndoRedoButtons();
+        }
+
+        function undoMarkers() {
+            if (markerHistory.length === 0) return;
+            markerRedoStack.push(snapshotMarkers());
+            restoreMarkersSnapshot(markerHistory.pop());
+            persistHistoryStack();
+        }
+
+        function redoMarkers() {
+            if (markerRedoStack.length === 0) return;
+            markerHistory.push(snapshotMarkers());
+            restoreMarkersSnapshot(markerRedoStack.pop());
+            persistHistoryStack();
+        }
+
+        function updateUndoRedoButtons() {
+            const undoBtn = document.getElementById('undoBtn');
+            const redoBtn = document.getElementById('redoBtn');
+            if (undoBtn) undoBtn.disabled = markerHistory.length === 0;
+            if (redoBtn) redoBtn.disabled = markerRedoStack.length === 0;
+        }
+
+        function prepareHistoryForTimeEdit() {
+            if (!timeEditHistoryPushed) {
+                pushHistory();
+                timeEditHistoryPushed = true;
+            }
+        }
+
+        function maybeWriteCheckpoint() {
+            const now = Date.now();
+            serializeSaveCount++;
+            if (serializeSaveCount % CHECKPOINT_SAVE_EVERY === 0 || (now - lastCheckpointTime) >= CHECKPOINT_INTERVAL_MS) {
+                try {
+                    localStorage.setItem('asm_saved_markers_checkpoint', snapshotMarkers());
+                    localStorage.setItem('asm_checkpoint_time', String(now));
+                    lastCheckpointTime = now;
+                } catch (e) { /* quota */ }
+            }
+        }
+
+        function restoreCheckpoint() {
+            const checkpoint = localStorage.getItem('asm_saved_markers_checkpoint');
+            if (!checkpoint) {
+                alert('No checkpoint found. Checkpoints are saved periodically while you edit.');
+                return;
+            }
+            const when = localStorage.getItem('asm_checkpoint_time');
+            const whenLabel = when ? new Date(parseInt(when, 10)).toLocaleString() : 'unknown time';
+            if (!confirm('Restore marker checkpoint from ' + whenLabel + '? Current segments will be replaced.')) return;
+            pushHistory();
+            restoreMarkersSnapshot(checkpoint);
+            alert('Checkpoint restored (' + window.rawMarkers.length + ' segments).');
+        }
+
+        function validateMarkers() {
+            const issues = [];
+            if (!window.rawMarkers || window.rawMarkers.length === 0) return issues;
+            for (let i = 0; i < window.rawMarkers.length; i++) {
+                const m = window.rawMarkers[i];
+                const types = [];
+                if (m.start >= m.end) types.push('invalid');
+                if (i > 0) {
+                    const prev = window.rawMarkers[i - 1];
+                    if (m.start < prev.end) types.push('overlap');
+                    else if (m.start > prev.end) types.push('gap');
+                }
+                if (detectedDuration > 0 && m.end > detectedDuration) types.push('overflow');
+                if (types.length) issues.push({ index: i, types: types });
+            }
+            return issues;
+        }
+
+        function getIssueLabel(types) {
+            if (types.includes('invalid')) return 'invalid';
+            if (types.includes('overlap')) return 'overlap';
+            if (types.includes('gap')) return 'gap';
+            if (types.includes('overflow')) return 'overflow';
+            return 'issue';
+        }
+
+        function reStitchTimelinePreserveDuration() {
+            const minDuration = 0.1;
+            if (!window.rawMarkers || window.rawMarkers.length === 0) return;
+            for (let i = 1; i < window.rawMarkers.length; i++) {
+                const prev = window.rawMarkers[i - 1];
+                const curr = window.rawMarkers[i];
+                let duration = parseFloat((curr.end - curr.start).toFixed(1));
+                if (!isFinite(duration) || duration <= 0) duration = minDuration;
+                duration = Math.max(minDuration, duration);
+                curr.start = parseFloat(prev.end.toFixed(1));
+                curr.end = parseFloat((curr.start + duration).toFixed(1));
+            }
+            const lastIdx = window.rawMarkers.length - 1;
+            if (detectedDuration > 0 && window.rawMarkers[lastIdx].end > detectedDuration) {
+                window.rawMarkers[lastIdx].end = parseFloat(detectedDuration.toFixed(1));
+            }
+        }
+
+        function repairTimeline() {
+            if (!window.rawMarkers || window.rawMarkers.length === 0) return;
+            const before = validateMarkers();
+            pushHistory();
+            reStitchTimelinePreserveDuration();
+            const after = validateMarkers();
+            const fixed = Math.max(0, before.length - after.length);
+            renderInteractiveGrid(true);
+            serializeStateToJS();
+            alert('Repair complete. Fixed ' + fixed + ' issue(s). ' + after.length + ' remaining.');
+        }
+
+        function applyValidationRowStyles() {
+            lastValidationIssues = validateMarkers();
+            const issueByIndex = {};
+            lastValidationIssues.forEach((issue) => { issueByIndex[issue.index] = issue; });
+            document.querySelectorAll('.marker-item').forEach((row) => {
+                const idx = parseInt(row.id.replace('item-', ''), 10);
+                const issue = issueByIndex[idx];
+                row.classList.remove('marker-item-invalid', 'marker-item-warn', 'marker-item-active');
+                if (idx === currentHighlightIndex) row.classList.add('marker-item-active');
+                else if (issue) {
+                    if (issue.types.includes('invalid')) row.classList.add('marker-item-invalid');
+                    else row.classList.add('marker-item-warn');
+                }
+            });
+            updateStatusWithIssues();
+        }
+
+        function updateStatusWithIssues() {
+            const statusEl = document.getElementById('status');
+            if (!statusEl || window.isReviewPlayback) return;
+            const count = window.rawMarkers ? window.rawMarkers.length : 0;
+            const issueCount = lastValidationIssues.length;
+            if (issueCount > 0) {
+                statusEl.innerHTML = 'Markers: ' + count + ' (<span class="status-issues" onclick="scrollToFirstIssue()" title="Click to jump to first issue">' + issueCount + ' issue' + (issueCount === 1 ? '' : 's') + '</span>)';
+            } else {
+                statusEl.textContent = 'Markers: ' + count;
+            }
+        }
+
+        function scrollToFirstIssue() {
+            if (lastValidationIssues.length === 0) return;
+            currentHighlightIndex = lastValidationIssues[0].index;
+            highlightUIRow(currentHighlightIndex);
+        }
+
+        function openDeleteModal(index) {
+            if (window.rawMarkers.length <= 1) {
+                alert('Cannot delete the last remaining track marker segment.');
+                return;
+            }
+            pendingDeleteIndex = index;
+            const seg = window.rawMarkers[index];
+            const preview = (seg.text || '').trim().substring(0, 80) || '(empty)';
+            document.getElementById('deleteModalText').textContent =
+                'Delete segment #' + (index + 1) + '? Text: "' + preview + (seg.text && seg.text.length > 80 ? '…' : '') + '"';
+            document.getElementById('deleteMergeOptions').style.display =
+                index > 0 && (seg.text || '').trim() ? 'block' : 'none';
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            pendingDeleteIndex = -1;
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        function confirmDeleteSegment() {
+            const index = pendingDeleteIndex;
+            if (index < 0 || !window.rawMarkers[index]) {
+                closeDeleteModal();
+                return;
+            }
+            const mergeRadio = document.querySelector('input[name="deleteTextAction"]:checked');
+            const mergeText = mergeRadio && mergeRadio.value === 'merge';
+            const removedSegment = window.rawMarkers[index];
+            pushHistory();
+            if (mergeText && index > 0 && (removedSegment.text || '').trim()) {
+                const prev = window.rawMarkers[index - 1];
+                const removedText = removedSegment.text.trim();
+                prev.text = prev.text.trim() ? prev.text.trim() + ' * ' + removedText : removedText;
+            }
+            if (removedSegment.forceEndBlock && index > 0) {
+                window.rawMarkers[index - 1].forceEndBlock = true;
+            }
+            window.rawMarkers.splice(index, 1);
+            reStitchTimelinePreserveDuration();
+            closeDeleteModal();
+            renderInteractiveGrid(true);
+            serializeStateToJS();
+            setTimeout(() => {
+                const focusTargetIndex = index >= window.rawMarkers.length ? window.rawMarkers.length - 1 : index;
+                const targetRow = document.getElementById('item-' + focusTargetIndex);
+                if (targetRow) {
+                    const txtInput = targetRow.querySelector('input[type="text"]');
+                    if (txtInput) txtInput.focus({ preventScroll: true });
+                    highlightUIRow(focusTargetIndex);
+                }
+            }, 50);
+        }
+
         function parseTextToMutableState() {
             const textRaw = document.getElementById('textGuidedContent').value;
             if (!textRaw.trim()) return;
+            pushHistory();
 
             let cleanText = textRaw.replace(/\\/gi, '');
             cleanText = cleanText.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -909,76 +1502,23 @@
             serializeStateToJS();
         }
 
-        function insertSegmentInBetween(index) {
-            const currentSegment = window.rawMarkers[index];
-            if (!currentSegment) return;
-
-            const midTime = parseFloat(((currentSegment.start + currentSegment.end) / 2).toFixed(1));
-            const originalEnd = currentSegment.end;
-
-            currentSegment.end = midTime;
-
-            const newSegment = {
-                start: midTime,
-                end: originalEnd,
-                text: "",
-                forceEndBlock: currentSegment.forceEndBlock
-            };
-
-            currentSegment.forceEndBlock = false;
-            window.rawMarkers.splice(index + 1, 0, newSegment);
-
-            renderInteractiveGrid(true);
-            serializeStateToJS();
-
-            setTimeout(() => {
-                const nextRow = document.getElementById(`item-${index + 1}`);
-                if (nextRow) {
-                    const txtInput = nextRow.querySelector('input[type="text"]');
-                    if (txtInput) txtInput.focus({ preventScroll: true });
-                    highlightUIRow(index + 1);
-                }
-            }, 50);
-        }
-
         function deleteSegment(index) {
-            if (window.rawMarkers.length <= 1) {
-                alert("Cannot delete the last remaining track marker segment.");
-                return;
-            }
-
-            const removedSegment = window.rawMarkers[index];
-
-            if (index > 0) {
-                window.rawMarkers[index - 1].end = removedSegment.end;
-                if (removedSegment.forceEndBlock) window.rawMarkers[index - 1].forceEndBlock = true;
-            } else if (window.rawMarkers[index + 1]) {
-                window.rawMarkers[index + 1].start = removedSegment.start;
-            }
-
-            window.rawMarkers.splice(index, 1);
-            renderInteractiveGrid(true);
-            serializeStateToJS();
-
-            setTimeout(() => {
-                const focusTargetIndex = index >= window.rawMarkers.length ? window.rawMarkers.length - 1 : index;
-                const targetRow = document.getElementById(`item-${focusTargetIndex}`);
-                if (targetRow) {
-                    const txtInput = targetRow.querySelector('input[type="text"]');
-                    if (txtInput) txtInput.focus({ preventScroll: true });
-                    highlightUIRow(focusTargetIndex);
-                }
-            }, 50);
+            openDeleteModal(index);
         }
 
         function distributeTimelineProrally() {
             if (window.rawMarkers.length === 0) return;
+            pushHistory();
             let totalDuration = detectedDuration || 300;
             let step = totalDuration / window.rawMarkers.length;
             window.rawMarkers.forEach((m, idx) => {
                 m.start = parseFloat((idx * step).toFixed(1));
                 m.end = (idx === window.rawMarkers.length - 1) ? parseFloat(totalDuration.toFixed(1)) : parseFloat(((idx + 1) * step).toFixed(1));
             });
+            setMarkerSource('evenDistribute');
+            window.markersReviewed = false;
+            syncReviewUi();
+            localStorage.setItem('asm_markers_reviewed', 'false');
             renderInteractiveGrid(true);
             serializeStateToJS();
         }
@@ -993,12 +1533,17 @@
 
         function updateStateTime(index, field, value) {
             if (!window.rawMarkers[index]) return;
+            prepareHistoryForTimeEdit();
 
             const newVal = parseFloat(value) || 0;
             const oldVal = window.rawMarkers[index][field];
             const delta = newVal - oldVal;
 
             window.rawMarkers[index][field] = newVal;
+
+            if (window.markerSource === 'evenDistribute') {
+                setMarkerSource('capture');
+            }
 
             if (field === 'start' && window.rawMarkers[index - 1]) {
                 window.rawMarkers[index - 1].end = newVal;
@@ -1024,6 +1569,7 @@
             localStorage.setItem('asm_saved_markers', JSON.stringify(window.rawMarkers));
             renderInteractiveGrid(false);
             serializeStateToJS();
+            refreshWaveformViews();
         }
 
         function toggleStateBoundary(index, isChecked) {
@@ -1033,13 +1579,33 @@
             }
         }
 
-        function snapToCurrentPlayback(index) {
-            const time = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
-            updateStateTime(index, 'end', parseFloat(time.toFixed(1)));
+        function cutSegmentAtPlayback(index) {
+            let time = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
+            if (waveformReady && document.getElementById('silenceSnapOnM')?.checked) {
+                time = AudioWaveform.findSilenceValley(time);
+            }
+            updateStateTime(index, 'end', roundMarkerTime(time));
+            refreshWaveformViews();
+        }
+
+        function pauseSegmentPlayback() {
+            if (window.isReviewPlayback) {
+                pauseReviewPlayback();
+                return;
+            }
+            clearSegmentPlaybackMonitor();
+            if (isYouTube && ytPlayer) ytPlayer.pauseVideo();
+            else if (player) player.pause();
+            window.isTestingSegmentAudio = false;
         }
 
         function captureTimestampAtCurrent() {
-            const time = parseFloat((isYouTube ? ytPlayer.getCurrentTime() : player.currentTime).toFixed(1));
+            pushHistory();
+            let time = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
+            if (waveformReady && document.getElementById('silenceSnapOnM')?.checked) {
+                time = AudioWaveform.findSilenceValley(time);
+            }
+            time = roundMarkerTime(time);
             for (let i = 0; i < window.rawMarkers.length; i++) {
                 if (time > window.rawMarkers[i].start && time < window.rawMarkers[i].end) {
                     window.rawMarkers[i].end = time;
@@ -1047,8 +1613,12 @@
                     break;
                 }
             }
+            if (window.markerSource === 'evenDistribute') {
+                setMarkerSource('capture');
+            }
             renderInteractiveGrid(true);
             serializeStateToJS();
+            refreshWaveformViews();
         }
 
         function renderPasuramReaderPanel(activeIndex) {
@@ -1079,7 +1649,16 @@
         }
 
         function renderInteractiveGrid(forceFullRedraw = false) {
-            if (!markerList || window.rawMarkers.length === 0) return;
+            if (!markerList) return;
+            if (window.rawMarkers.length === 0) {
+                updateReviewButtons();
+                updateStatusWithIssues();
+                updateUndoRedoButtons();
+                return;
+            }
+            const issueByIndex = {};
+            lastValidationIssues = validateMarkers();
+            lastValidationIssues.forEach((issue) => { issueByIndex[issue.index] = issue; });
             const DOMItemsCount = markerList.querySelectorAll('.marker-item').length;
 
             if (!forceFullRedraw && DOMItemsCount === window.rawMarkers.length) {
@@ -1089,84 +1668,242 @@
                         const inputs = itemRow.querySelectorAll('input[type="number"]');
                         const textInput = itemRow.querySelector('input[type="text"]');
                         const checkInput = itemRow.querySelector('input[type="checkbox"]');
-
                         if (inputs[0] && document.activeElement !== inputs[0]) inputs[0].value = m.start;
                         if (inputs[1] && document.activeElement !== inputs[1]) inputs[1].value = m.end;
                         if (textInput && document.activeElement !== textInput) textInput.value = m.text;
                         if (checkInput) checkInput.checked = m.forceEndBlock;
                     }
                 });
-                document.getElementById('status').innerText = `Markers: ${window.rawMarkers.length}`;
+                applyValidationRowStyles();
+                updateReviewButtons();
+                refreshWaveformViews();
                 return;
             }
 
             markerList.innerHTML = window.rawMarkers.map((m, i) => {
-                return `
-            <div class="marker-item" id="item-${i}">
-                <span style="font-weight:bold; margin-right:4px; min-width:25px; font-size:12px;">#${i + 1}</span>
-                <input type="number" step="0.1" value="${m.start}" 
-                       onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
-                       onblur="window.isUserEditingActiveCell = false;" 
+                const issue = issueByIndex[i];
+                const badge = issue ? `<span class="issue-badge" title="${issue.types.join(', ')}">${getIssueLabel(issue.types)}</span>` : '';
+                const rowClass = issue ? (issue.types.includes('invalid') ? 'marker-item-invalid' : 'marker-item-warn') : '';
+                const playTitle = issue && issue.types.includes('invalid')
+                    ? 'Fix invalid times (end must be after start) or use Repair Timeline'
+                    : 'Play segment';
+                const step = timeStepAttr();
+                const timeFields = `
+                <input type="number" step="${step}" value="${m.start}" 
+                       onfocus="onMarkerTimeFocus(); window.isUserEditingActiveCell = true;" 
+                       onblur="onMarkerTimeBlur();" 
                        oninput="updateStateTime(${i}, 'start', this.value)">
-                <input type="number" step="0.1" value="${m.end}" 
-                       onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
-                       onblur="window.isUserEditingActiveCell = false;" 
-                       oninput="updateStateTime(${i}, 'end', this.value)">
+                <input type="number" step="${step}" value="${m.end}" 
+                       onfocus="onMarkerTimeFocus(); window.isUserEditingActiveCell = true;" 
+                       onblur="onMarkerTimeBlur();" 
+                       oninput="updateStateTime(${i}, 'end', this.value)">`;
+                const rowBtns = `
+                    <button class="btn btn-icon" style="background-color: #1a237e;" onclick="cutSegmentAtPlayback(${i})" title="Cut: set end to playhead">
+                        <img src="splitter-assets/cut.png" alt="Cut">
+                    </button>
+                    <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #28a745;" onclick="testSegmentAudio(${i})" title="${playTitle}">▶</button>
+                    <button class="btn btn-icon" style="background-color: #1565c0;" onclick="pauseSegmentPlayback()" title="Pause playback">
+                        <img src="splitter-assets/pause.png" alt="Pause">
+                    </button>
+                    <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #dc3545;" onclick="deleteSegment(${i})" title="Delete Segment">×</button>`;
+                const wfCanvas = waveformReady
+                    ? `<canvas class="wf-segment-canvas" id="wf-seg-${i}" title="Drag green handles to trim; double-click to expand"></canvas>`
+                    : '';
+                return `
+            <div class="marker-item ${rowClass}" id="item-${i}">
+                <span style="font-weight:bold; margin-right:4px; min-width:25px; font-size:12px;">#${i + 1}</span>
+                ${badge}
+                ${timeFields}
                 <input type="text" placeholder="Add new segment text" value="${m.text.replace(/"/g, '&quot;')}" 
-                       onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
+                       onfocus="onMarkerInputFocus(); window.isUserEditingActiveCell = true;" 
                        onblur="window.isUserEditingActiveCell = false;" 
                        oninput="updateStateText(${i}, this.value)">
                 <label class="checkbox-label">
                     <input type="checkbox" ${m.forceEndBlock ? 'checked' : ''} onchange="toggleStateBoundary(${i}, this.checked)"> Break
                 </label>
                 <div style="display:flex; gap:3px; margin-left:auto;">
-                    <button class="btn" style="padding: 6px 8px; font-size: 11px;" onclick="snapToCurrentPlayback(${i})">Snap</button>
-                    <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #28a745;" onclick="testSegmentAudio(${i})">▶</button>
-                    <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #dc3545;" onclick="deleteSegment(${i})" title="Delete Segment">×</button>
+                    ${rowBtns}
                 </div>
+                ${wfCanvas}
             </div>`;
             }).join('');
 
-            document.getElementById('status').innerText = `Markers: ${window.rawMarkers.length}`;
             renderPasuramReaderPanel(currentHighlightIndex);
+            applyValidationRowStyles();
+            updateReviewButtons();
+            mountSegmentWaveforms();
         }
 
-        function testSegmentAudio(targetId) {
+        function onMarkerInputFocus() {
+            if (window.isReviewPlayback) pauseReviewPlayback();
+            else window.isTestingSegmentAudio = false;
+        }
+
+        function onMarkerTimeFocus() {
+            onMarkerInputFocus();
+            prepareHistoryForTimeEdit();
+        }
+
+        function onMarkerTimeBlur() {
+            window.isUserEditingActiveCell = false;
+            timeEditHistoryPushed = false;
+        }
+
+        function clearSegmentPlaybackMonitor() {
+            if (window.activeAudioTrackLoop) {
+                clearInterval(window.activeAudioTrackLoop);
+                window.activeAudioTrackLoop = null;
+            }
+        }
+
+        function armSegmentEndMonitor(targetId, onComplete, keepPlayingOnEnd) {
             const marker = window.rawMarkers[targetId];
             if (!marker) return;
-
-            const start = marker.start;
+            clearSegmentPlaybackMonitor();
             const end = marker.end;
-
-            // Set segment preview lock so background scroll listeners ignore automatic advancement highlights
-            window.isTestingSegmentAudio = true;
-            currentHighlightIndex = targetId;
-            highlightUIRow(targetId);
-
-            if (isYouTube) { ytPlayer.seekTo(start); ytPlayer.playVideo(); }
-            else { player.currentTime = start; player.play(); }
-
-            if (window.activeAudioTrackLoop) clearInterval(window.activeAudioTrackLoop);
-
             window.activeAudioTrackLoop = setInterval(() => {
-                let curr = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
+                const curr = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
                 const currentEnd = window.rawMarkers[targetId] ? window.rawMarkers[targetId].end : end;
-
                 if (curr >= currentEnd) {
-                    if (isYouTube) ytPlayer.pauseVideo(); else player.pause();
-                    clearInterval(window.activeAudioTrackLoop);
+                    clearSegmentPlaybackMonitor();
+                    if (!keepPlayingOnEnd) {
+                        if (isYouTube) ytPlayer.pauseVideo();
+                        else player.pause();
+                    }
+                    if (onComplete) onComplete();
                 }
             }, 30);
         }
 
-        function highlightUIRow(index) {
-            // 1. Reset backgrounds across all tracking rows
-            document.querySelectorAll('.marker-item').forEach(el => el.style.background = '#f9f9f9');
+        function playSegmentRange(targetId, onComplete, options) {
+            const marker = window.rawMarkers[targetId];
+            if (!marker) return;
+            if (marker.start >= marker.end) {
+                alert('Segment #' + (targetId + 1) + ' has end before start (' + marker.start + ' → ' + marker.end + '). Fix times or use Repair Timeline.');
+                return;
+            }
+            options = options || {};
+            const reviewChain = !!options.reviewChain;
+            window.isTestingSegmentAudio = true;
+            currentHighlightIndex = targetId;
+            highlightUIRow(targetId);
+            if (isYouTube) {
+                ytPlayer.seekTo(marker.start);
+                ytPlayer.playVideo();
+            } else {
+                player.currentTime = marker.start;
+                if (player.paused || options.forcePlay) {
+                    const playAttempt = player.play();
+                    if (playAttempt && playAttempt.catch) playAttempt.catch((err) => console.warn('Segment playback blocked:', err));
+                }
+            }
+            armSegmentEndMonitor(targetId, onComplete, reviewChain);
+        }
 
+        function updateReviewButtons() {
+            const playBtn = document.getElementById('reviewPlayBtn');
+            const pauseBtn = document.getElementById('reviewPauseBtn');
+            if (!playBtn || !pauseBtn) return;
+            const hasMarkers = window.rawMarkers && window.rawMarkers.length > 0;
+            playBtn.disabled = !hasMarkers;
+            pauseBtn.disabled = !window.isReviewPlayback || window.reviewPaused;
+            playBtn.textContent = (window.isReviewPlayback && window.reviewPaused) ? 'Resume Review' : 'Review All';
+            updateStatusWithIssues();
+            if (window.isReviewPlayback) {
+                const statusEl = document.getElementById('status');
+                if (statusEl) {
+                    const label = window.reviewPaused ? 'Paused' : 'Reviewing';
+                    statusEl.innerText = label + ' ' + (window.reviewSegmentIndex + 1) + '/' + window.rawMarkers.length;
+                }
+            }
+        }
+
+        function stopReviewPlayback() {
+            window.isReviewPlayback = false;
+            window.reviewPaused = false;
+            clearSegmentPlaybackMonitor();
+            if (isYouTube && ytPlayer) ytPlayer.pauseVideo();
+            else if (player) player.pause();
+            window.isTestingSegmentAudio = false;
+            updateReviewButtons();
+        }
+
+        function pauseReviewPlayback() {
+            if (!window.isReviewPlayback || window.reviewPaused) return;
+            window.reviewPaused = true;
+            clearSegmentPlaybackMonitor();
+            if (isYouTube) ytPlayer.pauseVideo();
+            else player.pause();
+            updateReviewButtons();
+        }
+
+        function playReviewSegment(index) {
+            if (!window.isReviewPlayback || window.reviewPaused) return;
+            if (index >= window.rawMarkers.length) {
+                stopReviewPlayback();
+                return;
+            }
+            window.reviewSegmentIndex = index;
+            updateReviewButtons();
+            const isLast = index === window.rawMarkers.length - 1;
+            playSegmentRange(index, () => {
+                if (!window.isReviewPlayback || window.reviewPaused) return;
+                playReviewSegment(index + 1);
+            }, { reviewChain: !isLast, forcePlay: index === 0 });
+        }
+
+        function resumeReviewPlayback() {
+            if (!window.isReviewPlayback || !window.reviewPaused) return;
+            window.reviewPaused = false;
+            updateReviewButtons();
+            const index = window.reviewSegmentIndex;
+            const marker = window.rawMarkers[index];
+            if (!marker) { stopReviewPlayback(); return; }
+            window.isTestingSegmentAudio = true;
+            currentHighlightIndex = index;
+            highlightUIRow(index);
+            const curr = isYouTube ? ytPlayer.getCurrentTime() : player.currentTime;
+            const insideSegment = curr >= marker.start && curr < marker.end;
+            const isLast = index === window.rawMarkers.length - 1;
+            if (!insideSegment) {
+                if (isYouTube) { ytPlayer.seekTo(marker.start); ytPlayer.playVideo(); }
+                else { player.currentTime = marker.start; player.play().catch(() => {}); }
+            } else if (isYouTube) {
+                ytPlayer.playVideo();
+            } else {
+                player.play().catch(() => {});
+            }
+            armSegmentEndMonitor(index, () => {
+                if (!window.isReviewPlayback || window.reviewPaused) return;
+                playReviewSegment(index + 1);
+            }, !isLast);
+        }
+
+        function startReviewPlayback() {
+            if (!window.rawMarkers || window.rawMarkers.length === 0) return;
+            if (window.isReviewPlayback && window.reviewPaused) {
+                resumeReviewPlayback();
+                return;
+            }
+            clearSegmentPlaybackMonitor();
+            window.isReviewPlayback = true;
+            window.reviewPaused = false;
+            window.reviewSegmentIndex = 0;
+            window.isTestingSegmentAudio = true;
+            updateReviewButtons();
+            playReviewSegment(0);
+        }
+
+        function testSegmentAudio(targetId) {
+            stopReviewPlayback();
+            playSegmentRange(targetId, null);
+        }
+
+        function highlightUIRow(index) {
+            document.querySelectorAll('.marker-item').forEach(el => el.classList.remove('marker-item-active'));
             let targetRow = document.getElementById(`item-${index}`);
             if (targetRow) {
-                // 2. Highlight the active focus target segment row
-                targetRow.style.background = '#e1f5fe';
+                targetRow.classList.add('marker-item-active');
 
                 // 3. DYNAMIC SCROLL CENTER COGNITION
                 // Calculate the physical mid-point of the container viewport window
@@ -1185,7 +1922,9 @@
                     markerList.scrollTo({ top: perfectCenterScrollPosition, behavior: 'smooth' });
                 }
             }
+            applyValidationRowStyles();
             renderPasuramReaderPanel(index);
+            if (waveformReady && window.AudioWaveform) AudioWaveform.setActiveSegment(index);
         }
 
         function serializeStateToJS() {
@@ -1222,7 +1961,8 @@
                     timelineBlocks.push({
                         p: currentPasuramIndex,
                         step1: step1, step2: step2, step3: step3,
-                        step4: [parseFloat(activeGroup[0].start.toFixed(1)), parseFloat(activeGroup[activeGroup.length - 1].end.toFixed(1))]
+                        step4: [parseFloat(activeGroup[0].start.toFixed(1)), parseFloat(activeGroup[activeGroup.length - 1].end.toFixed(1))],
+                        meta: buildExportMeta()
                     });
 
                     let combinedPhrases = [];
@@ -1242,7 +1982,10 @@
                 }
             }
 
-            let timelineLines = timelineBlocks.map(b => `  { "p": ${b.p}, "step1": ${JSON.stringify(b.step1)}, "step2": ${JSON.stringify(b.step2)}, "step3": ${JSON.stringify(b.step3)}, "step4": ${JSON.stringify(b.step4)} }`);
+            let timelineLines = timelineBlocks.map(b => {
+                const metaJson = JSON.stringify(b.meta);
+                return `  { "p": ${b.p}, "step1": ${JSON.stringify(b.step1)}, "step2": ${JSON.stringify(b.step2)}, "step3": ${JSON.stringify(b.step3)}, "step4": ${JSON.stringify(b.step4)}, "meta": ${metaJson} }`;
+            });
             let timelineOutput = `'${currentFileName}.steps' : [\n${timelineLines.join(",\n")}\n],`;
 
             let textLines = Object.keys(textBlocks).map(pKey => `    ${pKey}: ${JSON.stringify(textBlocks[pKey])}`);
@@ -1258,6 +2001,69 @@
                 `${textOutput}`;
 
             localStorage.setItem('asm_saved_markers', JSON.stringify(window.rawMarkers));
+            maybeWriteCheckpoint();
+        }
+
+        function extractJsonArray(rawInput) {
+            const arrayStart = rawInput.indexOf('[');
+            if (arrayStart === -1) return null;
+            let depth = 0;
+            for (let i = arrayStart; i < rawInput.length; i++) {
+                if (rawInput[i] === '[') depth++;
+                else if (rawInput[i] === ']') {
+                    depth--;
+                    if (depth === 0) return rawInput.substring(arrayStart, i + 1);
+                }
+            }
+            return null;
+        }
+
+        function parsePhrasesFromTextString(text) {
+            if (!text || typeof text !== 'string') return [];
+            const rawTokens = text.split(' ');
+            let phrases = [];
+            let currentPhraseBuffer = [];
+            for (let token of rawTokens) {
+                if (token === '***') {
+                    if (currentPhraseBuffer.length > 0) phrases.push(currentPhraseBuffer.join(' ').trim());
+                    currentPhraseBuffer = ['**'];
+                } else if (token === '*') {
+                    if (currentPhraseBuffer.length > 0) {
+                        phrases.push(currentPhraseBuffer.join(' ').trim());
+                        currentPhraseBuffer = [];
+                    }
+                } else {
+                    currentPhraseBuffer.push(token);
+                }
+            }
+            if (currentPhraseBuffer.length > 0) phrases.push(currentPhraseBuffer.join(' ').trim());
+            if (phrases.length > 0 && phrases[phrases.length - 1] === '') phrases.pop();
+            return phrases;
+        }
+
+        function extractTextDictionary(rawInput) {
+            const dict = {};
+            const sectionMatch = rawInput.match(/\.texts'\s*:\s*\{/);
+            if (!sectionMatch) return dict;
+            const openBrace = rawInput.indexOf('{', sectionMatch.index);
+            if (openBrace === -1) return dict;
+            let depth = 0;
+            let closeBrace = -1;
+            for (let i = openBrace; i < rawInput.length; i++) {
+                if (rawInput[i] === '{') depth++;
+                else if (rawInput[i] === '}') {
+                    depth--;
+                    if (depth === 0) { closeBrace = i; break; }
+                }
+            }
+            if (closeBrace === -1) return dict;
+            const body = rawInput.substring(openBrace + 1, closeBrace);
+            const entryRegex = /(\d+)\s*:\s*("(?:\\.|[^"\\])*")/g;
+            let match;
+            while ((match = entryRegex.exec(body)) !== null) {
+                dict[parseInt(match[1], 10)] = JSON.parse(match[2]);
+            }
+            return dict;
         }
 
         function importExistingConfig() {
@@ -1268,64 +2074,66 @@
             }
 
             try {
-                const arrayStart = rawInput.indexOf('[');
-                const arrayEnd = rawInput.lastIndexOf(']');
-                if (arrayStart === -1 || arrayEnd === -1) throw new Error("Could not locate structured array blocks.");
+                const arrayString = extractJsonArray(rawInput);
+                if (!arrayString) throw new Error("Could not locate structured array blocks.");
 
-                let arrayString = rawInput.substring(arrayStart, arrayEnd + 1);
-                arrayString = arrayString.replace(/,\s*$/, "").replace(/,\s*\]/, "]");
                 const parsedBlocks = JSON.parse(arrayString);
-
                 if (!Array.isArray(parsedBlocks)) throw new Error("Parsed content is not recognized as a structured block.");
 
+                const textDictionary = extractTextDictionary(rawInput);
                 let reconstitutedMarkers = [];
 
                 parsedBlocks.forEach((block) => {
-                    const rawTokens = block.text.split(' ');
-                    let phrases = [];
-                    let currentPhraseBuffer = [];
-
-                    for (let token of rawTokens) {
-                        if (token === '***') {
-                            if (currentPhraseBuffer.length > 0) phrases.push(currentPhraseBuffer.join(' ').trim());
-                            currentPhraseBuffer = ['**'];
-                        } else if (token === '*') {
-                            if (currentPhraseBuffer.length > 0) {
-                                phrases.push(currentPhraseBuffer.join(' ').trim());
-                                currentPhraseBuffer = [];
-                            }
-                        } else {
-                            currentPhraseBuffer.push(token);
-                        }
-                    }
-                    if (currentPhraseBuffer.length > 0) phrases.push(currentPhraseBuffer.join(' ').trim());
-                    if (phrases.length > 0 && phrases[phrases.length - 1] === '') phrases.pop();
-
+                    const pasuramKey = block.p;
+                    const textSource = block.text
+                        || (pasuramKey != null ? textDictionary[pasuramKey] : null)
+                        || '';
+                    const phrases = parsePhrasesFromTextString(textSource);
                     const timelines = block.step1 || [];
+                    const segmentCount = Math.max(timelines.length, phrases.length);
+                    if (segmentCount === 0) return;
 
-                    for (let i = 0; i < phrases.length; i++) {
-                        let startTime = 0, endTime = 0;
-
+                    for (let i = 0; i < segmentCount; i++) {
+                        let startTime = 0;
+                        let endTime = 0;
                         if (timelines[i]) {
                             startTime = parseFloat(parseFloat(timelines[i][0]).toFixed(1));
                             endTime = parseFloat(parseFloat(timelines[i][1]).toFixed(1));
                         } else {
-                            startTime = reconstitutedMarkers.length > 0 ? reconstitutedMarkers[reconstitutedMarkers.length - 1].end : 0;
+                            startTime = reconstitutedMarkers.length > 0
+                                ? reconstitutedMarkers[reconstitutedMarkers.length - 1].end
+                                : 0;
                             endTime = startTime + 3.0;
                         }
-
                         reconstitutedMarkers.push({
                             start: startTime,
                             end: endTime,
-                            text: phrases[i].trim(),
-                            forceEndBlock: (i === phrases.length - 1)
+                            text: phrases[i] ? phrases[i].trim() : '',
+                            forceEndBlock: (i === segmentCount - 1)
                         });
                     }
                 });
 
+                if (reconstitutedMarkers.length === 0) {
+                    throw new Error("No step1 timing entries found in the pasted snippet.");
+                }
+
+                pushHistory();
                 window.rawMarkers = reconstitutedMarkers;
-                const nameMatch = rawInput.match(/^'([^']+)'\s*:/);
+                const nameMatch = rawInput.match(/'([^']+)\.steps'\s*:/) || rawInput.match(/^'([^']+)'\s*:/);
                 if (nameMatch && nameMatch[1]) currentFileName = nameMatch[1];
+
+                const withMeta = parsedBlocks.find(b => b && b.meta);
+                const firstMeta = withMeta && withMeta.meta;
+                if (firstMeta && typeof firstMeta === 'object') {
+                    setMarkerSource(firstMeta.source || 'import');
+                    window.markersReviewed = !!firstMeta.reviewed;
+                } else {
+                    setMarkerSource('import');
+                    window.markersReviewed = false;
+                }
+                localStorage.setItem('asm_markers_reviewed', window.markersReviewed ? 'true' : 'false');
+                syncReviewUi();
 
                 renderInteractiveGrid(true);
                 serializeStateToJS();
@@ -1341,7 +2149,7 @@
                 let idx = window.rawMarkers.findIndex(m => curr >= m.start && curr < m.end);
 
                 // Only fire layout highlight/auto-scroll adjustments if cell input editing and test-preview cycles are quiet
-                if (idx !== -1 && idx !== currentHighlightIndex && !window.isUserEditingActiveCell && !window.isTestingSegmentAudio) {
+                if (idx !== -1 && idx !== currentHighlightIndex && !window.isUserEditingActiveCell && !window.isTestingSegmentAudio && !window.isReviewPlayback) {
                     currentHighlightIndex = idx;
                     highlightUIRow(idx);
                 }
@@ -1350,7 +2158,10 @@
                 // DYNAMIC TIMER FIELD HOOK
                 const timeDisplayEl = document.getElementById('timeDisplay');
                 if (timeDisplayEl && typeof curr === 'number') {
-                    timeDisplayEl.innerText = curr.toFixed(1) + 's';
+                    timeDisplayEl.innerText = formatTimeDisplay(curr) + 's';
+                }
+                if (waveformReady && window.AudioWaveform) {
+                    AudioWaveform.setPlayhead(curr);
                 }
                 requestAnimationFrame(monitor);
             };
@@ -1361,15 +2172,23 @@
 
         function clearAllState() {
             if (confirm("Purge canvas?")) {
+                if (window.rawMarkers.length > 0) pushHistory();
+                stopReviewPlayback();
                 window.rawMarkers = [];
                 localStorage.removeItem('asm_saved_markers');
                 localStorage.removeItem('asm_saved_text');
                 localStorage.removeItem('asm_saved_url');
+                localStorage.removeItem('asm_marker_source');
+                localStorage.removeItem('asm_markers_reviewed');
+                setMarkerSource('capture');
+                window.markersReviewed = false;
+                syncReviewUi();
                 document.getElementById('textGuidedContent').value = '';
                 document.getElementById('urlInput').value = '';
                 document.getElementById('chapterSelectorContainer').style.display = 'none';
                 renderInteractiveGrid(true);
                 serializeStateToJS();
+                updateUndoRedoButtons();
             }
         }
     </script>
