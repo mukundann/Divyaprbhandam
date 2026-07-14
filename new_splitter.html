@@ -969,13 +969,13 @@
                     <input type="checkbox" ${marker.forceEndBlock ? 'checked' : ''} onchange="toggleSegmentBlockBoundary(${i}, this.checked)"> Break
                 </label>
                 <div style="display:flex; gap:3px; margin-left:auto;">
-                    <button class="btn btn-icon" style="background-color: #1a237e;" onclick="cutSegmentAtPlayback(${i})" title="Cut: set end to playhead">
+                    <!-- <button class="btn btn-icon" style="background-color: #1a237e;" onclick="cutSegmentAtPlayback(${i})" title="Cut: set end to playhead">
                         <img src="splitter-assets/cut.png" alt="Cut">
-                    </button>
+                    </button> -->
                     <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #28a745;" onclick="testSegmentAudioPlaybackInterval(${i})" title="Play segment">▶</button>
-                    <button class="btn btn-icon" style="background-color: #1565c0;" onclick="pauseSegmentPlayback()" title="Pause playback">
+                    <!--<button class="btn btn-icon" style="background-color: #1565c0;" onclick="pauseSegmentPlayback()" title="Pause playback">
                         <img src="splitter-assets/pause.png" alt="Pause">
-                    </button>
+                    </button>-->
                     <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #dc3545;" onclick="deleteSegmentRow(${i})" title="Delete Segment">×</button>
                 </div>
                 ${activeCanvas}

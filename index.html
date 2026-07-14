@@ -807,7 +807,7 @@
                             <div class="picker-field" id="pasVerseField">
                                 <label for="pasVerse">No.</label>
                                 <input id="pasVerse" type="number" min="1" step="1" inputmode="numeric"
-                                    aria-label="Pasuram number" placeholder="1" value="1"
+                                    aria-label="Paasuram number" placeholder="1" value="1"
                                     onchange="onPasuramPickerChange()" enterkeyhint="done">
                             </div>
                         </div>
@@ -845,7 +845,7 @@
                     </div>
                     <div class="switch-field">
                         <span class="switch-label" id="autoLabel">Auto</span>
-                        <label class="switch-control" title="Auto-advance to next pasuram">
+                        <label class="switch-control" title="Auto-advance to next paasuram">
                             <input type="checkbox" id="autoNextToggle" checked
                                 aria-labelledby="autoLabel" onchange="onAutoToggleChange()">
                             <span class="switch-ui" aria-hidden="true"></span>
@@ -870,16 +870,16 @@
 
             <div class="transport-row">
                 <div class="nav-controls" role="group" aria-label="Playback navigation">
-                    <button type="button" class="btn-nav" onclick="navigate(-1)" title="Previous pasuram"
-                        aria-label="Previous pasuram">⏮</button>
+                    <button type="button" class="btn-nav" onclick="navigate(-1)" title="Previous paasuram"
+                        aria-label="Previous paasuram">⏮</button>
                     <button type="button" id="prevPhraseBtn" class="btn-nav" onclick="navigatePhrase(-1)"
                         title="Previous phrase" aria-label="Previous phrase">◂</button>
                     <button type="button" id="toggleBtn" class="btn-play" onclick="handlePlaybackToggle()"
                         title="Start recitation" aria-label="Start recitation">▶</button>
                     <button type="button" id="nextPhraseBtn" class="btn-nav" onclick="navigatePhrase(1)"
                         title="Next phrase" aria-label="Next phrase">▸</button>
-                    <button type="button" class="btn-nav" onclick="navigate(1)" title="Next pasuram"
-                        aria-label="Next pasuram">⏭</button>
+                    <button type="button" class="btn-nav" onclick="navigate(1)" title="Next paasuram"
+                        aria-label="Next paasuram">⏭</button>
                 </div>
             </div>
         </div>
