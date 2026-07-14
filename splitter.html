@@ -319,16 +319,19 @@
 
         .wf-segment-canvas {
             width: 100%;
-            height: 32px;
+            height: 96px;
             display: block;
             cursor: ew-resize;
-            border-radius: 3px;
-            background: #eceff1;
-            margin-top: 4px;
+            border-radius: 6px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            margin-top: 8px;
+            flex: 1 1 100%;
+            touch-action: none;
         }
 
         .wf-segment-canvas.wf-expanded {
-            height: 80px;
+            height: 140px;
         }
 
         .wf-unavailable {
@@ -529,6 +532,7 @@
         let waveformReady = false;
         let expandedWaveformIndex = -1;
         let waveformDragHistoryPushed = false;
+        let isWaveformInteracting = false;
 
         function setMarkerSource(source) {
             window.markerSource = source || 'capture';
@@ -610,6 +614,7 @@
 
         function onWaveformBoundaryChange(index, field, time) {
             if (!window.rawMarkers[index]) return;
+            isWaveformInteracting = true;
             if (!waveformDragHistoryPushed) {
                 pushHistory();
                 waveformDragHistoryPushed = true;
@@ -638,30 +643,56 @@
             localStorage.setItem('asm_saved_markers', JSON.stringify(window.rawMarkers));
             renderInteractiveGrid(false);
             serializeStateToJS();
-            AudioWaveform.refreshAll();
+            // Redraw only — remounting mid-drag aborts pin movement
+            if (waveformReady && window.AudioWaveform) AudioWaveform.refreshAll();
         }
 
         function onWaveformDragEnd() {
             waveformDragHistoryPushed = false;
+            isWaveformInteracting = false;
         }
 
-        function mountSegmentWaveforms() {
+        function mountSegmentWaveforms(forceRemount = false) {
             if (!waveformReady || !window.AudioWaveform) return;
-            AudioWaveform.clearSegmentBars();
+            if (isWaveformInteracting && !forceRemount) {
+                AudioWaveform.refreshAll();
+                return;
+            }
+
+            const expectedIds = new Set(
+                window.rawMarkers.map((_, i) => 'wf-seg-' + i)
+            );
+            const existingCanvases = markerList
+                ? Array.from(markerList.querySelectorAll('.wf-segment-canvas'))
+                : [];
+            const canvasesMatch = existingCanvases.length === window.rawMarkers.length
+                && existingCanvases.every((c) => expectedIds.has(c.id));
+
+            if (forceRemount || !canvasesMatch) {
+                AudioWaveform.clearSegmentBars();
+            }
+
             window.rawMarkers.forEach((m, i) => {
                 const canvas = document.getElementById('wf-seg-' + i);
                 if (!canvas) return;
-                const expanded = expandedWaveformIndex === i;
+                // Active / manually expanded rows get the tall audiotrimmer-style view
+                const expanded = expandedWaveformIndex === i || i === currentHighlightIndex;
                 canvas.classList.toggle('wf-expanded', expanded);
                 AudioWaveform.createSegmentBar(canvas, i, {
                     getMarkers: () => window.rawMarkers,
-                    onSeek: (t) => seekPlayback(t),
+                    onSeek: (t) => {
+                        isWaveformInteracting = true;
+                        seekPlayback(t);
+                    },
                     onBoundaryChange: onWaveformBoundaryChange,
-                    onDragStart: () => { waveformDragHistoryPushed = false; },
+                    onDragStart: () => {
+                        isWaveformInteracting = true;
+                        waveformDragHistoryPushed = false;
+                    },
                     onDragEnd: onWaveformDragEnd,
                     onToggleExpand: (idx) => {
                         expandedWaveformIndex = expandedWaveformIndex === idx ? -1 : idx;
-                        mountSegmentWaveforms();
+                        mountSegmentWaveforms(true);
                     }
                 }, expanded);
             });
@@ -671,8 +702,11 @@
 
         function refreshWaveformViews() {
             if (!waveformReady || !window.AudioWaveform) return;
-            AudioWaveform.refreshAll();
-            mountSegmentWaveforms();
+            if (isWaveformInteracting) {
+                AudioWaveform.refreshAll();
+                return;
+            }
+            mountSegmentWaveforms(false);
         }
 
         window.loadLocalFile = function (input) {
@@ -1597,6 +1631,7 @@
             if (isYouTube && ytPlayer) ytPlayer.pauseVideo();
             else if (player) player.pause();
             window.isTestingSegmentAudio = false;
+            isWaveformInteracting = false;
         }
 
         function captureTimestampAtCurrent() {
@@ -1707,7 +1742,7 @@
                     </button>
                     <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #dc3545;" onclick="deleteSegment(${i})" title="Delete Segment">×</button>`;
                 const wfCanvas = waveformReady
-                    ? `<canvas class="wf-segment-canvas" id="wf-seg-${i}" title="Drag green handles to trim; double-click to expand"></canvas>`
+                    ? `<canvas class="wf-segment-canvas${(expandedWaveformIndex === i || i === currentHighlightIndex) ? ' wf-expanded' : ''}" id="wf-seg-${i}" title="Drag the green start/end pins to trim; click waveform to seek; double-click to expand"></canvas>`
                     : '';
                 return `
             <div class="marker-item ${rowClass}" id="item-${i}">
@@ -1731,7 +1766,7 @@
             renderPasuramReaderPanel(currentHighlightIndex);
             applyValidationRowStyles();
             updateReviewButtons();
-            mountSegmentWaveforms();
+            mountSegmentWaveforms(true);
         }
 
         function onMarkerInputFocus() {
@@ -1924,7 +1959,10 @@
             }
             applyValidationRowStyles();
             renderPasuramReaderPanel(index);
-            if (waveformReady && window.AudioWaveform) AudioWaveform.setActiveSegment(index);
+            if (waveformReady && window.AudioWaveform) {
+                AudioWaveform.setActiveSegment(index);
+                if (!isWaveformInteracting) refreshWaveformViews();
+            }
         }
 
         function serializeStateToJS() {
@@ -2148,8 +2186,18 @@
                 let curr = isYouTube ? (ytPlayer ? ytPlayer.getCurrentTime() : 0) : (player ? player.currentTime : 0);
                 let idx = window.rawMarkers.findIndex(m => curr >= m.start && curr < m.end);
 
-                // Only fire layout highlight/auto-scroll adjustments if cell input editing and test-preview cycles are quiet
-                if (idx !== -1 && idx !== currentHighlightIndex && !window.isUserEditingActiveCell && !window.isTestingSegmentAudio && !window.isReviewPlayback) {
+                // Keep highlight pinned while editing, previewing, dragging pins, or paused
+                // so seeking/trimming on a phrase waveform does not jump rows.
+                const playerPlaying = isYouTube
+                    ? (ytPlayer && typeof ytPlayer.getPlayerState === 'function' && ytPlayer.getPlayerState() === 1)
+                    : (player && !player.paused);
+                const allowAutoFollow = playerPlaying
+                    && !window.isUserEditingActiveCell
+                    && !window.isTestingSegmentAudio
+                    && !window.isReviewPlayback
+                    && !isWaveformInteracting;
+
+                if (allowAutoFollow && idx !== -1 && idx !== currentHighlightIndex) {
                     currentHighlightIndex = idx;
                     highlightUIRow(idx);
                 }
