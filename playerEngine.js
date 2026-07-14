@@ -286,12 +286,15 @@ function applyDeepLinkFromUrl() {
     const repeat = params.get('repeat');
     if (repeat && !isNaN(parseInt(repeat, 10))) {
         document.getElementById('repeatLimit').value = parseInt(repeat, 10);
+        syncRepeatDisplay();
     }
 
     const autoNext = params.get('autoNext');
     if (autoNext === 'true' || autoNext === 'false') {
         document.getElementById('autoNext').value = autoNext;
     }
+
+    syncPracticeControlUI();
 }
 
 function syncUrlToPrefs() {
@@ -326,11 +329,11 @@ async function copyShareLink() {
     const btn = document.getElementById('copyLinkBtn');
     const setCopiedFeedback = (ok) => {
         if (!btn) return;
-        const previous = btn.dataset.label || btn.textContent;
+        const previous = btn.dataset.label || btn.textContent || '🔗';
         btn.dataset.label = previous;
-        btn.textContent = ok ? 'Copied!' : 'Copy failed';
+        btn.textContent = ok ? '✓' : '!';
         setTimeout(() => {
-            btn.textContent = btn.dataset.label || 'Copy link';
+            btn.textContent = btn.dataset.label || '🔗';
         }, 2000);
     };
 
@@ -389,10 +392,69 @@ function onPasuramNumberChange() {
 function onLearningStepChange() {
     resetLineTracking();
     syncUrlToPrefs();
+    updatePhraseNavButtons();
+    if (!(window.LearningEngine && LearningEngine.state && LearningEngine.state.isPlaying)) {
+        syncTextToAudioTimeline();
+    }
 }
 
 function onSessionPrefChange() {
     syncUrlToPrefs();
+}
+
+function onTextLanguageChange() {
+    renderCurrentPasuramText();
+}
+
+function setTextLanguage(lang) {
+    if (!VALID_LANGS.has(lang)) return;
+    const langEl = document.getElementById('textLanguage');
+    if (langEl) langEl.value = lang;
+    renderCurrentPasuramText();
+}
+
+function syncAutoToggleUI() {
+    const hidden = document.getElementById('autoNext');
+    const toggle = document.getElementById('autoNextToggle');
+    if (!hidden || !toggle) return;
+    toggle.checked = hidden.value !== 'false';
+}
+
+function onAutoToggleChange() {
+    const hidden = document.getElementById('autoNext');
+    const toggle = document.getElementById('autoNextToggle');
+    if (!hidden || !toggle) return;
+    hidden.value = toggle.checked ? 'true' : 'false';
+    onSessionPrefChange();
+}
+
+function syncPracticeControlUI() {
+    syncAutoToggleUI();
+    syncRepeatDisplay();
+}
+
+function syncRepeatDisplay() {
+    const input = document.getElementById('repeatLimit');
+    const display = document.getElementById('repeatDisplay');
+    if (!input) return;
+    let n = parseInt(input.value, 10);
+    if (!Number.isFinite(n) || n < 1) n = 1;
+    if (n > 99) n = 99;
+    input.value = String(n);
+    if (display) display.textContent = String(n);
+}
+
+function nudgeRepeat(delta) {
+    const input = document.getElementById('repeatLimit');
+    if (!input) return;
+    const cur = parseInt(input.value, 10) || 1;
+    input.value = String(Math.max(1, Math.min(99, cur + delta)));
+    syncRepeatDisplay();
+    onSessionPrefChange();
+}
+
+function bindChromeControls() {
+    syncPracticeControlUI();
 }
 
 function initPasuramPickers() {
@@ -408,6 +470,15 @@ function initPasuramPickers() {
     }
 }
 
+let lyricsFitResizeTimer = null;
+
+function scheduleLyricsFit() {
+    if (lyricsFitResizeTimer) clearTimeout(lyricsFitResizeTimer);
+    lyricsFitResizeTimer = setTimeout(() => {
+        requestAnimationFrame(() => fitLyricsToPanel());
+    }, 80);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const audioPlayer = document.getElementById('audioPlayer');
     if (audioPlayer) {
@@ -415,6 +486,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initPasuramPickers();
+    updateToggleButtonUI(false);
+    updatePhraseNavButtons();
+    bindChromeControls();
+    requestAnimationFrame(() => fitLyricsToPanel());
+
+    window.addEventListener('resize', scheduleLyricsFit);
+    window.addEventListener('orientationchange', scheduleLyricsFit);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', scheduleLyricsFit);
+    }
 
     if (shouldAutoPlayFromUrl()) {
         setTimeout(() => startLearningAndFocus(), 600);
@@ -508,6 +589,9 @@ function syncTextToAudioTimeline() {
 
     if (!stepsDatabaseBlock || !stepsDatabaseBlock[coords.pas - 1]) {
         displayPanel.innerHTML = `<div style="color:#65676b; font-size:1.1rem; font-style:italic;">Pasuram ${numInput} (Audio-Only Mode)</div>`;
+        displayPanel.dataset.lastSignature = '';
+        updatePhraseNavButtons();
+        fitLyricsToPanel();
         return;
     }
 
@@ -521,7 +605,11 @@ function syncTextToAudioTimeline() {
             rawTextString = targetPasuram.text[selectedLang] || targetPasuram.text['ta'] || targetPasuram.text['en'] || "";
         }
     }
-    if (!rawTextString) return;
+    if (!rawTextString) {
+        updatePhraseNavButtons();
+        fitLyricsToPanel();
+        return;
+    }
 
     const step1Timeline = targetPasuram["step1"] || [];
 
@@ -580,6 +668,93 @@ function syncTextToAudioTimeline() {
 
     displayPanel.innerHTML = innerHTMLString.join('');
     displayPanel.dataset.lastSignature = currentSignature;
+    updatePhraseNavButtons();
+    fitLyricsToPanel();
+}
+
+function fitLyricsToPanel() {
+    const displayPanel = document.getElementById('pasuramDisplay');
+    if (!displayPanel) return;
+    if (displayPanel.clientHeight < 8 || displayPanel.clientWidth < 8) return;
+
+    const maxPx = 26;
+    const minPx = 11;
+    let lo = minPx;
+    let hi = maxPx;
+    let best = minPx;
+
+    displayPanel.style.fontSize = `${maxPx}px`;
+
+    // Binary search the largest size that fits without scrolling.
+    for (let i = 0; i < 12; i++) {
+        const mid = (lo + hi) / 2;
+        displayPanel.style.fontSize = `${mid}px`;
+        if (displayPanel.scrollHeight <= displayPanel.clientHeight + 1 &&
+            displayPanel.scrollWidth <= displayPanel.clientWidth + 1) {
+            best = mid;
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+
+    displayPanel.style.fontSize = `${best}px`;
+}
+
+function getMarkerStepsBlock(pre, coords) {
+    if (!window.MARKER_DATABASE || !pre || !coords) return null;
+    const stepsKey = `${pre}.${coords.ch}.steps`;
+    const alternativeKey = `${pre}.steps`;
+    const lookupKey = `${pre}.${coords.ch}.${coords.sub}.steps`;
+    return window.MARKER_DATABASE[stepsKey] ||
+        window.MARKER_DATABASE[stepsKey.toLowerCase()] ||
+        window.MARKER_DATABASE[lookupKey] ||
+        window.MARKER_DATABASE[lookupKey.toLowerCase()] ||
+        window.MARKER_DATABASE[alternativeKey] ||
+        window.MARKER_DATABASE[alternativeKey.toLowerCase()] ||
+        window.MARKER_DATABASE['PTM_2_DATA'] ||
+        null;
+}
+
+function getActiveSegmentsForCurrentSelection() {
+    const pre = document.getElementById('prefix')?.value;
+    const numInput = document.getElementById('number')?.value;
+    const chosenStep = document.getElementById('learningStep')?.value || 'step1';
+    const c = CONFIG[pre];
+    if (!c || !numInput) return { chosenStep, segments: null };
+
+    const coords = Navigation.parseCoords(numInput, c.hasSub);
+    const block = getMarkerStepsBlock(pre, coords);
+    if (!block || !block[coords.pas - 1]) return { chosenStep, segments: null };
+
+    const targetPasuram = block[coords.pas - 1];
+    if (chosenStep === 'step4') return { chosenStep, segments: null };
+
+    const segments = targetPasuram[chosenStep] || targetPasuram.step2 || null;
+    if (!segments || !segments.length) return { chosenStep, segments: null };
+    return { chosenStep, segments };
+}
+
+function updatePhraseNavButtons() {
+    const { chosenStep, segments } = getActiveSegmentsForCurrentSelection();
+    const enabled = chosenStep !== 'step4' && !!(segments && segments.length > 0);
+    ['prevPhraseBtn', 'nextPhraseBtn'].forEach((id) => {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = !enabled;
+    });
+}
+
+function navigatePhrase(dir) {
+    const { segments } = getActiveSegmentsForCurrentSelection();
+    if (!segments || !segments.length) return;
+
+    const n = segments.length;
+    activeLineIndex = ((activeLineIndex + dir) % n + n) % n;
+    if (window.LearningEngine && LearningEngine.state) {
+        LearningEngine.state.currentRepeatCount = 0;
+    }
+    safeStopAudio();
+    startLearning();
 }
 
 function startLearning(onPlayCallback) {
@@ -653,6 +828,7 @@ function startLearning(onPlayCallback) {
 
         syncTextToAudioTimeline();
         updateToggleButtonUI(true);
+        updatePhraseNavButtons();
 
         LearningEngine.playSegment(audioSrc, bounds, () => {
             window.dispatchEvent(new CustomEvent('learning-track-ended'));
@@ -687,11 +863,15 @@ function updateToggleButtonUI(isPlaying) {
     if (!toggleBtn) return;
 
     if (isPlaying) {
-        toggleBtn.innerText = "STOP RECITATION";
-        toggleBtn.style.backgroundColor = "#d93838";
+        toggleBtn.textContent = '■';
+        toggleBtn.classList.add('is-playing');
+        toggleBtn.title = 'Stop recitation';
+        toggleBtn.setAttribute('aria-label', 'Stop recitation');
     } else {
-        toggleBtn.innerText = "START RECITATION";
-        toggleBtn.style.backgroundColor = "#0070ba";
+        toggleBtn.textContent = '▶';
+        toggleBtn.classList.remove('is-playing');
+        toggleBtn.title = 'Start recitation';
+        toggleBtn.setAttribute('aria-label', 'Start recitation');
     }
 }
 
@@ -800,7 +980,10 @@ function resetToStart() {
     if (displayPanel) {
         displayPanel.dataset.lastSignature = "";
         displayPanel.innerHTML = "<em>Select a file or press start to view pasuram lines...</em>";
+        displayPanel.style.fontSize = '';
     }
+    updatePhraseNavButtons();
+    fitLyricsToPanel();
     syncUrlToPrefs();
 }
 
@@ -816,8 +999,23 @@ window.renderCurrentPasuramText = renderCurrentPasuramText;
 window.onLearningStepChange = onLearningStepChange;
 window.onPasuramNumberChange = onPasuramNumberChange;
 window.onSessionPrefChange = onSessionPrefChange;
+window.onTextLanguageChange = onTextLanguageChange;
+window.setTextLanguage = setTextLanguage;
+window.onAutoToggleChange = onAutoToggleChange;
+window.syncPracticeControlUI = syncPracticeControlUI;
+window.nudgeRepeat = nudgeRepeat;
+window.syncRepeatDisplay = syncRepeatDisplay;
+window.navigatePhrase = navigatePhrase;
+window.navigate = navigate;
+window.handlePlaybackToggle = handlePlaybackToggle;
+window.fitLyricsToPanel = fitLyricsToPanel;
+window.resetToStart = resetToStart;
+window.updateEngineSpeed = updateEngineSpeed;
+window.startLearningAndFocus = startLearningAndFocus;
+window.bindChromeControls = bindChromeControls;
 
 // Fill pickers even if this script was hot-swapped after DOMContentLoaded (sync_engine).
 if (document.readyState !== 'loading') {
     initPasuramPickers();
+    bindChromeControls();
 }
