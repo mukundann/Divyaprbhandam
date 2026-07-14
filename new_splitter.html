@@ -108,9 +108,76 @@
             background-color: #c82333;
         }
 
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            min-width: 28px;
+            min-height: 28px;
+            line-height: 0;
+        }
+
+        .btn-icon img {
+            width: 18px;
+            height: 18px;
+            display: block;
+            object-fit: contain;
+        }
+
         audio {
             width: 100%;
             margin-top: 10px;
+        }
+
+        .wf-overview-wrap {
+            margin-top: 8px;
+            border: 1px solid #cfd8dc;
+            border-radius: 4px;
+            background: #fafafa;
+            padding: 6px 8px 8px;
+        }
+
+        .wf-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #546e7a;
+            margin-bottom: 4px;
+        }
+
+        .wf-overview-canvas {
+            width: 100%;
+            height: 72px;
+            display: block;
+            cursor: crosshair;
+            border-radius: 3px;
+            background: #eceff1;
+        }
+
+        .wf-segment-canvas {
+            width: 100%;
+            height: 96px;
+            display: block;
+            cursor: ew-resize;
+            border-radius: 6px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            margin-top: 8px;
+            flex: 1 1 100%;
+            touch-action: none;
+        }
+
+        .wf-segment-canvas.wf-expanded {
+            height: 140px;
+        }
+
+        .wf-unavailable {
+            font-size: 12px;
+            color: #888;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            margin-top: 8px;
         }
 
         #marker-list {
@@ -125,6 +192,7 @@
         .marker-item {
             display: flex;
             align-items: center;
+            flex-wrap: wrap;
             gap: 8px;
             padding: 8px;
             background: #fff;
@@ -200,6 +268,7 @@
             overflow-x: auto;
         }
     </style>
+    <script src="audioWaveform.js"></script>
 </head>
 
 <body>
@@ -256,6 +325,7 @@
                 <div id="timeDisplay" style="font-size:24px; font-weight:bold; color:#0f172a; margin-bottom:4px;">0.0s
                 </div>
                 <audio id="player" controls></audio>
+                <div id="waveformOverview"></div>
                 <div style="display:flex; gap:8px; margin-top:8px;">
                     <button class="btn btn-primary" onclick="rewindPlayback()">↩ Rewind 2s</button>
                     <button id="captureBtn" class="btn btn-success" onclick="captureLiveTimestamp()" disabled>Capture
@@ -310,6 +380,10 @@
         window.isUserEditingActiveCell = false;
         window.isTestingSegmentAudio = false;
         let isSystemImportingData = false;
+        let waveformReady = false;
+        let activeSegmentWaveformExpanded = true;
+        let mountedActiveSegmentIndex = -1;
+        let isWaveformInteracting = false;
 
         let player, markerList, ioJson, livePasuramView;
 
@@ -358,6 +432,138 @@
                 }
             });
         });
+
+        function seekPlayback(time) {
+            if (!player) return;
+            player.currentTime = Math.max(0, time);
+        }
+
+        function roundMarkerTime(t) {
+            if (window.AudioWaveform && waveformReady) return AudioWaveform.roundTime(t);
+            return parseFloat(Number(t).toFixed(1));
+        }
+
+        function placeActiveSegmentCanvas(index) {
+            if (!markerList) return null;
+            markerList.querySelectorAll('.wf-segment-canvas').forEach((el) => el.remove());
+            if (!waveformReady || index < 0 || index >= window.rawMarkers.length) {
+                mountedActiveSegmentIndex = -1;
+                return null;
+            }
+            const row = document.getElementById(`item-${index}`);
+            if (!row) return null;
+            const canvas = document.createElement('canvas');
+            canvas.className = 'wf-segment-canvas' + (activeSegmentWaveformExpanded ? ' wf-expanded' : '');
+            canvas.id = 'wf-seg-' + index;
+            canvas.title = 'Drag the green start/end pins to trim; click waveform to seek';
+            row.appendChild(canvas);
+            mountedActiveSegmentIndex = index;
+            return canvas;
+        }
+
+        function onWaveformBoundaryChange(index, field, time) {
+            if (!window.rawMarkers[index]) return;
+            isWaveformInteracting = true;
+            const t = roundMarkerTime(time);
+            const m = window.rawMarkers[index];
+            const minGap = 0.01;
+            if (field === 'start') {
+                const floor = index > 0 ? window.rawMarkers[index - 1].start + minGap : 0;
+                const ceil = m.end - minGap;
+                const clamped = Math.max(floor, Math.min(ceil, t));
+                m.start = clamped;
+                if (window.rawMarkers[index - 1]) window.rawMarkers[index - 1].end = clamped;
+            } else {
+                const floor = m.start + minGap;
+                const ceil = index < window.rawMarkers.length - 1
+                    ? window.rawMarkers[index + 1].end - minGap
+                    : (detectedDuration || m.end + 1);
+                const clamped = Math.max(floor, Math.min(ceil, t));
+                m.end = clamped;
+                if (window.rawMarkers[index + 1]) window.rawMarkers[index + 1].start = clamped;
+            }
+            renderTimelineGridCanvas(false);
+            if (!isSystemImportingData) serializeWorkspaceStateToJsCodeblock();
+            // Redraw only — do not remount the bar mid-drag
+            if (waveformReady && window.AudioWaveform) AudioWaveform.refreshAll();
+        }
+
+        function mountActiveSegmentWaveform() {
+            if (!waveformReady || !window.AudioWaveform) return;
+            const idx = currentHighlightIndex;
+            if (idx < 0 || idx >= window.rawMarkers.length) return;
+
+            let canvas = document.getElementById('wf-seg-' + idx);
+            if (!canvas || mountedActiveSegmentIndex !== idx) {
+                // Only tear down when the active phrase (or canvas) actually changes
+                AudioWaveform.clearSegmentBars();
+                canvas = placeActiveSegmentCanvas(idx);
+            }
+            if (!canvas) return;
+            canvas.classList.toggle('wf-expanded', activeSegmentWaveformExpanded);
+            AudioWaveform.createSegmentBar(canvas, idx, {
+                getMarkers: () => window.rawMarkers,
+                onSeek: (t) => {
+                    isWaveformInteracting = true;
+                    seekPlayback(t);
+                },
+                onBoundaryChange: onWaveformBoundaryChange,
+                onDragStart: () => { isWaveformInteracting = true; },
+                onDragEnd: () => { isWaveformInteracting = false; },
+                onToggleExpand: () => {
+                    activeSegmentWaveformExpanded = !activeSegmentWaveformExpanded;
+                    canvas.classList.toggle('wf-expanded', activeSegmentWaveformExpanded);
+                    mountActiveSegmentWaveform();
+                }
+            }, activeSegmentWaveformExpanded);
+            AudioWaveform.setActiveSegment(idx);
+            AudioWaveform.refreshAll();
+        }
+
+        function refreshWaveformViews() {
+            if (!waveformReady || !window.AudioWaveform) return;
+            // While dragging start/end, only redraw — never remount (that aborts the drag)
+            if (isWaveformInteracting) {
+                AudioWaveform.refreshAll();
+                return;
+            }
+            mountActiveSegmentWaveform();
+        }
+
+        function clearWaveformOverview() {
+            waveformReady = false;
+            mountedActiveSegmentIndex = -1;
+            const container = document.getElementById('waveformOverview');
+            if (window.AudioWaveform) {
+                AudioWaveform.clearSegmentBars();
+                AudioWaveform.destroyOverview();
+            }
+            if (container) container.innerHTML = '';
+            if (markerList) markerList.querySelectorAll('.wf-segment-canvas').forEach((el) => el.remove());
+        }
+
+        function initWaveformForAudio(url) {
+            const container = document.getElementById('waveformOverview');
+            if (!container || !window.AudioWaveform) return;
+            waveformReady = false;
+            AudioWaveform.clearSegmentBars();
+            AudioWaveform.destroyOverview();
+            container.innerHTML = '<div class="wf-unavailable">Decoding waveform…</div>';
+            AudioWaveform.decode(url).then((ok) => {
+                if (!ok) {
+                    AudioWaveform.showUnavailable(container, 'Waveform unavailable (CORS or decode error). Ear-only marking still works.');
+                    return;
+                }
+                waveformReady = true;
+                AudioWaveform.mountOverview(container, {
+                    getMarkers: () => window.rawMarkers,
+                    getIssues: () => [],
+                    onSeek: (t) => seekPlayback(t),
+                    onSegmentClick: (idx) => focusRowScrollHighlight(idx)
+                });
+                refreshWaveformViews();
+            });
+        }
 
         function loadLocalAudio(input) {
             if (!input || !input.files || input.files.length === 0) return;
@@ -433,6 +639,7 @@
             player.src = url;
             player.load();
             document.getElementById('captureBtn').disabled = false;
+            initWaveformForAudio(url);
             player.onloadedmetadata = function () {
                 detectedDuration = player.duration;
                 evaluateIncomingPipelineAssets();
@@ -740,6 +947,9 @@
             }
 
             markerList.innerHTML = window.rawMarkers.map((marker, i) => {
+                const activeCanvas = (waveformReady && i === currentHighlightIndex)
+                    ? `<canvas class="wf-segment-canvas${activeSegmentWaveformExpanded ? ' wf-expanded' : ''}" id="wf-seg-${i}" title="Drag the green start/end pins to trim; click waveform to seek"></canvas>`
+                    : '';
                 return `
             <div class="marker-item" id="item-${i}">
                 <span style="font-weight:bold; min-width:35px; font-size:11px; color:#64748b;">P.${marker.pIndex || 1} #${i + 1}</span>
@@ -759,15 +969,28 @@
                     <input type="checkbox" ${marker.forceEndBlock ? 'checked' : ''} onchange="toggleSegmentBlockBoundary(${i}, this.checked)"> Break
                 </label>
                 <div style="display:flex; gap:3px; margin-left:auto;">
-                   <!-- <button class="btn btn-primary" style="padding:4px 8px; font-size:11px;" onclick="snapSegmentBoundaryToPlaybackTime(${i})">Snap</button> -->
-                    <button class="btn btn-success" style="padding:4px 8px; font-size:11px;" onclick="testSegmentAudioPlaybackInterval(${i})">▶</button>
-                    <button class="btn btn-danger" style="padding:4px 8px; font-size:11px;" onclick="deleteSegmentRow(${i})">×</button>
+                    <button class="btn btn-icon" style="background-color: #1a237e;" onclick="cutSegmentAtPlayback(${i})" title="Cut: set end to playhead">
+                        <img src="splitter-assets/cut.png" alt="Cut">
+                    </button>
+                    <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #28a745;" onclick="testSegmentAudioPlaybackInterval(${i})" title="Play segment">▶</button>
+                    <button class="btn btn-icon" style="background-color: #1565c0;" onclick="pauseSegmentPlayback()" title="Pause playback">
+                        <img src="splitter-assets/pause.png" alt="Pause">
+                    </button>
+                    <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #dc3545;" onclick="deleteSegmentRow(${i})" title="Delete Segment">×</button>
                 </div>
+                ${activeCanvas}
             </div>`;
             }).join('');
 
+            if (waveformReady && currentHighlightIndex >= 0) {
+                mountedActiveSegmentIndex = currentHighlightIndex;
+            } else {
+                mountedActiveSegmentIndex = -1;
+            }
+
             document.getElementById('status').innerText = `Markers: ${window.rawMarkers.length}`;
             renderRunningLiveHighlightViewer(currentHighlightIndex);
+            refreshWaveformViews();
         }
 
         function modifySegmentTextString(index, val) {
@@ -817,6 +1040,7 @@
             if (!isSystemImportingData) {
                 serializeWorkspaceStateToJsCodeblock();
             }
+            refreshWaveformViews();
         }
 
         function toggleSegmentBlockBoundary(index, isChecked) {
@@ -834,6 +1058,26 @@
         //     serializeWorkspaceStateToJsCodeblock();
         // }
 
+        function pauseSegmentPlayback() {
+            if (window.segmentPlaybackIntervalHandle) {
+                clearInterval(window.segmentPlaybackIntervalHandle);
+                window.segmentPlaybackIntervalHandle = null;
+            }
+            if (player) player.pause();
+            window.isTestingSegmentAudio = false;
+            isWaveformInteracting = false;
+        }
+
+        function cutSegmentAtPlayback(index) {
+            if (!window.rawMarkers[index] || !player) return;
+            const time = parseFloat(player.currentTime.toFixed(1));
+            window.rawMarkers[index].end = time;
+            if (window.rawMarkers[index + 1]) window.rawMarkers[index + 1].start = time;
+            renderTimelineGridCanvas(false);
+            serializeWorkspaceStateToJsCodeblock();
+            refreshWaveformViews();
+        }
+
         function captureLiveTimestamp() {
             const time = parseFloat(player.currentTime.toFixed(1));
             for (let i = 0; i < window.rawMarkers.length; i++) {
@@ -845,6 +1089,7 @@
             }
             renderTimelineGridCanvas(true);
             serializeWorkspaceStateToJsCodeblock();
+            refreshWaveformViews();
         }
 
         function insertMidpointSegmentRow(index) {
@@ -870,6 +1115,7 @@
 
             renderTimelineGridCanvas(true);
             serializeWorkspaceStateToJsCodeblock();
+            refreshWaveformViews();
 
             setTimeout(() => {
                 const targetRow = document.getElementById(`item-${index + 1}`);
@@ -897,6 +1143,7 @@
             window.rawMarkers.splice(index, 1);
             renderTimelineGridCanvas(true);
             serializeWorkspaceStateToJsCodeblock();
+            refreshWaveformViews();
         }
 
         function reproportionalizeTimelineDist() {
@@ -909,6 +1156,7 @@
             });
             renderTimelineGridCanvas(true);
             serializeWorkspaceStateToJsCodeblock();
+            refreshWaveformViews();
         }
 
         function testSegmentAudioPlaybackInterval(id) {
@@ -916,7 +1164,7 @@
             if (!m) return;
 
             window.isTestingSegmentAudio = true;
-            currentHighlightIndex = id;
+            isWaveformInteracting = false;
             focusRowScrollHighlight(id);
 
             player.currentTime = m.start;
@@ -928,15 +1176,10 @@
                 if (player.currentTime >= m.end) {
                     player.pause();
                     clearInterval(window.segmentPlaybackIntervalHandle);
+                    window.segmentPlaybackIntervalHandle = null;
                     window.isTestingSegmentAudio = false;
-
-                    // Advance focus pointer automatically here too
-                    const nextIndex = id + 1;
-                    if (nextIndex < window.rawMarkers.length) {
-                        currentHighlightIndex = nextIndex;
-                        focusRowScrollHighlight(nextIndex);
-                        player.currentTime = window.rawMarkers[nextIndex].start;
-                    }
+                    // Stay on this phrase so waveform trim editing remains available
+                    focusRowScrollHighlight(id);
                 }
             }, 20);
         }
@@ -956,6 +1199,8 @@
         }
 
         function focusRowScrollHighlight(index) {
+            const highlightChanged = index !== currentHighlightIndex;
+            currentHighlightIndex = index;
             document.querySelectorAll('.marker-item').forEach(el => el.style.background = '#ffffff');
             let row = document.getElementById(`item-${index}`);
             if (row) {
@@ -964,6 +1209,14 @@
                 markerList.scrollTo({ top: Math.max(0, midPointScroll), behavior: 'smooth' });
             }
             renderRunningLiveHighlightViewer(index);
+            if (waveformReady && window.AudioWaveform) {
+                AudioWaveform.setActiveSegment(index);
+                // Do not remount the trim canvas mid-drag — that aborts boundary edits
+                if (!isWaveformInteracting && (highlightChanged || mountedActiveSegmentIndex !== index)) {
+                    placeActiveSegmentCanvas(index);
+                    mountActiveSegmentWaveform();
+                }
+            }
         }
 
         function setupGlobalSyncLoop() {
@@ -971,13 +1224,23 @@
                 let curr = player ? player.currentTime : 0;
                 let idx = window.rawMarkers.findIndex(m => curr >= m.start && curr < m.end);
 
-                if (idx !== -1 && idx !== currentHighlightIndex && !window.isUserEditingActiveCell) {
-                    currentHighlightIndex = idx;
+                // Keep highlight pinned while editing inputs, testing a clip, trimming,
+                // or when paused (so seeking on the active phrase waveform never jumps rows).
+                const allowAutoFollow = player
+                    && !player.paused
+                    && !window.isUserEditingActiveCell
+                    && !window.isTestingSegmentAudio
+                    && !isWaveformInteracting;
+
+                if (allowAutoFollow && idx !== -1 && idx !== currentHighlightIndex) {
                     focusRowScrollHighlight(idx);
                 }
 
                 const timerElement = document.getElementById('timeDisplay');
                 if (timerElement) timerElement.innerText = curr.toFixed(1) + 's';
+                if (waveformReady && window.AudioWaveform) {
+                    AudioWaveform.setPlayhead(curr);
+                }
                 requestAnimationFrame(monitor);
             };
             requestAnimationFrame(monitor);
@@ -1161,6 +1424,7 @@
                     player.pause();
                     player.src = '';
                 }
+                clearWaveformOverview();
             }
         }
     </script>

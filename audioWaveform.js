@@ -10,10 +10,13 @@
         '#4a90d9', '#50b86c', '#e8a838', '#9b59b6', '#e74c3c',
         '#1abc9c', '#f39c12', '#3498db', '#2ecc71', '#e67e22'
     ];
-    const KEEP_FILL = 'rgba(40, 167, 69, 0.35)';
-    const KEEP_STROKE = '#28a745';
+    const KEEP_FILL = 'rgba(76, 175, 80, 0.28)';
+    const KEEP_STROKE = '#4caf50';
+    const KEEP_MARKER = '#66bb6a';
     const GAP_FILL = 'rgba(239, 83, 80, 0.45)';
     const PLAYHEAD_COLOR = '#d32f2f';
+    const PIN_AREA = 26;
+    const TIME_AREA = 20;
 
     let peaks = null;
     let peakSampleRate = 0;
@@ -228,7 +231,14 @@
         }
     }
 
-    function drawSegmentBar(canvas, segmentIndex, markers, playhead, expanded) {
+    function formatClock(t) {
+        const s = Math.max(0, t || 0);
+        const m = Math.floor(s / 60);
+        const sec = Math.floor(s % 60);
+        return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+    }
+
+    function drawSegmentBar(canvas, segmentIndex, markers, playhead, expanded, viewLock, activeHandle) {
         const m = markers[segmentIndex];
         if (!m) return;
         const dpr = window.devicePixelRatio || 1;
@@ -243,38 +253,149 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, w, h);
 
-        const pad = expanded ? 0.5 : 0.15;
-        const segLen = m.end - m.start;
-        const margin = Math.max(0.05, segLen * pad);
-        const viewStart = Math.max(0, m.start - margin);
-        const viewEnd = Math.min(duration || m.end + margin, m.end + margin);
-        const pk = rawPeaks;
-        drawPeaksForTimeRange(ctx, pk, viewStart, viewEnd, 0, 0, w, h, '#cfd8dc');
+        // audiotrimmer-style layout: pin markers on top, waveform middle, time badges below
+        const pinArea = PIN_AREA;
+        const timeArea = TIME_AREA;
+        const waveY = pinArea;
+        const waveH = Math.max(24, h - pinArea - timeArea);
+        const waveBottom = waveY + waveH;
+
+        ctx.fillStyle = '#f7f7f7';
+        ctx.fillRect(0, waveY, w, waveH);
+
+        const segLen = Math.max(0.05, m.end - m.start);
+        const margin = expanded ? Math.max(2.5, segLen * 0.35) : Math.max(0.75, segLen * 0.2);
+        let viewStart;
+        let viewEnd;
+        if (viewLock && viewLock.viewEnd > viewLock.viewStart) {
+            viewStart = viewLock.viewStart;
+            viewEnd = viewLock.viewEnd;
+        } else {
+            viewStart = Math.max(0, m.start - margin);
+            viewEnd = Math.min(duration || m.end + margin, m.end + margin);
+            if (viewEnd - viewStart < 0.2) viewEnd = viewStart + 0.2;
+        }
+
+        drawPeaksForTimeRange(ctx, rawPeaks, viewStart, viewEnd, 0, waveY, w, waveH, '#9e9e9e');
 
         const x0 = timeToX(m.start, viewStart, viewEnd, w);
         const x1 = timeToX(m.end, viewStart, viewEnd, w);
-        ctx.fillStyle = KEEP_FILL;
-        ctx.fillRect(x0, 0, Math.max(2, x1 - x0), h);
-        ctx.strokeStyle = KEEP_STROKE;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x0, 0.5, Math.max(2, x1 - x0), h - 1);
+        const keepW = Math.max(2, x1 - x0);
 
-        const handleW = expanded ? 10 : 6;
-        ctx.fillStyle = KEEP_STROKE;
-        ctx.fillRect(x0 - handleW / 2, 0, handleW, h);
-        ctx.fillRect(x1 - handleW / 2, 0, handleW, h);
+        // Soft "keep" selection overlay (audiotrimmer style)
+        ctx.fillStyle = KEEP_FILL;
+        ctx.fillRect(x0, waveY, keepW, waveH);
+        ctx.strokeStyle = 'rgba(76, 175, 80, 0.55)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x0 + 0.5, waveY + 0.5, keepW - 1, waveH - 1);
+
+        // "keep" label centered above selection
+        if (keepW > 36) {
+            ctx.fillStyle = '#2e7d32';
+            ctx.font = 'bold 11px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('keep', (x0 + x1) / 2, pinArea / 2);
+        }
+
+        // Start / end pin markers
+        drawTrimPin(ctx, x0, waveY, waveBottom, activeHandle === 'start');
+        drawTrimPin(ctx, x1, waveY, waveBottom, activeHandle === 'end');
+
+        // Time badges under pins
+        drawTimeBadge(ctx, x0, waveBottom + 3, formatClock(m.start), activeHandle === 'start', w);
+        drawTimeBadge(ctx, x1, waveBottom + 3, formatClock(m.end), activeHandle === 'end', w);
+
+        // View / phrase duration (bottom-right, like audiotrimmer total)
+        ctx.fillStyle = '#757575';
+        ctx.font = '11px system-ui, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(formatClock(m.end - m.start), w - 4, h - 2);
 
         if (playhead >= viewStart && playhead <= viewEnd) {
             const px = timeToX(playhead, viewStart, viewEnd, w);
             ctx.strokeStyle = PLAYHEAD_COLOR;
             ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.moveTo(px, 0);
-            ctx.lineTo(px, h);
+            ctx.moveTo(px, waveY);
+            ctx.lineTo(px, waveBottom);
             ctx.stroke();
         }
 
-        return { viewStart, viewEnd, x0, x1, handleW };
+        // Wide hit targets around pin stems
+        return {
+            viewStart,
+            viewEnd,
+            x0,
+            x1,
+            handleW: 22,
+            waveY,
+            waveBottom,
+            pinArea
+        };
+    }
+
+    /** Inverted teardrop pin + stem — matches audiotrimmer start/end markers */
+    function drawTrimPin(ctx, x, waveY, waveBottom, isActive) {
+        const r = 8;
+        const cy = r + 2;
+        const tipY = waveY;
+
+        // Stem through the keep region
+        ctx.strokeStyle = isActive ? '#2e7d32' : KEEP_MARKER;
+        ctx.lineWidth = isActive ? 2.5 : 2;
+        ctx.beginPath();
+        ctx.moveTo(x, tipY);
+        ctx.lineTo(x, waveBottom);
+        ctx.stroke();
+
+        // Pin head (circle + point into waveform)
+        ctx.beginPath();
+        ctx.arc(x, cy, r, Math.PI * 0.85, Math.PI * 0.15, true);
+        ctx.lineTo(x, tipY);
+        ctx.closePath();
+        ctx.fillStyle = isActive ? '#43a047' : KEEP_MARKER;
+        ctx.fill();
+        ctx.strokeStyle = isActive ? '#1b5e20' : '#388e3c';
+        ctx.lineWidth = isActive ? 2 : 1.5;
+        ctx.stroke();
+
+        // Inner highlight
+        ctx.beginPath();
+        ctx.arc(x - 1.5, cy - 1.5, 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.fill();
+
+        if (isActive) {
+            ctx.strokeStyle = '#90caf9';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x - r - 3, 1, r * 2 + 6, tipY + 2);
+        }
+    }
+
+    function drawTimeBadge(ctx, x, y, text, emphasized, canvasW) {
+        ctx.font = emphasized ? 'bold 11px system-ui, sans-serif' : '11px system-ui, sans-serif';
+        const tw = ctx.measureText(text).width;
+        const padX = 5;
+        const bw = tw + padX * 2;
+        const bh = 15;
+        let left = x - bw / 2;
+        left = Math.max(0, Math.min(canvasW - bw, left));
+        ctx.fillStyle = emphasized ? '#212121' : '#424242';
+        ctx.beginPath();
+        const r = 3;
+        ctx.moveTo(left + r, y);
+        ctx.arcTo(left + bw, y, left + bw, y + bh, r);
+        ctx.arcTo(left + bw, y + bh, left, y + bh, r);
+        ctx.arcTo(left, y + bh, left, y, r);
+        ctx.arcTo(left, y, left + bw, y, r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, left + bw / 2, y + bh / 2 + 0.5);
     }
 
     function mountOverview(container, callbacks) {
@@ -336,60 +457,137 @@
     }
 
     function createSegmentBar(canvas, segmentIndex, callbacks, expanded) {
-        const state = { segmentIndex, callbacks, expanded: !!expanded, drag: null };
+        // Reuse existing bar on the same canvas so we don't stack duplicate listeners
+        // (new_splitter remounts often via refreshWaveformViews).
+        const existing = segmentBars.get(segmentIndex);
+        if (existing && existing.canvas === canvas) {
+            existing.callbacks = callbacks;
+            existing.setExpanded(!!expanded);
+            existing.redraw();
+            return existing;
+        }
+
+        // Fresh canvas element if replacing an old bar (drop leaked listeners)
+        if (existing && existing.canvas !== canvas) {
+            if (typeof existing.destroy === 'function') existing.destroy();
+            segmentBars.delete(segmentIndex);
+        }
+
+        const state = {
+            segmentIndex,
+            callbacks,
+            expanded: !!expanded,
+            drag: null,
+            viewLock: null
+        };
 
         function redraw() {
-            const markers = callbacks.getMarkers ? callbacks.getMarkers() : [];
-            const layout = drawSegmentBar(canvas, segmentIndex, markers, playheadTime, state.expanded);
+            const markers = state.callbacks.getMarkers ? state.callbacks.getMarkers() : [];
+            const activeHandle = (state.drag === 'start' || state.drag === 'end') ? state.drag : null;
+            const layout = drawSegmentBar(
+                canvas,
+                segmentIndex,
+                markers,
+                playheadTime,
+                state.expanded,
+                state.viewLock,
+                activeHandle
+            );
             state.layout = layout;
         }
 
         function localHit(e) {
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             const w = rect.width;
             if (!state.layout) return { zone: 'none' };
-            const { viewStart, viewEnd, x0, x1, handleW } = state.layout;
+            const { viewStart, viewEnd, x0, x1, handleW, pinArea } = state.layout;
             const t = roundTime(xToTime(x, viewStart, viewEnd, w));
-            if (Math.abs(x - x0) <= handleW) return { zone: 'start', time: t };
-            if (Math.abs(x - x1) <= handleW) return { zone: 'end', time: t };
+            // Prefer pin heads / stems — especially easy grab in the top pin belt
+            const hitPad = y <= (pinArea || PIN_AREA) + 4 ? Math.max(handleW, 26) : Math.max(handleW, 18);
+            if (Math.abs(x - x0) <= hitPad) return { zone: 'start', time: t };
+            if (Math.abs(x - x1) <= hitPad) return { zone: 'end', time: t };
             if (x >= x0 && x <= x1) return { zone: 'body', time: t };
             return { zone: 'seek', time: t };
         }
 
-        canvas.addEventListener('mousedown', (e) => {
+        function onMouseMove(e) {
+            if (!state.drag) {
+                const hover = localHit(e);
+                canvas.style.cursor = (hover.zone === 'start' || hover.zone === 'end')
+                    ? 'ew-resize'
+                    : (hover.zone === 'body' || hover.zone === 'seek' ? 'crosshair' : 'default');
+                return;
+            }
+            const hit = localHit(e);
+            if (state.drag === 'start' && state.callbacks.onBoundaryChange) {
+                state.callbacks.onBoundaryChange(segmentIndex, 'start', hit.time);
+            } else if (state.drag === 'end' && state.callbacks.onBoundaryChange) {
+                state.callbacks.onBoundaryChange(segmentIndex, 'end', hit.time);
+            } else if (state.drag === 'seek' && state.callbacks.onSeek) {
+                state.callbacks.onSeek(hit.time);
+            }
+            redraw();
+        }
+
+        function onMouseUp() {
+            if (!state.drag) return;
+            const wasBoundary = state.drag === 'start' || state.drag === 'end';
+            if (state.callbacks.onDragEnd) state.callbacks.onDragEnd(segmentIndex);
+            state.drag = null;
+            state.viewLock = null;
+            if (wasBoundary) redraw();
+        }
+
+        canvas.addEventListener('mousedown', onMouseDown);
+        canvas.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        canvas.addEventListener('dblclick', onDblClick);
+
+        function onMouseDown(e) {
+            e.preventDefault();
             e.stopPropagation();
             const hit = localHit(e);
             if (hit.zone === 'start' || hit.zone === 'end') {
                 state.drag = hit.zone;
-                if (callbacks.onDragStart) callbacks.onDragStart(segmentIndex, hit.zone);
+                // Freeze camera so dragging start/end doesn't re-zoom under the pointer
+                if (state.layout) {
+                    state.viewLock = {
+                        viewStart: state.layout.viewStart,
+                        viewEnd: state.layout.viewEnd
+                    };
+                }
+                if (state.callbacks.onDragStart) state.callbacks.onDragStart(segmentIndex, hit.zone);
             } else if (hit.zone === 'seek' || hit.zone === 'body') {
                 state.drag = 'seek';
-                if (callbacks.onSeek) callbacks.onSeek(hit.time);
+                if (state.callbacks.onSeek) state.callbacks.onSeek(hit.time);
             }
-        });
-        canvas.addEventListener('mousemove', (e) => {
-            if (!state.drag) return;
-            const hit = localHit(e);
-            if (state.drag === 'start' && callbacks.onBoundaryChange) {
-                callbacks.onBoundaryChange(segmentIndex, 'start', hit.time);
-            } else if (state.drag === 'end' && callbacks.onBoundaryChange) {
-                callbacks.onBoundaryChange(segmentIndex, 'end', hit.time);
-            } else if (state.drag === 'seek' && callbacks.onSeek) {
-                callbacks.onSeek(hit.time);
-            }
-            redraw();
-        });
-        window.addEventListener('mouseup', () => {
-            if (state.drag && callbacks.onDragEnd) callbacks.onDragEnd(segmentIndex);
-            state.drag = null;
-        });
-        canvas.addEventListener('dblclick', (e) => {
-            e.stopPropagation();
-            if (callbacks.onToggleExpand) callbacks.onToggleExpand(segmentIndex);
-        });
+        }
 
-        const bar = { canvas, segmentIndex, redraw, setExpanded(exp) { state.expanded = exp; redraw(); }, destroy() {} };
+        function onDblClick(e) {
+            e.stopPropagation();
+            if (state.callbacks.onToggleExpand) state.callbacks.onToggleExpand(segmentIndex);
+        }
+
+        const bar = {
+            canvas,
+            segmentIndex,
+            get callbacks() { return state.callbacks; },
+            set callbacks(v) { state.callbacks = v; },
+            redraw,
+            setExpanded(exp) {
+                state.expanded = !!exp;
+                if (!state.drag) state.viewLock = null;
+                redraw();
+            },
+            destroy() {
+                canvas.removeEventListener('mousedown', onMouseDown);
+                canvas.removeEventListener('mousemove', onMouseMove);
+                canvas.removeEventListener('dblclick', onDblClick);
+                window.removeEventListener('mouseup', onMouseUp);
+            }
+        };
         segmentBars.set(segmentIndex, bar);
         redraw();
         return bar;
@@ -412,6 +610,9 @@
     }
 
     function clearSegmentBars() {
+        segmentBars.forEach((bar) => {
+            if (bar && typeof bar.destroy === 'function') bar.destroy();
+        });
         segmentBars.clear();
     }
 
