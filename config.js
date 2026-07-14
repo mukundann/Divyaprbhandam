@@ -135,7 +135,7 @@ const CONFIG = {
         key: 'PTM', remotePrefix: 'PT',
         structure: 'chapter_sub_pasuram',
         hasSub: true, maxCh: 11, maxSub: 10, defPas: 10, ex: { '2.7': 13 },
-        availableContent: ["5_1", "5_2", "5_3", "5_4", "5_5", "5_6", "5_7", "5_8"]
+        availableContent: ["5_1", "5_2", "5_3", "5_4", "5_5", "5_6", "5_7", "5_8", "5_9", "5_10"]
     }),
 
     'TKT': makeGroupedBook({ key: 'TKT', defPas: 20, ex: { '0': 3 } }),
