@@ -542,12 +542,15 @@
 
         canvas.addEventListener('mousedown', onMouseDown);
         canvas.addEventListener('mousemove', onMouseMove);
+        canvas.addEventListener('click', onClickSetEnd);
         window.addEventListener('mouseup', onMouseUp);
         canvas.addEventListener('dblclick', onDblClick);
 
         function onMouseDown(e) {
             e.preventDefault();
             e.stopPropagation();
+            state._downX = e.clientX;
+            state._downY = e.clientY;
             const hit = localHit(e);
             if (hit.zone === 'start' || hit.zone === 'end') {
                 state.drag = hit.zone;
@@ -561,7 +564,23 @@
                 if (state.callbacks.onDragStart) state.callbacks.onDragStart(segmentIndex, hit.zone);
             } else if (hit.zone === 'seek' || hit.zone === 'body') {
                 state.drag = 'seek';
-                if (state.callbacks.onSeek) state.callbacks.onSeek(hit.time);
+                // Don't seek on mousedown — let click handler decide (set-end vs seek)
+            }
+        }
+
+        function onClickSetEnd(e) {
+            // Only fire if the mouse barely moved (genuine click, not a drag)
+            const dx = Math.abs(e.clientX - (state._downX || 0));
+            const dy = Math.abs(e.clientY - (state._downY || 0));
+            if (dx > 5 || dy > 5) return;
+
+            const hit = localHit(e);
+            // Click in body/seek zone → set end of this segment to clicked position
+            // Only accept times ahead of current playhead so audio isn't cut short
+            if ((hit.zone === 'body' || hit.zone === 'seek') && state.callbacks.onBoundaryChange) {
+                const minEnd = playheadTime > 0 ? Math.max(hit.time, playheadTime + 0.05) : hit.time;
+                state.callbacks.onBoundaryChange(segmentIndex, 'end', minEnd);
+                redraw();
             }
         }
 
@@ -584,6 +603,7 @@
             destroy() {
                 canvas.removeEventListener('mousedown', onMouseDown);
                 canvas.removeEventListener('mousemove', onMouseMove);
+                canvas.removeEventListener('click', onClickSetEnd);
                 canvas.removeEventListener('dblclick', onDblClick);
                 window.removeEventListener('mouseup', onMouseUp);
             }
