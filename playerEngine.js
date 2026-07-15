@@ -245,6 +245,11 @@ function onPasuramPickerChange() {
     syncNumberFromPickers();
     resetLineTracking();
     syncUrlToPrefs();
+    ensureMarkersForCurrentSelection(() => {
+        if (!(window.LearningEngine && LearningEngine.state && LearningEngine.state.isPlaying)) {
+            syncTextToAudioTimeline();
+        }
+    });
 }
 
 /**
@@ -392,10 +397,11 @@ function onPasuramNumberChange() {
 function onLearningStepChange() {
     resetLineTracking();
     syncUrlToPrefs();
-    updatePhraseNavButtons();
-    if (!(window.LearningEngine && LearningEngine.state && LearningEngine.state.isPlaying)) {
-        syncTextToAudioTimeline();
-    }
+    ensureMarkersForCurrentSelection(() => {
+        if (!(window.LearningEngine && LearningEngine.state && LearningEngine.state.isPlaying)) {
+            syncTextToAudioTimeline();
+        }
+    });
 }
 
 function onSessionPrefChange() {
@@ -465,6 +471,11 @@ function initPasuramPickers() {
             setPasuramValue(document.getElementById('number')?.value);
         }
         syncUrlToPrefs();
+        ensureMarkersForCurrentSelection(() => {
+            if (!(window.LearningEngine && LearningEngine.state && LearningEngine.state.isPlaying)) {
+                syncTextToAudioTimeline();
+            }
+        });
     } catch (err) {
         console.error('Pasuram picker init failed:', err);
     }
@@ -744,6 +755,35 @@ function updatePhraseNavButtons() {
     });
 }
 
+/**
+ * Preload timeline (+ language) for the current selection so phrase ◂ ▸ can
+ * enable before the user presses Play (critical for on-demand books like NAT).
+ */
+function ensureMarkersForCurrentSelection(done) {
+    const pre = document.getElementById('prefix')?.value;
+    const numInput = document.getElementById('number')?.value;
+    const selectedLang = document.getElementById('textLanguage')?.value || 'ta';
+    const finish = () => {
+        // Markers may lengthen the section vs CONFIG — refresh pickers so No. max
+        // matches getLimit (same source) before phrase-nav / play.
+        const keep = document.getElementById('number')?.value;
+        if (typeof rebuildPasuramPickers === 'function') {
+            rebuildPasuramPickers(keep);
+        }
+        updatePhraseNavButtons();
+        if (typeof done === 'function') done();
+    };
+    if (!pre || !numInput || typeof CONFIG === 'undefined' || !CONFIG[pre]) {
+        finish();
+        return;
+    }
+    if (typeof loadMarkerOnDemand !== 'function') {
+        finish();
+        return;
+    }
+    loadMarkerOnDemand(pre, numInput, selectedLang, finish);
+}
+
 function navigatePhrase(dir) {
     const { segments } = getActiveSegmentsForCurrentSelection();
     if (!segments || !segments.length) return;
@@ -982,9 +1022,13 @@ function resetToStart() {
         displayPanel.innerHTML = "<em>Select a file or press start to view pasuram lines...</em>";
         displayPanel.style.fontSize = '';
     }
-    updatePhraseNavButtons();
-    fitLyricsToPanel();
     syncUrlToPrefs();
+    ensureMarkersForCurrentSelection(() => {
+        if (!(window.LearningEngine && LearningEngine.state && LearningEngine.state.isPlaying)) {
+            syncTextToAudioTimeline();
+        }
+        fitLyricsToPanel();
+    });
 }
 
 window.copyShareLink = copyShareLink;
@@ -1006,6 +1050,7 @@ window.syncPracticeControlUI = syncPracticeControlUI;
 window.nudgeRepeat = nudgeRepeat;
 window.syncRepeatDisplay = syncRepeatDisplay;
 window.navigatePhrase = navigatePhrase;
+window.ensureMarkersForCurrentSelection = ensureMarkersForCurrentSelection;
 window.navigate = navigate;
 window.handlePlaybackToggle = handlePlaybackToggle;
 window.fitLyricsToPanel = fitLyricsToPanel;
