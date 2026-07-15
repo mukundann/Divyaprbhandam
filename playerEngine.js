@@ -441,22 +441,11 @@ function syncPracticeControlUI() {
 
 function syncRepeatDisplay() {
     const input = document.getElementById('repeatLimit');
-    const display = document.getElementById('repeatDisplay');
     if (!input) return;
     let n = parseInt(input.value, 10);
     if (!Number.isFinite(n) || n < 1) n = 1;
     if (n > 99) n = 99;
     input.value = String(n);
-    if (display) display.textContent = String(n);
-}
-
-function nudgeRepeat(delta) {
-    const input = document.getElementById('repeatLimit');
-    if (!input) return;
-    const cur = parseInt(input.value, 10) || 1;
-    input.value = String(Math.max(1, Math.min(99, cur + delta)));
-    syncRepeatDisplay();
-    onSessionPrefChange();
 }
 
 function bindChromeControls() {
@@ -1047,7 +1036,6 @@ window.onTextLanguageChange = onTextLanguageChange;
 window.setTextLanguage = setTextLanguage;
 window.onAutoToggleChange = onAutoToggleChange;
 window.syncPracticeControlUI = syncPracticeControlUI;
-window.nudgeRepeat = nudgeRepeat;
 window.syncRepeatDisplay = syncRepeatDisplay;
 window.navigatePhrase = navigatePhrase;
 window.ensureMarkersForCurrentSelection = ensureMarkersForCurrentSelection;
