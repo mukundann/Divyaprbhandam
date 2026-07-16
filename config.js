@@ -121,8 +121,8 @@ const CONFIG = {
         ]
     }),
     'TPV': makeGroupedBook({ key: 'TPV', defPas: 30, ex: { '0': 3 } }),
-    'NAT': makeSimpleBook({ key: 'NAT', defPas: 11, ex: { '0': 2 }, minCh: 0, maxCh: 14 }),
-    'PMT': makeSimpleBook({ key: 'PMT', defPas: 11, ex: { '0': 2 }, minCh: 0, maxCh: 10 }),
+    'NAT': makeSimpleBook({ key: 'NAT', defPas: 11, ex: { '0': 2, '4': 12, '5': 12, '6': 12 }, minCh: 0, maxCh: 14 }),
+    'PMT': makeSimpleBook({ key: 'PMT', defPas: 12, ex: { '0': 2, '2': 10, '3': 10, '5': 11, '6': 11 }, minCh: 0, maxCh: 10 }),
     'TCV': makeGroupedBook({ key: 'TCV', defPas: 120, ex: { '0': 3 } }),
     'TML': makeGroupedBook({ key: 'TML', defPas: 45, ex: { '0': 1 } }),
     'TPE': makeGroupedBook({ key: 'TPE', defPas: 10, ex: { '0': 2 } }),
