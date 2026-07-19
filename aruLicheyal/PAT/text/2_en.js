@@ -132,7 +132,7 @@ window.mergeLanguageTexts = function () {
             6: "taLLi taLir naDaiyittu * iLam piLLaiyAy * uLLattin uLLE * avaLai uRanOkki *** kaLLattinAl vanda * pEychchi mulaiyuyir * tuLLa suvaittAnAl inRu muRRum * tuvakkaRa uNDAnAl inRumuRRum.",
             7: "mAvali vELviyil * mAN uruvAy senRu * moovaDi tAvenRu * iranda immaNNinai *** OraDiyittu * iraNDAm aDi tannilE * tAvaDi ittAnAl inRu muRRum * taraNi aLandAnAl inRumuRRum.",
             8: "tAzhai taNNAmbal * taDam perum poyhai vAy * vAzhu mudalai * valaippattu vAdippuN *** vEzham tuyar keDa * viNNOr perumAnAy * AzhipaNi koNDAnAl inRu muRRum * adaRku aruL seydAnAl inRumuRRum.",
-            9: "vAnattu ezhunda * mazhai mugil pOl * engum kAnattu mEyndu *** kaLittu viLaiyADi * EnatturuvAy * iDanda immaNNinai * tAnattE vaittAnAl inRu muRRumtaraNi iDandAnAl inRu muRRum.",
+            9: "vAnattu ezhunda * mazhai mugil pOl * engum kAnattu mEyndu * kaLittu viLaiyADi *** EnatturuvAy * iDanda immaNNinai * tAnattE vaittAnAl inRu muRRumtaraNi iDandAnAl inRu muRRum.",
             10: "angamala kaNNan tannai * yasOdaikku * mangai nallArkaL * tAm vandu muRaippatta *** angavar sollai * puduvai kOn pattan sol * ingu ivai vallavarkku * Edam onRillaiyE.",
         }
     };
