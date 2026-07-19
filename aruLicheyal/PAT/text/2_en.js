@@ -101,8 +101,8 @@ window.mergeLanguageTexts = function () {
         'PAT.2.8.steps': {
             1: "indiranODu biraman * eesan imaiyavar ellAm * mandira mAmalar koNDu * maRaindu uvarAy vandu ninRAr *** chandiran mALigai sErum * sadirarkaL veLLaRai ninRAy * andiyam pOdu iduvAkum * azhaganE! kAppiDa vArAy.",
             2: "kanRugaL illam pugundu * kadaRukinRa pasu ellAm * ninRu ozhindEn unnaik koovi * nEsamEl onRum ilAdAy! *** manRil nillEl andip pOdu * madiL tiru veLLaRai ninRAy! * nanRu kaNDAy en tan sollu * nAn unnaik kAppiDa vArAy.",
-            3: "seppOdu men mulaiyArkaL * siRusORum illum sidaittiTTu * appOdu nAn urappappOy *** aDisilum uNDilai ALvAy! * muppOdum vAnavar Ettum * munivarhaL veLLaRai ninRAy!ippOdu nAn onRum seyyEn * embirAn! kAppiDa vArAy",
-            4: "kaNNil maNal koDu toovik * kAlinAl pAynddanai enRuenRu * eNNarum piLLaikaL vandiTTu *** ivarAl muRaippaDu kinRAr * kaNNanE! veLLaRai ninRAy! * kaNDArODE teemai seyvAy!vaNNamE vElaiyadu oppAy! * vaLLalE! kAppiDa vArAy",
+            3: "seppOdu men mulaiyArkaL * siRusORum illum sidaittiTTu * appOdu nAn urappappOy * aDisilum uNDilai ALvAy! *** muppOdum vAnavar Ettum * munivarhaL veLLaRai ninRAy!ippOdu nAn onRum seyyEn * embirAn! kAppiDa vArAy",
+            4: "kaNNil maNal koDu toovik * kAlinAl pAynddanai enRuenRu * eNNarum piLLaikaL vandiTTu *** ivarAl muRaippaDu kinRAr * kaNNanE! veLLaRai ninRAy! * kaNDArODE teemai seyvAy! * vaNNamE vElaiyadu oppAy! * vaLLalE! kAppiDa vArAy",
             5: "pallAyiravar ivvooril * piLLaikaL teemaigaL seyvAr * ellAm un mEl anRi pogAdu * embirAn! nee ingE vArAy *** nallArkaL veLLaRai ninRAy! * nAnachchuDarE! un mEni * sollAra vAzhtti ninRu Etti * soppaDa kAppiDa vArAy.",
             6: "kanjan kaRukkoNDu ninmEl * karuniRa chemmayirp pEyai * vanjippadaRku viDuttAn *** enbadOr vArttaiyum uNDu * manju tavazh maNimADa * madiL tiru veLLaRai ninRAy!anjuvan nee angu niRka * azhaganE! kAppiDa vArAy.",
             7: "kaLLach chakaDum marudum * kalakkazhiya udai seyda * piLLaiyarasE! * nee pEyai piDittu mulai uNDa pinnai *** uLLavARu onRum aRiyEn * oLi uDai veLLaRai ninRAy! * paLLi koL pOdu iduvagum * paramanE! kAppiDa vArAy.",
