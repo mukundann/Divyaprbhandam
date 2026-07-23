@@ -163,7 +163,7 @@ const CONFIG = {
         key: 'TVM', remotePrefix: 'TVM',
         structure: 'chapter_sub_pasuram',
         hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, ex: { '2.7': 13 },
-        availableContent: ["3_1", "3_2", "3_3", "3_4", "3_5"]
+        availableContent: ["3_1", "3_2", "3_3", "3_4", "3_5","3_6","3_7"]
     }),
 
     'RN': makeGroupedBook({ key: 'RN', defPas: 108, ex: { '0': 3 } }),
