@@ -107,6 +107,7 @@ function makeSimpleBook({ key, defPas, ex = {}, minCh = 0, maxCh = 1 }) {
     };
 }
 const CONFIG = {
+    'PTN': makeSimpleBook({ key: 'PTN', defPas: 5, ex: { '0': 1 }, maxCh: 2 }),
     'TPL': makeSimpleBook({ key: 'TPL', defPas: 12, ex: { '0': 3 } }),
     'PAT': makeSubChapterBook({
         key: 'PAT', remotePrefix: 'PT',
@@ -147,11 +148,11 @@ const CONFIG = {
     '1TA': makeGroupedBook({ key: '1TA', defPas: 100, ex: { '0': 1 } }),
     '2TA': makeGroupedBook({ key: '2TA', defPas: 100, ex: { '0': 1 } }),
     '3TA': makeGroupedBook({ key: '3TA', defPas: 100, ex: { '0': 1 } }),
-    '4TA': makeGroupedBook({ key: '4TA', defPas: 97,  ex: { '0': 1 } }),
-    'PTA': makeGroupedBook({ key: 'PTA', defPas: 87,  ex: { '0': 1 } }),
+    '4TA': makeGroupedBook({ key: '4TA', defPas: 97, ex: { '0': 1 } }),
+    'PTA': makeGroupedBook({ key: 'PTA', defPas: 87, ex: { '0': 1 } }),
     'TVT': makeGroupedBook({ key: 'TVT', defPas: 100, ex: { '0': 1 } }),
 
-   
+
     'TVS': makeSimpleBook({ key: 'TVS', defPas: 7, ex: { '0': 1 } }),
     'TVK': makeSimpleBook({ key: 'TVK', defPas: 8, ex: { '0': 1 } }),
     //'STM': makeGroupedBook({ key: 'STM', defPas: 8, ex: { '0': 1 } }),
@@ -163,7 +164,7 @@ const CONFIG = {
         key: 'TVM', remotePrefix: 'TVM',
         structure: 'chapter_sub_pasuram',
         hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, ex: { '2.7': 13 },
-        availableContent: ["3_1", "3_2", "3_3", "3_4", "3_5","3_6","3_7"]
+        availableContent: ["3_1", "3_2", "3_3", "3_4", "3_5", "3_6", "3_7"]
     }),
 
     'RN': makeGroupedBook({ key: 'RN', defPas: 108, ex: { '0': 3 } }),
