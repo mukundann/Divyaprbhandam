@@ -49,10 +49,9 @@ function makeSubChapterBook(opts) {
         getAudioSrc(num) {
             if (!num) return '';
             const [chapter, subChapter] = num.split('.');
-   //         if (this.availableContent.includes(`${chapter}_${subChapter}`)) {
-                return `${ROOT}/${key}/audiofiles/${key}_${chapter}.${subChapter}.ogg`;
-     //       }
-     //       return `https://www.uveda.org/media/recitation/${remotePrefix}.${num}.mp3`;
+
+            return `${ROOT}/${key}/audiofiles/${key}_${chapter}.${subChapter}.ogg`;
+
         },
 
         getLanguagePath(num, langCode) {
@@ -131,7 +130,7 @@ const CONFIG = {
         key: 'PTM', remotePrefix: 'PT',
         structure: 'chapter_sub_pasuram',
         hasSub: true, maxCh: 11, maxSub: 10, defPas: 11,
-  
+
     }),
 
     'TKT': makeGroupedBook({ key: 'TKT', defPas: 20, ex: { '0': 3 } }),
