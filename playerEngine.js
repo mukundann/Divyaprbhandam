@@ -1,216 +1,250 @@
-/**
- * playerEngine.js - UI Syncing, Dynamic Pickers, and Navigation logic
- */
-
 let activeLineIndex = 0;
 let pauseTimeoutHandle = null;
 
-/**
- * Parses user selection string into structured coordinate components.
- */
-function parseCoords(str, hasSub) {
-    if (!str) return { ch: '1', sub: '1', pas: '1' };
-    const parts = String(str).split('.');
-    if (hasSub) {
-        return {
-            ch: parts[0] || '1',
-            sub: parts[1] || '1',
-            pas: parts[2] || '1'
-        };
-    } else {
-        return {
-            ch: parts.length > 1 ? parts[0] : '1',
-            sub: '1',
-            pas: parts.length > 1 ? parts[1] : parts[0] || '1'
-        };
+const VALID_STEPS = new Set(['step1', 'step2', 'step3', 'step4']);
+const DEFAULT_STEP = 'step1';
+const VALID_LANGS = new Set(['ta', 'en']);
+const DEEP_LINK_KEYS = ['book', 'pas', 'step', 'lang', 'speed', 'repeat', 'autoNext', 'prefix', 'play'];
+
+function resolveContext(pre, numInput) {
+    const bookConfig = CONFIG[pre];
+    if (bookConfig && bookConfig.isPlaylist) {
+        const item = bookConfig.getItem(numInput);
+        if (item) {
+            const targetConfig = CONFIG[item.book];
+            const coords = Navigation.parseCoords(item.pasuram, targetConfig ? targetConfig.hasSub : false);
+            return { pre: item.book, coords, config: targetConfig, pasuramStr: item.pasuram };
+        }
+    }
+    const coords = Navigation.parseCoords(numInput, bookConfig ? bookConfig.hasSub : false);
+    return { pre, coords, config: bookConfig, pasuramStr: numInput };
+}
+
+function hasDeepLinkParams() {
+    const params = new URLSearchParams(window.location.search);
+    return DEEP_LINK_KEYS.some((key) => params.has(key));
+}
+
+function shouldAutoPlayFromUrl() {
+    return new URLSearchParams(window.location.search).get('play') === '1';
+}
+
+function bookUsesSubchapters(c) {
+    return !!(c && (c.hasSub || c.structure === 'chapter_sub_pasuram'));
+}
+
+function setSubPickerVisible(visible) {
+    const subEl = document.getElementById('pasSub');
+    const subField = document.getElementById('pasSubField');
+    const pickers = document.getElementById('pasuramPickers');
+    if (subEl) subEl.classList.toggle('hidden', !visible);
+    if (subField) subField.classList.toggle('hidden', !visible);
+    if (pickers) pickers.classList.toggle('no-sub', !visible);
+}
+
+function fillSelectOptions(selectEl, items) {
+    if (!selectEl) return;
+    const prev = selectEl.value;
+    selectEl.innerHTML = '';
+    items.forEach(({ value, label }) => {
+        const opt = document.createElement('option');
+        opt.value = String(value);
+        opt.textContent = label;
+        selectEl.appendChild(opt);
+    });
+    if (items.some((i) => String(i.value) === prev)) {
+        selectEl.value = prev;
+    } else if (items.length) {
+        selectEl.value = String(items[0].value);
     }
 }
 
-/**
- * Fills a <select> element with options.
- */
-function fillSelectOptions(selectEl, optionsArray) {
-    if (!selectEl) return;
-    selectEl.innerHTML = '';
-    optionsArray.forEach(opt => {
-        const el = document.createElement('option');
-        el.value = opt.value;
-        el.textContent = opt.label;
-        selectEl.appendChild(el);
-    });
-}
-
-/**
- * Safely computes or falls back to standard pasuram limits.
- */
-function sectionPasuramCountSafe(pre, section) {
-    const c = CONFIG[pre];
+function sectionPasuramCountSafe(pre, sectionId) {
+    if (typeof Navigation !== 'undefined' && typeof Navigation.sectionPasuramCount === 'function') {
+        return Navigation.sectionPasuramCount(pre, sectionId);
+    }
+    const c = typeof CONFIG !== 'undefined' ? CONFIG[pre] : null;
     if (!c) return 10;
-    if (c.ex && c.ex[section]) return c.ex[section];
+    const ex = c.ex || {};
+    const sid = String(sectionId);
+    if (typeof ex[sid] !== 'undefined') return ex[sid];
     return c.defPas || 10;
 }
 
-/**
- * Rebuilds picker visibility and input modes (Select vs Text Input) based on `customTextLevels`.
- */
 function rebuildPasuramPickers(preferredValue) {
     const prefixEl = document.getElementById('prefix');
+    const partEl = document.getElementById('pasPart');
+    const subEl = document.getElementById('pasSub');
+    const verseEl = document.getElementById('pasVerse');
     const numberEl = document.getElementById('number');
-    if (!prefixEl || !numberEl) return;
+    if (!prefixEl || !partEl || !subEl || !verseEl || !numberEl) return;
 
     const pre = prefixEl.value;
-    const c = CONFIG[pre];
+    const c = (typeof CONFIG !== 'undefined') ? CONFIG[pre] : null;
     if (!c) return;
 
-    const customLevels = c.customTextLevels || [];
-    const isChCustom = customLevels.includes('chapter');
-    const isSubCustom = customLevels.includes('sub');
-    const isPasCustom = customLevels.includes('pasuram');
-
     const preferred = preferredValue != null ? String(preferredValue).trim() : (numberEl.value || '');
-    const coords = parseCoords(preferred || '1.1', c.hasSub);
+    const coords = (typeof Navigation !== 'undefined' && Navigation.parseCoords)
+        ? Navigation.parseCoords(preferred || '1.1', c.hasSub)
+        : { ch: 0, sub: 1, pas: 1 };
 
-    // Dynamic Element References
-    const partEl = document.getElementById('pasPart');
-    const partCustomEl = document.getElementById('pasPartCustom');
-    const subEl = document.getElementById('pasSub');
-    const subCustomEl = document.getElementById('pasSubCustom');
-    const verseEl = document.getElementById('pasVerse');
-    const verseCustomEl = document.getElementById('pasVerseCustom');
-    const groupSub = document.getElementById('groupSub');
-
-    // -------------------------------------------------------------------
-    // 1. CHAPTER LEVEL
-    // -------------------------------------------------------------------
-    if (isChCustom) {
-        if (partEl) partEl.classList.add('hidden');
-        if (partCustomEl) {
-            partCustomEl.classList.remove('hidden');
-            partCustomEl.value = coords.ch || '1';
+    if (c.isPlaylist || c.structure === 'flat_pasuram') {
+        fillSelectOptions(partEl, [{ value: '1', label: c.isPlaylist ? 'Items' : 'Pasurams' }]);
+        partEl.value = '1';
+        setSubPickerVisible(false);
+        const n = c.maxPas || c.defPas || 10;
+        verseEl.min = 1;
+        verseEl.max = n;
+        verseEl.value = Math.min(Math.max(coords.pas || 1, 1), n);
+    } else if (bookUsesSubchapters(c)) {
+        const maxCh = c.maxCh || 10;
+        const parts = [];
+        for (let ch = 1; ch <= maxCh; ch++) {
+            parts.push({ value: ch, label: String(ch) });
         }
+        fillSelectOptions(partEl, parts);
+        partEl.value = String(Math.min(Math.max(coords.ch || 1, 1), maxCh));
+
+        const maxSub = (typeof Navigation !== 'undefined' && Navigation.getSubLimit)
+            ? (Navigation.getSubLimit(pre, parseInt(partEl.value, 10)) || c.maxSub || 10)
+            : (c.maxSub || 10);
+        const subs = [];
+        for (let s = 1; s <= maxSub; s++) {
+            subs.push({ value: s, label: String(s) });
+        }
+        fillSelectOptions(subEl, subs);
+        setSubPickerVisible(true);
+        const wantSub = coords.sub || 1;
+        subEl.value = String(Math.min(Math.max(wantSub, 1), maxSub));
+
+        const n = sectionPasuramCountSafe(pre, `${partEl.value}.${subEl.value}`);
+        verseEl.min = 1;
+        verseEl.max = Math.max(1, n);
+        verseEl.value = Math.min(Math.max(coords.pas || 1, 1), n);
     } else {
-        if (partCustomEl) partCustomEl.classList.add('hidden');
-        if (partEl) {
-            partEl.classList.remove('hidden');
-            const minCh = typeof c.minCh !== 'undefined' ? c.minCh : (c.hasSub ? 1 : 0);
-            const maxCh = c.maxCh || 1;
-            const parts = [];
-            for (let ch = minCh; ch <= maxCh; ch++) {
-                parts.push({ value: ch, label: ch === 0 ? 'Taniyan' : String(ch) });
-            }
-            fillSelectOptions(partEl, parts);
-            partEl.value = String(coords.ch || minCh);
+        const minCh = typeof c.minCh !== 'undefined' ? c.minCh : 0;
+        const maxCh = typeof c.maxCh !== 'undefined' ? c.maxCh : 1;
+        const parts = [];
+        for (let ch = minCh; ch <= maxCh; ch++) {
+            parts.push({
+                value: ch,
+                label: ch === 0 ? 'Taniyan' : String(ch)
+            });
         }
-    }
+        fillSelectOptions(partEl, parts);
+        const wantCh = typeof coords.ch === 'number' ? coords.ch : minCh;
+        partEl.value = String(Math.min(Math.max(wantCh, minCh), maxCh));
+        setSubPickerVisible(false);
 
-    // -------------------------------------------------------------------
-    // 2. SUB-CHAPTER LEVEL
-    // -------------------------------------------------------------------
-    if (c.hasSub) {
-        if (groupSub) groupSub.classList.remove('hidden');
-        if (isSubCustom) {
-            if (subEl) subEl.classList.add('hidden');
-            if (subCustomEl) {
-                subCustomEl.classList.remove('hidden');
-                subCustomEl.value = coords.sub || '1';
-            }
-        } else {
-            if (subCustomEl) subCustomEl.classList.add('hidden');
-            if (subEl) {
-                subEl.classList.remove('hidden');
-                const currentCh = isChCustom ? (partCustomEl ? partCustomEl.value : '1') : (partEl ? partEl.value : '1');
-                const maxSub = c.maxSub || 10;
-
-                const subs = [];
-                for (let s = 1; s <= maxSub; s++) {
-                    subs.push({ value: s, label: String(s) });
-                }
-                fillSelectOptions(subEl, subs);
-                subEl.value = String(coords.sub || 1);
-            }
-        }
-    } else {
-        if (groupSub) groupSub.classList.add('hidden');
-    }
-
-    // -------------------------------------------------------------------
-    // 3. PASURAM LEVEL
-    // -------------------------------------------------------------------
-    if (isPasCustom) {
-        if (verseEl) verseEl.classList.add('hidden');
-        if (verseCustomEl) {
-            verseCustomEl.classList.remove('hidden');
-            verseCustomEl.value = coords.pas || '1';
-        }
-    } else {
-        if (verseCustomEl) verseCustomEl.classList.add('hidden');
-        if (verseEl) {
-            verseEl.classList.remove('hidden');
-            const currentCh = isChCustom ? (partCustomEl ? partCustomEl.value : '1') : (partEl ? partEl.value : '1');
-            const currentSub = isSubCustom ? (subCustomEl ? subCustomEl.value : '1') : (subEl ? subEl.value : '1');
-            const targetSection = c.hasSub ? `${currentCh}.${currentSub}` : currentCh;
-
-            const n = sectionPasuramCountSafe(pre, targetSection);
-            verseEl.min = 1;
-            verseEl.max = Math.max(1, n);
-            verseEl.value = Math.min(Math.max(parseInt(coords.pas, 10) || 1, 1), n);
-        }
+        const n = sectionPasuramCountSafe(pre, partEl.value);
+        verseEl.min = 1;
+        verseEl.max = Math.max(1, n);
+        const wantPas = coords.pas || 1;
+        verseEl.value = Math.min(Math.max(wantPas, 1), n);
     }
 
     syncNumberFromPickers();
 }
 
-/**
- * Combines standard selects or custom text fields into `#number`.
- */
 function syncNumberFromPickers() {
     const prefixEl = document.getElementById('prefix');
+    const partEl = document.getElementById('pasPart');
+    const subEl = document.getElementById('pasSub');
+    const verseEl = document.getElementById('pasVerse');
     const numberEl = document.getElementById('number');
-    if (!prefixEl || !numberEl) return;
+    const hintEl = document.getElementById('pasuramHint');
+    if (!prefixEl || !partEl || !verseEl || !numberEl) return;
 
-    const pre = prefixEl.value;
-    const c = CONFIG[pre];
+    const c = CONFIG[prefixEl.value];
     if (!c) return;
 
-    const customLevels = c.customTextLevels || [];
-    const isChCustom = customLevels.includes('chapter');
-    const isSubCustom = customLevels.includes('sub');
-    const isPasCustom = customLevels.includes('pasuram');
+    let pas = parseInt(verseEl.value, 10);
+    if (isNaN(pas) || pas < 1) pas = 1;
 
-    const chVal = isChCustom 
-        ? (document.getElementById('pasPartCustom')?.value || '').trim() 
-        : (document.getElementById('pasPart')?.value || '1');
+    let value;
+    let hint;
 
-    const subVal = isSubCustom 
-        ? (document.getElementById('pasSubCustom')?.value || '').trim() 
-        : (document.getElementById('pasSub')?.value || '1');
-
-    const pasVal = isPasCustom 
-        ? (document.getElementById('pasVerseCustom')?.value || '').trim() 
-        : (document.getElementById('pasVerse')?.value || '1');
-
-    let finalPasuramKey = '';
-
-    if (c.hasSub) {
-        finalPasuramKey = `${chVal}.${subVal}.${pasVal}`;
-    } else if (c.isPlaylist || c.structure === 'flat_pasuram') {
-        finalPasuramKey = pasVal;
+    if (c.isPlaylist) {
+        const n = c.maxPas;
+        if (pas > n) pas = n;
+        verseEl.max = n;
+        verseEl.value = pas;
+        value = `${pas}`;
+        const item = c.getItem(pas);
+        hint = item ? `Track ${pas}: ${item.book} (${item.pasuram})` : `Track ${pas}`;
+    } else if (bookUsesSubchapters(c)) {
+        const ch = parseInt(partEl.value, 10) || 1;
+        const sub = parseInt(subEl.value, 10) || 1;
+        const n = sectionPasuramCountSafe(prefixEl.value, `${ch}.${sub}`);
+        if (pas > n) pas = n;
+        verseEl.max = n;
+        verseEl.value = pas;
+        value = `${ch}.${sub}.${pas}`;
+        hint = `Chapter ${ch} · Decad ${sub} · Pasuram ${pas}`;
+    } else if (c.structure === 'flat_pasuram') {
+        const n = c.maxPas || c.defPas || 10;
+        if (pas > n) pas = n;
+        verseEl.max = n;
+        verseEl.value = pas;
+        value = `${pas}`;
+        hint = `Pasuram ${pas}`;
     } else {
-        finalPasuramKey = `${chVal}.${pasVal}`;
+        const ch = parseInt(partEl.value, 10);
+        const n = sectionPasuramCountSafe(prefixEl.value, String(ch));
+        if (pas > n) pas = n;
+        verseEl.max = n;
+        verseEl.value = pas;
+        value = `${ch}.${pas}`;
+        hint = ch === 0 ? `Taniyan ${pas}` : `Chapter ${ch} · Pasuram ${pas}`;
     }
 
-    numberEl.value = finalPasuramKey;
-
-    const hintEl = document.getElementById('pasuramHint');
-    if (hintEl) {
-        hintEl.textContent = `Selected: ${pre} ${finalPasuramKey}`;
-    }
+    numberEl.value = value;
+    if (hintEl) hintEl.textContent = hint;
 }
 
-/**
- * Event listener triggered whenever inputs change.
- */
+function syncPickersFromNumber() {
+    const numberEl = document.getElementById('number');
+    if (!numberEl) return;
+    rebuildPasuramPickers(numberEl.value);
+}
+
+function setPasuramValue(preferredValue) {
+    const numberEl = document.getElementById('number');
+    if (!numberEl) return;
+    if (preferredValue != null && String(preferredValue).trim() !== '') {
+        numberEl.value = String(preferredValue).trim();
+    }
+    rebuildPasuramPickers(numberEl.value);
+}
+
 function onPasuramPickerChange() {
+    const prefixEl = document.getElementById('prefix');
+    const partEl = document.getElementById('pasPart');
+    const subEl = document.getElementById('pasSub');
+    const verseEl = document.getElementById('pasVerse');
+    if (!prefixEl || !partEl || !verseEl) return;
+
+    const c = CONFIG[prefixEl.value];
+    if (c && !c.isPlaylist && bookUsesSubchapters(c)) {
+        const n = sectionPasuramCountSafe(prefixEl.value, `${partEl.value}.${subEl.value}`);
+        const maxSub = (typeof Navigation !== 'undefined' && Navigation.getSubLimit)
+            ? (Navigation.getSubLimit(prefixEl.value, parseInt(partEl.value, 10)) || c.maxSub || 10)
+            : (c.maxSub || 10);
+        const subs = [];
+        for (let s = 1; s <= maxSub; s++) {
+            subs.push({ value: s, label: String(s) });
+        }
+        const keepSub = subEl.value;
+        fillSelectOptions(subEl, subs);
+        if ([...subEl.options].some((o) => o.value === keepSub)) subEl.value = keepSub;
+        verseEl.max = Math.max(1, n);
+        if (parseInt(verseEl.value, 10) > n) verseEl.value = n;
+    } else if (c && !c.isPlaylist && c.structure !== 'flat_pasuram') {
+        const n = sectionPasuramCountSafe(prefixEl.value, partEl.value);
+        verseEl.max = Math.max(1, n);
+        if (parseInt(verseEl.value, 10) > n) verseEl.value = n;
+    }
+
     syncNumberFromPickers();
     resetLineTracking();
     syncUrlToPrefs();
@@ -221,152 +255,759 @@ function onPasuramPickerChange() {
     });
 }
 
-/**
- * Resets the UI and options when selecting a new book.
- */
-function resetToStart() {
-    safeStopAudio();
-    resetLineTracking();
-    
-    const pre = document.getElementById('prefix')?.value || '';
-    const c = CONFIG[pre];
+function applyDeepLinkFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const book = params.get('book') || params.get('prefix');
 
-    let initialValue = "1.1";
-    if (c) {
-        if (c.hasSub) {
-            initialValue = "1.1.1";
-        } else if (c.isPlaylist || c.structure === 'flat_pasuram') {
-            initialValue = "1";
-        } else {
-            const minCh = typeof c.minCh !== 'undefined' ? c.minCh : 1;
-            initialValue = `${minCh}.1`;
+    if (book && CONFIG[book]) {
+        const prefixEl = document.getElementById('prefix');
+        if (prefixEl && [...prefixEl.options].some((opt) => opt.value === book)) {
+            prefixEl.value = book;
         }
     }
 
-    rebuildPasuramPickers(initialValue);
+    const pas = params.get('pas');
+    setPasuramValue(pas || undefined);
+
+    const step = params.get('step');
+    if (step && VALID_STEPS.has(step)) {
+        const stepEl = document.getElementById('learningStep');
+        if (stepEl) stepEl.value = step;
+    }
+
+    const lang = params.get('lang');
+    if (lang && VALID_LANGS.has(lang)) {
+        const langEl = document.getElementById('textLanguage');
+        if (langEl) langEl.value = lang;
+    }
+
+    const speed = params.get('speed');
+    if (speed && document.querySelector(`#playbackSpeed option[value="${speed}"]`)) {
+        document.getElementById('playbackSpeed').value = speed;
+    }
+
+    const repeat = params.get('repeat');
+    if (repeat && !isNaN(parseInt(repeat, 10))) {
+        document.getElementById('repeatLimit').value = parseInt(repeat, 10);
+        syncRepeatDisplay();
+    }
+
+    const autoNext = params.get('autoNext');
+    if (autoNext === 'true' || autoNext === 'false') {
+        document.getElementById('autoNext').value = autoNext;
+    }
+
+    syncPracticeControlUI();
+}
+
+function syncUrlToPrefs() {
+    if (!window.history || !window.history.replaceState) return;
+
+    const params = new URLSearchParams();
+    params.set('book', document.getElementById('prefix')?.value || '');
+    params.set('pas', document.getElementById('number')?.value || '');
+    params.set('step', document.getElementById('learningStep')?.value || DEFAULT_STEP);
+    params.set('lang', document.getElementById('textLanguage')?.value || 'ta');
+
+    const speed = document.getElementById('playbackSpeed')?.value;
+    if (speed && speed !== '1.0') params.set('speed', speed);
+
+    const repeat = document.getElementById('repeatLimit')?.value;
+    if (repeat && repeat !== '3') params.set('repeat', repeat);
+
+    const autoNext = document.getElementById('autoNext')?.value;
+    if (autoNext === 'false') params.set('autoNext', autoNext);
+
+    const nextUrl = `${window.location.pathname}?${params.toString()}`;
+    history.replaceState(null, '', nextUrl);
+}
+
+function getShareUrl() {
+    syncUrlToPrefs();
+    return window.location.href;
+}
+
+async function copyShareLink() {
+    const url = getShareUrl();
+    const btn = document.getElementById('copyLinkBtn');
+    const setCopiedFeedback = (ok) => {
+        if (!btn) return;
+        const previous = btn.dataset.label || btn.textContent || '🔗';
+        btn.dataset.label = previous;
+        btn.textContent = ok ? '✓' : '!';
+        setTimeout(() => {
+            btn.textContent = btn.dataset.label || '🔗';
+        }, 2000);
+    };
+
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(url);
+        } else {
+            throw new Error('Clipboard API unavailable');
+        }
+        setCopiedFeedback(true);
+    } catch (err) {
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            setCopiedFeedback(true);
+        } catch (copyErr) {
+            setCopiedFeedback(false);
+            window.prompt('Copy this link:', url);
+        }
+        document.body.removeChild(textarea);
+    }
+}
+
+function updateEngineSpeed() {
+    const speedSelect = document.getElementById('playbackSpeed');
+    if (speedSelect && window.LearningEngine) {
+        window.LearningEngine.setPlaybackRate(speedSelect.value);
+    }
+    syncUrlToPrefs();
+}
+
+function startLearningAndFocus() {
+    if (window.LearningEngine && typeof window.LearningEngine.unlockAudio === 'function') {
+        window.LearningEngine.unlockAudio();
+    }
+    updateEngineSpeed();
+    startLearning();
+}
+
+function renderCurrentPasuramText() {
+    syncUrlToPrefs();
+    syncTextToAudioTimeline();
+}
+
+function onPasuramNumberChange() {
+    resetLineTracking();
+    syncUrlToPrefs();
+}
+
+function onLearningStepChange() {
+    resetLineTracking();
+    syncUrlToPrefs();
+    ensureMarkersForCurrentSelection(() => {
+        if (!(window.LearningEngine && LearningEngine.state && LearningEngine.state.isPlaying)) {
+            syncTextToAudioTimeline();
+        }
+    });
+}
+
+function onSessionPrefChange() {
+    syncUrlToPrefs();
+}
+
+function onTextLanguageChange() {
+    renderCurrentPasuramText();
+}
+
+function setTextLanguage(lang) {
+    if (!VALID_LANGS.has(lang)) return;
+    const langEl = document.getElementById('textLanguage');
+    if (langEl) langEl.value = lang;
+    renderCurrentPasuramText();
+}
+
+function syncAutoToggleUI() {
+    const hidden = document.getElementById('autoNext');
+    const toggle = document.getElementById('autoNextToggle');
+    if (!hidden || !toggle) return;
+    toggle.checked = hidden.value !== 'false';
+}
+
+function onAutoToggleChange() {
+    const hidden = document.getElementById('autoNext');
+    const toggle = document.getElementById('autoNextToggle');
+    if (!hidden || !toggle) return;
+    hidden.value = toggle.checked ? 'true' : 'false';
+    onSessionPrefChange();
+}
+
+function syncPracticeControlUI() {
+    syncAutoToggleUI();
+    syncRepeatDisplay();
+}
+
+function syncRepeatDisplay() {
+    const input = document.getElementById('repeatLimit');
+    if (!input) return;
+    let n = parseInt(input.value, 10);
+    if (!Number.isFinite(n) || n < 1) n = 1;
+    if (n > 99) n = 99;
+    input.value = String(n);
+}
+
+function bindChromeControls() {
+    syncPracticeControlUI();
+}
+
+function initPasuramPickers() {
+    try {
+        if (hasDeepLinkParams()) {
+            applyDeepLinkFromUrl();
+        } else {
+            setPasuramValue(document.getElementById('number')?.value);
+        }
+        syncUrlToPrefs();
+        ensureMarkersForCurrentSelection(() => {
+            if (!(window.LearningEngine && LearningEngine.state && LearningEngine.state.isPlaying)) {
+                syncTextToAudioTimeline();
+            }
+        });
+    } catch (err) {
+        console.error('Pasuram picker init failed:', err);
+    }
+}
+
+let lyricsFitResizeTimer = null;
+
+function scheduleLyricsFit() {
+    if (lyricsFitResizeTimer) clearTimeout(lyricsFitResizeTimer);
+    lyricsFitResizeTimer = setTimeout(() => {
+        requestAnimationFrame(() => fitLyricsToPanel());
+    }, 80);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const audioPlayer = document.getElementById('audioPlayer');
+    if (audioPlayer) {
+        LearningEngine.init(audioPlayer);
+    }
+
+    initPasuramPickers();
+    updateToggleButtonUI(false);
+    updatePhraseNavButtons();
+    bindChromeControls();
+    requestAnimationFrame(() => fitLyricsToPanel());
+
+    window.addEventListener('resize', scheduleLyricsFit);
+    window.addEventListener('orientationchange', scheduleLyricsFit);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', scheduleLyricsFit);
+    }
+
+    if (shouldAutoPlayFromUrl()) {
+        setTimeout(() => startLearningAndFocus(), 600);
+    }
+
+    ['repeatLimit', 'autoNext', 'number'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', onSessionPrefChange);
+    });
+
+    window.addEventListener('learning-track-ended', () => {
+        const limit = parseInt(document.getElementById('repeatLimit').value, 10);
+        const chosenStep = document.getElementById('learningStep').value;
+
+        LearningEngine.state.currentRepeatCount = (LearningEngine.state.currentRepeatCount || 0) + 1;
+
+        if (LearningEngine.state.currentRepeatCount < limit) {
+            startLearning();
+        } else {
+            const pre = document.getElementById('prefix').value;
+            const numInput = document.getElementById('number').value;
+            const { pre: targetPre, coords } = resolveContext(pre, numInput);
+
+            const stepsKey = `${targetPre}.${coords.ch}.steps`;
+            const alternativeKey = `${targetPre}.steps`;
+            const lookupKey = `${targetPre}.${coords.ch}.${coords.sub}.steps`;
+            const stepsDatabaseBlock = window.MARKER_DATABASE[stepsKey] ||
+                window.MARKER_DATABASE[stepsKey.toLowerCase()] ||
+                window.MARKER_DATABASE[alternativeKey] ||
+                window.MARKER_DATABASE[alternativeKey.toLowerCase()] ||
+                window.MARKER_DATABASE[lookupKey] ||
+                window.MARKER_DATABASE[lookupKey.toLowerCase()];
+
+            if (stepsDatabaseBlock && stepsDatabaseBlock[coords.pas - 1]) {
+                const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
+                const activeSegments = targetPasuram[chosenStep] || targetPasuram["step2"];
+
+                if (chosenStep !== "step4" && activeLineIndex < activeSegments.length - 1) {
+                    activeLineIndex++;
+                    LearningEngine.state.currentRepeatCount = 0;
+                    startLearning();
+                    return;
+                }
+            }
+
+            activeLineIndex = 0;
+            LearningEngine.state.currentRepeatCount = 0;
+
+            if (document.getElementById('autoNext').value === "true") {
+                navigate(1);
+            } else {
+                safeStopAudio();
+            }
+        }
+    });
+});
+
+function syncTextToAudioTimeline(overrideTime) {
+    const playerEl = document.getElementById('audioPlayer');
+    const displayPanel = document.getElementById('pasuramDisplay');
+
+    if (!playerEl || !displayPanel || !window.MARKER_DATABASE) return;
+
+    const pre = document.getElementById('prefix').value;
+    const numInput = document.getElementById('number').value;
+    if (!CONFIG[pre]) return;
+
+    const { pre: targetPre, coords } = resolveContext(pre, numInput);
+
+    const stepsKey = `${targetPre}.${coords.ch}.steps`;
+    const lookupKey = `${targetPre}.${coords.ch}.${coords.sub}.steps`;
+    const alternativeKey = `${targetPre}.steps`;
+    const stepsDatabaseBlock = window.MARKER_DATABASE[stepsKey] ||
+        window.MARKER_DATABASE[lookupKey] ||
+        window.MARKER_DATABASE[lookupKey.toLowerCase()] ||
+        window.MARKER_DATABASE[alternativeKey];
+
+    if (!stepsDatabaseBlock || !stepsDatabaseBlock[coords.pas - 1]) {
+        displayPanel.innerHTML = `<div style="color:#65676b; font-size:1.1rem; font-style:italic;">Pasuram ${numInput} (Audio-Only Mode)</div>`;
+        displayPanel.dataset.lastSignature = '';
+        updatePhraseNavButtons();
+        fitLyricsToPanel();
+        return;
+    }
+
+    const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
+    let rawTextString = "";
+    if (targetPasuram.text) {
+        if (typeof targetPasuram.text === 'string') {
+            rawTextString = targetPasuram.text;
+        } else {
+            const selectedLang = document.getElementById('textLanguage')?.value || 'ta';
+            rawTextString = targetPasuram.text[selectedLang] || targetPasuram.text['ta'] || targetPasuram.text['en'] || "";
+        }
+    }
+    if (!rawTextString) {
+        updatePhraseNavButtons();
+        fitLyricsToPanel();
+        return;
+    }
+
+    const step1Timeline = targetPasuram["step1"] || [];
+
+    let currentTime;
+    if (typeof overrideTime === 'number') {
+        currentTime = Math.round(overrideTime * 10) / 10;
+    } else {
+        currentTime = Math.round((playerEl.currentTime || 0) * 10) / 10;
+    }
+
+    let matchIndex = -1;
+    for (let i = 0; i < step1Timeline.length; i++) {
+        const isLastSegment = (i === step1Timeline.length - 1);
+        const segmentStart = Math.round(step1Timeline[i][0] * 10) / 10;
+        const segmentEnd = Math.round(step1Timeline[i][1] * 10) / 10;
+
+        if (isLastSegment) {
+            if (currentTime >= segmentStart) {
+                matchIndex = i;
+                break;
+            }
+        } else {
+            if (currentTime >= segmentStart && currentTime <= segmentEnd) {
+                matchIndex = i;
+                break;
+            }
+        }
+    }
+
+    const selectedLangToken = document.getElementById('textLanguage')?.value || 'ta';
+    const currentSignature = `${targetPre}_${coords.ch}_${coords.pas}_${selectedLangToken}_${matchIndex}`;
+
+    if (displayPanel.dataset.lastSignature === currentSignature) {
+        return;
+    }
+
+    let textPhrases = rawTextString.split(' *');
+    if (textPhrases[textPhrases.length - 1].trim() === "") textPhrases.pop();
+
+    let innerHTMLString = [];
+    for (let j = 0; j < textPhrases.length; j++) {
+        const cleanPhrase = textPhrases[j].trim();
+        if (j === matchIndex) {
+            innerHTMLString.push(`<span class="active-segment">${cleanPhrase}</span>`);
+        } else {
+            innerHTMLString.push(`<span class="normal-segment">${cleanPhrase}</span>`);
+        }
+        if (j < textPhrases.length - 1) {
+            innerHTMLString.push(` <span style="color:#000000;">*</span><br> `);
+        }
+    }
+
+    displayPanel.innerHTML = innerHTMLString.join('');
+    displayPanel.dataset.lastSignature = currentSignature;
+    updatePhraseNavButtons();
+    fitLyricsToPanel();
+}
+
+function fitLyricsToPanel() {
+    const displayPanel = document.getElementById('pasuramDisplay');
+    if (!displayPanel) return;
+    if (displayPanel.clientHeight < 8 || displayPanel.clientWidth < 8) return;
+
+    const maxPx = 26;
+    const minPx = 11;
+    let lo = minPx;
+    let hi = maxPx;
+    let best = minPx;
+
+    displayPanel.style.fontSize = `${maxPx}px`;
+
+    for (let i = 0; i < 12; i++) {
+        const mid = (lo + hi) / 2;
+        displayPanel.style.fontSize = `${mid}px`;
+        if (displayPanel.scrollHeight <= displayPanel.clientHeight + 1 &&
+            displayPanel.scrollWidth <= displayPanel.clientWidth + 1) {
+            best = mid;
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+
+    displayPanel.style.fontSize = `${best}px`;
+}
+
+function getMarkerStepsBlock(pre, coords) {
+    if (!window.MARKER_DATABASE || !pre || !coords) return null;
+    const stepsKey = `${pre}.${coords.ch}.steps`;
+    const alternativeKey = `${pre}.steps`;
+    const lookupKey = `${pre}.${coords.ch}.${coords.sub}.steps`;
+    return window.MARKER_DATABASE[stepsKey] ||
+        window.MARKER_DATABASE[stepsKey.toLowerCase()] ||
+        window.MARKER_DATABASE[lookupKey] ||
+        window.MARKER_DATABASE[lookupKey.toLowerCase()] ||
+        window.MARKER_DATABASE[alternativeKey] ||
+        window.MARKER_DATABASE[alternativeKey.toLowerCase()] ||
+        null;
+}
+
+function getActiveSegmentsForCurrentSelection() {
+    const pre = document.getElementById('prefix')?.value;
+    const numInput = document.getElementById('number')?.value;
+    const chosenStep = document.getElementById('learningStep')?.value || 'step1';
+    if (!CONFIG[pre] || !numInput) return { chosenStep, segments: null };
+
+    const { pre: targetPre, coords } = resolveContext(pre, numInput);
+    const block = getMarkerStepsBlock(targetPre, coords);
+    if (!block || !block[coords.pas - 1]) return { chosenStep, segments: null };
+
+    const targetPasuram = block[coords.pas - 1];
+    if (chosenStep === 'step4') return { chosenStep, segments: null };
+
+    const segments = targetPasuram[chosenStep] || targetPasuram.step2 || null;
+    if (!segments || !segments.length) return { chosenStep, segments: null };
+    return { chosenStep, segments };
+}
+
+function updatePhraseNavButtons() {
+    const { chosenStep, segments } = getActiveSegmentsForCurrentSelection();
+    const enabled = chosenStep !== 'step4' && !!(segments && segments.length > 0);
+    ['prevPhraseBtn', 'nextPhraseBtn'].forEach((id) => {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = !enabled;
+    });
+}
+
+function ensureMarkersForCurrentSelection(done) {
+    const pre = document.getElementById('prefix')?.value;
+    const numInput = document.getElementById('number')?.value;
+    const selectedLang = document.getElementById('textLanguage')?.value || 'ta';
+    const finish = () => {
+        const keep = document.getElementById('number')?.value;
+        if (typeof rebuildPasuramPickers === 'function') {
+            rebuildPasuramPickers(keep);
+        }
+        updatePhraseNavButtons();
+        if (typeof done === 'function') done();
+    };
+    if (!pre || !numInput || typeof CONFIG === 'undefined' || !CONFIG[pre]) {
+        finish();
+        return;
+    }
+    if (typeof loadMarkerOnDemand !== 'function') {
+        finish();
+        return;
+    }
+    loadMarkerOnDemand(pre, numInput, selectedLang, finish);
+}
+
+function navigatePhrase(dir) {
+    const { segments } = getActiveSegmentsForCurrentSelection();
+    if (!segments || !segments.length) return;
+
+    const n = segments.length;
+    activeLineIndex = ((activeLineIndex + dir) % n + n) % n;
+    if (window.LearningEngine && LearningEngine.state) {
+        LearningEngine.state.currentRepeatCount = 0;
+    }
+    safeStopAudio();
+    startLearning();
+}
+
+function startLearning(onPlayCallback) {
+    if (pauseTimeoutHandle) clearTimeout(pauseTimeoutHandle);
+
+    const pre = document.getElementById('prefix').value;
+    const numInput = document.getElementById('number').value;
+    const chosenStep = document.getElementById('learningStep').value;
+    const focusMode = document.getElementById('recitationFocus').value;
+    const selectedLang = document.getElementById('textLanguage')?.value || 'ta';
+
+    const c = CONFIG[pre];
+    if (!c) return;
+
+    loadMarkerOnDemand(pre, numInput, selectedLang, () => {
+        const { pre: targetPre, coords } = resolveContext(pre, numInput);
+
+        let bounds = null;
+        let lineWindows = null;
+        let markersFound = false;
+
+        const stepsKey = `${targetPre}.${coords.ch}.steps`;
+        const alternativeKey = `${targetPre}.steps`;
+        const lookupKey = `${targetPre}.${coords.ch}.${coords.sub}.steps`;
+
+        const stepsDatabaseBlock = window.MARKER_DATABASE[stepsKey] ||
+            window.MARKER_DATABASE[stepsKey.toLowerCase()] ||
+            window.MARKER_DATABASE[lookupKey] ||
+            window.MARKER_DATABASE[lookupKey.toLowerCase()] ||
+            window.MARKER_DATABASE[alternativeKey] ||
+            window.MARKER_DATABASE[alternativeKey.toLowerCase()];
+
+        if (stepsDatabaseBlock && stepsDatabaseBlock[coords.pas - 1]) {
+            markersFound = true;
+            const targetPasuram = stepsDatabaseBlock[coords.pas - 1];
+            lineWindows = targetPasuram["step2"] || null;
+
+            if (chosenStep === "step4") {
+                const fullBounds = targetPasuram["step4"] ? targetPasuram["step4"] : null;
+                if (fullBounds) {
+                    bounds = { start: fullBounds[0], end: fullBounds[1] };
+                } else if (lineWindows && lineWindows.length > 0) {
+                    bounds = { start: lineWindows[0][0], end: lineWindows[lineWindows.length - 1][1] };
+                }
+            } else {
+                const activeSegments = targetPasuram[chosenStep] || targetPasuram["step2"];
+                if (activeSegments && activeSegments.length > 0) {
+                    if (activeLineIndex >= activeSegments.length) activeLineIndex = 0;
+                    const targetPair = activeSegments[activeLineIndex];
+                    bounds = { start: targetPair[0], end: targetPair[1] };
+                }
+            }
+        }
+
+        if (!markersFound) {
+            bounds = { start: 0, end: 9999 };
+        }
+
+        let audioSrc = "";
+        try {
+            audioSrc = c.getAudioSrc(numInput);
+        } catch (err) {
+            console.error("Audio source path mapping error:", err);
+            return;
+        }
+
+        syncTextToAudioTimeline();
+        updateToggleButtonUI(true);
+        updatePhraseNavButtons();
+
+        LearningEngine.playSegment(audioSrc, bounds, () => {
+            window.dispatchEvent(new CustomEvent('learning-track-ended'));
+        }, lineWindows, chosenStep, focusMode);
+
+        if (typeof onPlayCallback === 'function') {
+            onPlayCallback();
+        }
+    });
+}
+
+function safeStopAudio() {
+    if (pauseTimeoutHandle) clearTimeout(pauseTimeoutHandle);
+    if (window.LearningEngine) {
+        LearningEngine.stopMonitor();
+    }
+    updateToggleButtonUI(false);
+}
+
+function handlePlaybackToggle() {
+    const isPlaying = window.LearningEngine && window.LearningEngine.state && window.LearningEngine.state.isPlaying;
+    if (isPlaying) {
+        safeStopAudio();
+    } else {
+        startLearningAndFocus();
+    }
+}
+
+function updateToggleButtonUI(isPlaying) {
+    const toggleBtn = document.getElementById('toggleBtn');
+    if (!toggleBtn) return;
+
+    if (isPlaying) {
+        toggleBtn.textContent = '■';
+        toggleBtn.classList.add('is-playing');
+        toggleBtn.title = 'Stop recitation';
+        toggleBtn.setAttribute('aria-label', 'Stop recitation');
+    } else {
+        toggleBtn.textContent = '▶';
+        toggleBtn.classList.remove('is-playing');
+        toggleBtn.title = 'Start recitation';
+        toggleBtn.setAttribute('aria-label', 'Start recitation');
+    }
+}
+
+function navigate(dir) {
+    safeStopAudio();
+    resetLineTracking();
+
+    const input = document.getElementById('number');
+    const pre = document.getElementById('prefix').value;
+    const c = CONFIG[pre];
+
+    let coords = Navigation.parseCoords(input.value, c.hasSub);
+    coords.pas += dir;
+
+    const minChapterIndex = (typeof c.minCh !== 'undefined') ? c.minCh : 1;
+
+    if (c.isPlaylist || c.structure === 'flat_pasuram') {
+        const max = c.maxPas || c.defPas || 1;
+        if (coords.pas > max) coords.pas = 1;
+        else if (coords.pas < 1) coords.pas = max;
+        input.value = `${coords.pas}`;
+    } else {
+        switch (c.structure) {
+            case 'chapter_pasuram':
+                let chLimit = Navigation.getLimit(pre, coords.ch, 0);
+                if (coords.pas > chLimit) {
+                    coords.ch = (coords.ch >= c.maxCh) ? minChapterIndex : coords.ch + 1;
+                    coords.pas = 1;
+                } else if (coords.pas < 1) {
+                    coords.ch = (coords.ch <= minChapterIndex) ? c.maxCh : coords.ch - 1;
+                    coords.pas = Navigation.getLimit(pre, coords.ch, 0);
+                }
+                input.value = `${coords.ch}.${coords.pas}`;
+                break;
+
+            case 'chapter_sub_pasuram':
+                let subPasuramLimit = Navigation.getLimit(pre, coords.ch, coords.sub);
+
+                if (coords.pas > subPasuramLimit) {
+                    coords.pas = 1;
+                    coords.sub++;
+                    let activeSubLimit = Navigation.getSubLimit(pre, coords.ch);
+                    if (coords.sub > activeSubLimit) {
+                        coords.sub = 1;
+                        coords.ch = (coords.ch >= c.maxCh) ? minChapterIndex : coords.ch + 1;
+                    }
+                } else if (coords.pas < 1) {
+                    coords.sub--;
+                    if (coords.sub < 1) {
+                        coords.ch = (coords.ch <= 1) ? c.maxCh : coords.ch - 1;
+                        coords.sub = Navigation.getSubLimit(pre, coords.ch);
+                    }
+                    coords.pas = Navigation.getLimit(pre, coords.ch, coords.sub);
+                }
+                input.value = `${coords.ch}.${coords.sub}.${coords.pas}`;
+                break;
+        }
+    }
+
+    syncPickersFromNumber();
+    syncUrlToPrefs();
+    startLearning();
+}
+
+function resetLineTracking() {
+    activeLineIndex = 0;
+    if (window.LearningEngine && LearningEngine.state) { LearningEngine.state.currentRepeatCount = 0; }
+}
+
+function resetToStart() {
+    safeStopAudio();
+    resetLineTracking();
+    const pre = document.getElementById('prefix').value;
+    const c = CONFIG[pre];
+
+    let initialValue = "1.1";
+
+    if (c) {
+        const startingChapter = (typeof c.minCh !== 'undefined') ? c.minCh : 1;
+
+        if (c.isPlaylist || c.structure === 'flat_pasuram') {
+            initialValue = "1";
+        } else {
+            switch (c.structure) {
+                case 'chapter_pasuram':
+                    initialValue = `${startingChapter}.1`;
+                    break;
+                case 'chapter_sub_pasuram':
+                    initialValue = `${startingChapter}.1.1`;
+                    break;
+                default:
+                    initialValue = c.hasSub ? "1.1.1" : "1.1";
+                    break;
+            }
+        }
+    }
+
+    setPasuramValue(initialValue);
 
     const displayPanel = document.getElementById('pasuramDisplay');
     if (displayPanel) {
         displayPanel.dataset.lastSignature = "";
         displayPanel.innerHTML = "<em>Select a file or press start to view pasuram lines...</em>";
+        displayPanel.style.fontSize = '';
     }
     syncUrlToPrefs();
     ensureMarkersForCurrentSelection(() => {
         if (!(window.LearningEngine && LearningEngine.state && LearningEngine.state.isPlaying)) {
             syncTextToAudioTimeline();
         }
+        fitLyricsToPanel();
     });
 }
 
-// ---------------------------------------------------------------------------
-// RUNTIME IMPLEMENTATIONS FOR AUDIO & TRACKING INTEGRATION
-// ---------------------------------------------------------------------------
-
-/**
- * Safely stops audio playback and clears active timeouts.
- */
-function safeStopAudio() {
-    if (pauseTimeoutHandle) {
-        clearTimeout(pauseTimeoutHandle);
-        pauseTimeoutHandle = null;
-    }
-    if (window.LearningEngine && typeof window.LearningEngine.stop === 'function') {
-        window.LearningEngine.stop();
-    }
-    const audioEl = document.getElementById('audioPlayer') || document.querySelector('audio');
-    if (audioEl) {
-        audioEl.pause();
-        audioEl.currentTime = 0;
-    }
-}
-
-/**
- * Resets tracking states and clears line highlighting.
- */
-function resetLineTracking() {
-    activeLineIndex = 0;
-    const highlightedLines = document.querySelectorAll('.pasuram-line.active, .highlighted');
-    highlightedLines.forEach(el => el.classList.remove('active', 'highlighted'));
-}
-
-/**
- * Synchronizes selected book and pasuram position to URL search params.
- */
-function syncUrlToPrefs() {
-    const prefix = document.getElementById('prefix')?.value;
-    const number = document.getElementById('number')?.value;
-    if (!prefix || !number || !window.history.replaceState) return;
-
-    const url = new URL(window.location.href);
-    url.searchParams.set('book', prefix);
-    url.searchParams.set('pasuram', number);
-    window.history.replaceState({}, '', url.toString());
-}
-
-/**
- * Ensures markers and language texts are asynchronously loaded for current picker selection.
- */
-function ensureMarkersForCurrentSelection(cb) {
-    const pre = document.getElementById('prefix')?.value;
-    const num = document.getElementById('number')?.value;
-    const lang = document.getElementById('langSelect')?.value || 'en';
-
-    if (typeof window.loadMarkerOnDemand === 'function' && pre && num) {
-        window.loadMarkerOnDemand(pre, num, lang, () => {
-            if (cb) cb();
-        });
-    } else {
-        if (cb) cb();
-    }
-}
-
-/**
- * Syncs displayed text lines with the current audio timeline or index state.
- */
-function syncTextToAudioTimeline() {
-    const pre = document.getElementById('prefix')?.value;
-    const num = document.getElementById('number')?.value;
-    const displayPanel = document.getElementById('pasuramDisplay');
-
-    if (!pre || !num || !displayPanel) return;
-
-    // Resolve target data key if selecting from custom playlist
-    let targetPre = pre;
-    let targetNum = num;
-    if (CONFIG[pre] && CONFIG[pre].isPlaylist) {
-        const item = CONFIG[pre].getItem(num);
-        if (item) {
-            targetPre = item.book;
-            targetNum = item.pasuram;
-        }
-    }
-
-    const currentSig = `${targetPre}_${targetNum}`;
-    if (displayPanel.dataset.lastSignature === currentSig) return;
-
-    const lines = (window.PASURAM_TEXTS && window.PASURAM_TEXTS[targetPre])
-        ? window.PASURAM_TEXTS[targetPre][targetNum]
-        : null;
-
-    if (lines && Array.isArray(lines)) {
-        displayPanel.dataset.lastSignature = currentSig;
-        displayPanel.innerHTML = lines
-            .map((line, idx) => `<div class="pasuram-line" data-index="${idx}">${line}</div>`)
-            .join('');
-    }
-}
-
-// Global Export Registration
-window.onPasuramPickerChange = onPasuramPickerChange;
-window.resetToStart = resetToStart;
-window.rebuildPasuramPickers = rebuildPasuramPickers;
-window.safeStopAudio = safeStopAudio;
-window.resetLineTracking = resetLineTracking;
+window.copyShareLink = copyShareLink;
+window.getShareUrl = getShareUrl;
+window.applyDeepLinkFromUrl = applyDeepLinkFromUrl;
 window.syncUrlToPrefs = syncUrlToPrefs;
+window.setPasuramValue = setPasuramValue;
+window.onPasuramPickerChange = onPasuramPickerChange;
+window.syncPickersFromNumber = syncPickersFromNumber;
+window.initPasuramPickers = initPasuramPickers;
+window.renderCurrentPasuramText = renderCurrentPasuramText;
+window.onLearningStepChange = onLearningStepChange;
+window.onPasuramNumberChange = onPasuramNumberChange;
+window.onSessionPrefChange = onSessionPrefChange;
+window.onTextLanguageChange = onTextLanguageChange;
+window.setTextLanguage = setTextLanguage;
+window.onAutoToggleChange = onAutoToggleChange;
+window.syncPracticeControlUI = syncPracticeControlUI;
+window.syncRepeatDisplay = syncRepeatDisplay;
+window.navigatePhrase = navigatePhrase;
 window.ensureMarkersForCurrentSelection = ensureMarkersForCurrentSelection;
-window.syncTextToAudioTimeline = syncTextToAudioTimeline;
+window.navigate = navigate;
+window.handlePlaybackToggle = handlePlaybackToggle;
+window.fitLyricsToPanel = fitLyricsToPanel;
+window.resetToStart = resetToStart;
+window.updateEngineSpeed = updateEngineSpeed;
+window.startLearningAndFocus = startLearningAndFocus;
+window.bindChromeControls = bindChromeControls;
 
-// Initial setup on page load
-document.addEventListener('DOMContentLoaded', () => {
-    rebuildPasuramPickers();
-});
+if (document.readyState !== 'loading') {
+    initPasuramPickers();
+    bindChromeControls();
+}
