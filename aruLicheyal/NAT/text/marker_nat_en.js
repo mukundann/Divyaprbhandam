@@ -64,7 +64,20 @@ window.mergeLanguageTexts = function () {
       11: "* Udal kUdal * uNardhal puNardhalai * nIdu ninRa * niRai pugazh Aychchiyar *** kUdalaik * kuzhaR kOdhai mun kURiya * pAdal paththum vallArkku * illai pAvamE *",
       12: "adivaravu: theLLiyAr kAttil * pUmagan AychchimArgaL * mAdam aRRavan * anRu Aval * koNda pazhagu * Udal mannu *"
     },
-    'NAT.5.steps': {},
+    'NAT.5.steps': {
+      1: "* mannu perumpugazh mAdhavan * mAmaNi vaNNan maNimudi maindhan thannai * ugandhadhu kAraNamAga * en sangizhakkum vazhakkuNdE? *** punnai kurukkaththi njAzhal serundhip * podhumbinil vAzhum kuyilE! * panni eppOdhum irundhu viraindhu * en pavaLavAyan varak kUvAy",
+      2: "veLLai viLi sangu idangaiyil koNda * vimalan enakku urukkAttAn * uLLam pugundhu ennai naiviththu * nALum uyirppeydhu kUththAttuk kANum *** kaLLavizh seNbagap pUmalar kOdhik * kaLiththisai pAdum kuyilE! * meLLa irundhu mizhaRRi mizhaRRAdhu * en vEngadavan varak kUvAy",
+      3: "mAdhali thEr munbu kOl koLLa * mAyan irAvaNan mEl * saramAri thAy thalai aRRaRRu vIzhath * thoduththa thalaivan varavengum kANEn *** pOdhalar kAvil pudhu maNam nARap * poRivaNdin kAmaram kEttu * un kAdhaliyOdu udan vAzh kuyilE! * en karumANikkam varak kUvAy",
+      4: "enburugi inavEl nedum kaNgaL * imai porundhA pala nALum * thunbak kadal pukku vaigundhan enbadhOr * thONi peRAdhu uzhalginREn *** anbudaiyAraip pirivuRu nOy * adhu nIyum aRidhi kuyilE! * pon purai mEnik karuLak kodiyudaip * puNNiyanai varak kUvAy ",
+      5: "* mennadai annam parandhu viLaiyAdum * villipuththUr uRaivAn than * ponnadi kANbadhOr AsayinAl * en porukayaR kaNNiNai thunjA *** innadisilodu pAl amudhUtti * eduththa en kOlak kiLiyai * unnodu thOzhamai koLLuvan kuyilE! * ulagaLandhAn varak kUvAy ",
+      6: "eththisaiyum amarar paNindhu Eththum * irudIkEsan vali seyya * muththanna veNmuRuval seyya vAyum * mulaiyum azhagazhindhEn nAn *** koththalar kAvil maNiththadam * kaNpadai koLLum iLanguyilE! * en thaththuvanai varak kUkiRRiyAgil * thalai allAl kaimmARilEnE ",
+      7: "pongiya pARkadal paLLi koLvAnaip * puNarvadhOr AsaiyinAl * en kongai kiLarndhu kumaiththuk kudhugaliththu * Aviyai Agulam seyyum anguyilE! * unakkenna maRaindhuRaivu? * Azhiyum sangum oN thaNdum * thangiya kaiyavanai varak kUvil * nI sAlath tharumam peRudhi ",
+      8: "sArngam vaLaiya valikkum * thadakkaich chadhuran poruththam udaiyan * nAngaL emmilirundhu ottiyagachchangam * nAnum avanum aRidhum *** thEngani mAmpozhil sendhaLir kOdhum * siRu kuyilE! * thirumAlai Angu viraindhu ollai kUgiRRiyAgil * avanai nAn seyvana kANE ",
+      9: "paingiLi vaNNan sirIdharan enbadhOr * pAsaththu agappattirundhEn * pongoLi vaNdiraikkum pozhil vAzh kuyilE! * kuRikkoNdu idhu nI kEL *** sangodu chakkaraththAn varak kUvudhal * ponvaLai koNdu tharudhal * inguLLa kAvinil vAzhak karudhil * iraNdaththonREl thiNNam vENdum ",
+      10: "anRulagam aLandhAnai ugandhu * adimaikkaN avan vali seyya * thenRalum thingaLum UdaRuththu * ennai naliyum muRaimai aRiyEn *** enRum ikkAvil irundhirundhu * ennaith thadhaiththAdhE nIyum kuyilE! * inRu nArAyaNanai varak kUvAyEl * inguththai ninRum thurappan",
+      11: "* viNNuRa nINdu adi thAviya maindhanai * vERkaN madandhai virumbi * kaNNuRa en kadal vaNNanaik * kUvu karunguyilE! enRa mARRam *** paNNuRu nAnmaRaiyOr pudhuvai mannan * pattarpirAn kOdhai sonna * naNNuRu vAsaga mAlai vallAr *  namO nArAyaNAya enbArE",      
+      12: "adivaravu: mannu veLLai * mAthali enbu * mennadai eththisai * pongiya sArngam * paingiLi anRu viN vAraNam"
+    },
     'NAT.6.steps':
     {
       1: "vAraNam Ayiram * sUzha valam seydhu * nAraNa nambi * nadakkinRAn enRedhir *** pUraNa poRkudam * vaiththup puram engum * thOraNam nAttak * kanAk kaNdEn thOzhI! nAn *",
