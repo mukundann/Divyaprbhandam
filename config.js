@@ -25,14 +25,11 @@ function batchAudio(pasuram, maxPas, book) {
 
 /**
  * Factory for sub-chapter books: TVM, PTM, PAT.
- * All three share identical solver logic; only metadata differs.
  */
 function makeSubChapterBook(opts) {
-    // opts: { key, structure, hasSub, maxCh, maxSub, defPas, ex,
-    //         availableContent, remotePrefix }
     const { key, remotePrefix } = opts;
     return {
-        structure: opts.structure,
+        structure: 'chapter_sub_pasuram',
         hasSub: opts.hasSub,
         maxCh: opts.maxCh,
         maxSub: opts.maxSub,
@@ -49,9 +46,7 @@ function makeSubChapterBook(opts) {
         getAudioSrc(num) {
             if (!num) return '';
             const [chapter, subChapter] = num.split('.');
-
             return `${ROOT}/${key}/audiofiles/${key}_${chapter}.${subChapter}.ogg`;
-
         },
 
         getLanguagePath(num, langCode) {
@@ -64,7 +59,6 @@ function makeSubChapterBook(opts) {
 
 /**
  * Factory for grouped single-chapter books.
- * Ch0 (thanian) → BOOK_0.ogg; Ch1 → batched in groups of 10.
  */
 function makeGroupedBook({ key, defPas, ex = {}, minCh = 0, maxCh = 1 }) {
     return {
@@ -85,15 +79,7 @@ function makeGroupedBook({ key, defPas, ex = {}, minCh = 0, maxCh = 1 }) {
 }
 
 /**
- * Factory for simple per-chapter books (TPE, TPL, KCT, AAP, NAT, PMT).
- * One audio file per chapter, no batching.
- *
- * opts:
- *   key            - book key
- *   defPas         - default pasuram count
- *   ex             - exceptions map (default {})
- *   minCh          - default 0
- *   maxCh          - default 1
+ * Factory for simple per-chapter books.
  */
 function makeSimpleBook({ key, defPas, ex = {}, minCh = 0, maxCh = 1 }) {
     return {
@@ -105,6 +91,107 @@ function makeSimpleBook({ key, defPas, ex = {}, minCh = 0, maxCh = 1 }) {
         getAudioSrc: (num) => `${ROOT}/${key}/audiofiles/${key}_${parseInt(num.split('.')[0], 10)}.ogg`
     };
 }
+
+/**
+ * Factory for Custom Playlist Books.
+ * Can compile items defined as whole chapters, whole subchapters, or explicit pasurams.
+ */
+function makeCustomPlaylistBook({ key, items = [] }) {
+    return {
+        structure: 'flat_pasuram',
+        isPlaylist: true,
+        hasSub: false,
+        minCh: 1,
+        maxCh: 1,
+        rawItems: items,
+        
+        // Lazy-resolves playlist definition into explicit individual pasurams
+        getCompiledPlaylist() {
+            if (this._compiled) return this._compiled;
+
+            const compiled = [];
+            for (const item of this.rawItems) {
+                const targetBook = CONFIG[item.book];
+                if (!targetBook) continue;
+
+                // Case 1: Whole Chapter
+                if (typeof item.chapter !== 'undefined' && typeof item.sub === 'undefined' && !item.pasuram) {
+                    const ch = item.chapter;
+                    if (targetBook.hasSub) {
+                        const maxSub = targetBook.maxSub || 10;
+                        for (let s = 1; s <= maxSub; s++) {
+                            const count = (typeof Navigation !== 'undefined') 
+                                ? Navigation.getLimit(item.book, ch, s) 
+                                : (targetBook.defPas || 10);
+                            for (let p = 1; p <= count; p++) {
+                                compiled.push({ book: item.book, pasuram: `${ch}.${s}.${p}` });
+                            }
+                        }
+                    } else {
+                        const count = (typeof Navigation !== 'undefined') 
+                            ? Navigation.getLimit(item.book, ch, 0) 
+                            : (targetBook.defPas || 10);
+                        for (let p = 1; p <= count; p++) {
+                            compiled.push({ book: item.book, pasuram: `${ch}.${p}` });
+                        }
+                    }
+                }
+                // Case 2: Whole Subchapter (Decad)
+                else if (typeof item.chapter !== 'undefined' && typeof item.sub !== 'undefined' && !item.pasuram) {
+                    const count = (typeof Navigation !== 'undefined') 
+                        ? Navigation.getLimit(item.book, item.chapter, item.sub) 
+                        : (targetBook.defPas || 10);
+                    for (let p = 1; p <= count; p++) {
+                        compiled.push({ book: item.book, pasuram: `${item.chapter}.${item.sub}.${p}` });
+                    }
+                }
+                // Case 3: Explicit Pasuram
+                else if (item.pasuram) {
+                    compiled.push({ book: item.book, pasuram: String(item.pasuram) });
+                }
+            }
+
+            this._compiled = compiled;
+            return compiled;
+        },
+
+        get maxPas() {
+            return this.getCompiledPlaylist().length;
+        },
+
+        get defPas() {
+            return this.maxPas;
+        },
+
+        getItem(num) {
+            const list = this.getCompiledPlaylist();
+            const index = parseInt(num, 10) - 1;
+            return list[index] || null;
+        },
+
+        getMarkerPath(num) {
+            const item = this.getItem(num);
+            if (!item) return undefined;
+            const targetBook = CONFIG[item.book];
+            return targetBook ? targetBook.getMarkerPath(item.pasuram) : undefined;
+        },
+
+        getLanguagePath(num, langCode) {
+            const item = this.getItem(num);
+            if (!item) return undefined;
+            const targetBook = CONFIG[item.book];
+            return targetBook ? targetBook.getLanguagePath(item.pasuram, langCode) : undefined;
+        },
+
+        getAudioSrc(num) {
+            const item = this.getItem(num);
+            if (!item) return '';
+            const targetBook = CONFIG[item.book];
+            return targetBook ? targetBook.getAudioSrc(item.pasuram) : '';
+        }
+    };
+}
+
 const CONFIG = {
     'PTN': makeSimpleBook({ key: 'PTN', defPas: 5, ex: { '0': 1 }, maxCh: 2 }),
     'TPL': makeSimpleBook({ key: 'TPL', defPas: 12, ex: { '0': 3 } }),
@@ -113,7 +200,6 @@ const CONFIG = {
         structure: 'chapter_sub_pasuram',
         hasSub: true, maxCh: 5, maxSub: 10, defPas: 10,
         ex: { '1.2': 21, '1.5': 11, '1.6': 11, '1.7': 11, '1.8': 11 },
-
     }),
     'TPV': makeGroupedBook({ key: 'TPV', defPas: 30, ex: { '0': 3 } }),
     'NAT': makeSimpleBook({ key: 'NAT', defPas: 11, ex: { '0': 2, '4': 12, '5': 12, '6': 12 }, minCh: 0, maxCh: 14 }),
@@ -126,74 +212,77 @@ const CONFIG = {
     'KCT': makeSimpleBook({ key: 'KCT', defPas: 11, ex: { '0': 2 } }),
 
     // --- 2000 ---
-
     'PTM': makeSubChapterBook({
         key: 'PTM', remotePrefix: 'PT',
         structure: 'chapter_sub_pasuram',
         hasSub: true, maxCh: 11, maxSub: 10, defPas: 11,
-
     }),
-
     'TKT': makeGroupedBook({ key: 'TKT', defPas: 20, ex: { '0': 3 } }),
     'TNT': makeGroupedBook({ key: 'TNT', defPas: 30, ex: { '0': 3 } }),
 
     // --- 3000 ---
-
     '1TA': makeGroupedBook({ key: '1TA', defPas: 100, ex: { '0': 1 } }),
     '2TA': makeGroupedBook({ key: '2TA', defPas: 100, ex: { '0': 1 } }),
     '3TA': makeGroupedBook({ key: '3TA', defPas: 100, ex: { '0': 1 } }),
     '4TA': makeGroupedBook({ key: '4TA', defPas: 97, ex: { '0': 1 } }),
     'PTA': makeGroupedBook({ key: 'PTA', defPas: 87, ex: { '0': 1 } }),
     'TVT': makeGroupedBook({ key: 'TVT', defPas: 100, ex: { '0': 1 } }),
-
-
     'TVS': makeSimpleBook({ key: 'TVS', defPas: 7, ex: { '0': 1 } }),
     'TVK': makeSimpleBook({ key: 'TVK', defPas: 8, ex: { '0': 1 } }),
-    //'STM': makeGroupedBook({ key: 'STM', defPas: 8, ex: { '0': 1 } }),
-    // PTM - periya thiru madal - name conflict :(
 
     // --- 4000 ---
-
     'TVM': makeSubChapterBook({
         key: 'TVM', remotePrefix: 'TVM',
         structure: 'chapter_sub_pasuram',
         hasSub: true, maxCh: 10, maxSub: 10, defPas: 11, ex: { '2.7': 13 },
-
     }),
-
     'RN': makeGroupedBook({ key: 'RN', defPas: 108, ex: { '0': 3 } }),
-
-    // --- Others ---
-
     'URM': makeGroupedBook({ key: 'URM', defPas: 74, ex: { '0': 1 } }),
-    'VTN': makeSimpleBook({ key: 'VTN', defPas: 13, ex: { '0': 2, '2': 28 } }),
+
+    // --- PLAYLIST EXAMPLE ---
+    'NTS': makeCustomPlaylistBook({
+        key: 'NTS',
+        items: [
+            { book: 'PTN', pasuram: '0.1' },          // Single pasuram
+            { book: 'TPL', chapter: 1 },              // Entire Chapter 1 of TPL
+            { book: 'TVM', chapter: 1, sub: 2 },      // Entire Subchapter 1.2 of TVM
+            { book: 'AAP', pasuram: '1.1' }           // Single pasuram
+        ]
+    })
 };
 
 // ---------------------------------------------------------------------------
 // DYNAMIC LOADER
 // ---------------------------------------------------------------------------
 
-/**
- * Dynamically loads timeline and language scripts on-demand.
- */
 function loadMarkerOnDemand(pre, numVal, langCode, callback) {
-    const book = CONFIG[pre];
+    let targetPre = pre;
+    let targetNumVal = numVal;
+
+    if (CONFIG[pre] && CONFIG[pre].isPlaylist) {
+        const item = CONFIG[pre].getItem(numVal);
+        if (item) {
+            targetPre = item.book;
+            targetNumVal = item.pasuram;
+        }
+    }
+
+    const book = CONFIG[targetPre];
     if (!book || typeof book.getMarkerPath !== 'function') {
-        console.error("Marker path resolution strategy missing for book prefix:", pre);
+        console.error("Marker path resolution strategy missing for book prefix:", targetPre);
         return;
     }
 
     window.LOADED_SCRIPTS = window.LOADED_SCRIPTS || {};
-    const timelinePath = book.getMarkerPath(numVal);
+    const timelinePath = book.getMarkerPath(targetNumVal);
 
     if (!timelinePath) {
-        console.log(`No local timeline registered for ${pre} chapter context: ${numVal}. Proceeding with clean fallback.`);
         if (callback) callback();
         return;
     }
 
     if (window.LOADED_SCRIPTS[timelinePath]) {
-        handleLanguageInjection(book, numVal, langCode, callback);
+        handleLanguageInjection(book, targetNumVal, langCode, callback);
         return;
     }
 
@@ -201,7 +290,7 @@ function loadMarkerOnDemand(pre, numVal, langCode, callback) {
     script.src = timelinePath;
     script.onload = () => {
         window.LOADED_SCRIPTS[timelinePath] = true;
-        handleLanguageInjection(book, numVal, langCode, callback);
+        handleLanguageInjection(book, targetNumVal, langCode, callback);
     };
     script.onerror = () => {
         console.error(`Failed to load timeline: ${timelinePath}`);
@@ -210,9 +299,6 @@ function loadMarkerOnDemand(pre, numVal, langCode, callback) {
     document.head.appendChild(script);
 }
 
-/**
- * Chains language file injection after timeline is loaded.
- */
 function handleLanguageInjection(book, numVal, langCode, callback) {
     if (typeof book.getLanguagePath !== 'function') {
         if (callback) callback();
