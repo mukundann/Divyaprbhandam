@@ -25,13 +25,11 @@ function batchAudio(pasuram, maxPas, book) {
 
 /**
  * Factory for sub-chapter books: TVM, PTM, PAT.
- * @param {Array<string>} customTextLevels - Optional array e.g. ['chapter'], ['sub'], ['pasuram']
  */
 function makeSubChapterBook(opts) {
-    const { key, remotePrefix, customTextLevels = [] } = opts;
+    const { key, remotePrefix } = opts;
     return {
         structure: 'chapter_sub_pasuram',
-        customTextLevels: customTextLevels,
         hasSub: opts.hasSub,
         maxCh: opts.maxCh,
         maxSub: opts.maxSub,
@@ -62,10 +60,9 @@ function makeSubChapterBook(opts) {
 /**
  * Factory for grouped single-chapter books.
  */
-function makeGroupedBook({ key, defPas, ex = {}, minCh = 0, maxCh = 1, customTextLevels = [] }) {
+function makeGroupedBook({ key, defPas, ex = {}, minCh = 0, maxCh = 1 }) {
     return {
         structure: 'chapter_pasuram',
-        customTextLevels: customTextLevels,
         hasSub: false, minCh, maxCh, defPas, ex,
 
         getMarkerPath: () => flatMarkerPath(key),
@@ -84,36 +81,31 @@ function makeGroupedBook({ key, defPas, ex = {}, minCh = 0, maxCh = 1, customTex
 /**
  * Factory for simple per-chapter books.
  */
-function makeSimpleBook({ key, defPas, ex = {}, minCh = 0, maxCh = 1, customTextLevels = [] }) {
+function makeSimpleBook({ key, defPas, ex = {}, minCh = 0, maxCh = 1 }) {
     return {
         structure: 'chapter_pasuram',
-        customTextLevels: customTextLevels,
         hasSub: false, minCh, maxCh, defPas, ex,
 
-        getMarkerPath: (num) => `${ROOT}/${key}/markers/${key}.${num || '1'}.js`,
-        getLanguagePath: (num, langCode) => `${ROOT}/${key}/text/${key}.${num || '1'}.${langCode}.js`,
-        getAudioSrc: (num) => `${ROOT}/${key}/audiofiles/${key}_${num || '1'}.ogg`
+        getMarkerPath: () => flatMarkerPath(key),
+        getLanguagePath: (_num, langCode) => flatLangPath(key, langCode),
+        getAudioSrc: (num) => `${ROOT}/${key}/audiofiles/${key}_${parseInt(num.split('.')[0], 10)}.ogg`
     };
 }
 
 /**
  * Factory for Custom Playlist Books.
+ * Can compile items defined as whole chapters, whole subchapters, or explicit pasurams.
  */
-function makeCustomPlaylistBook({ key, items = [], customTextLevels = [] }) {
+function makeCustomPlaylistBook({ key, items = [] }) {
     return {
         structure: 'flat_pasuram',
-        customTextLevels: customTextLevels,
         isPlaylist: true,
         hasSub: false,
         minCh: 1,
         maxCh: 1,
         rawItems: items,
-<<<<<<< HEAD
-
-        // Lazy-resolves playlist definition into explicit individual pasurams
-=======
         
->>>>>>> 3108296c9b1a0881e0af35e41bd346a3e351dea2
+        // Lazy-resolves playlist definition into explicit individual pasurams
         getCompiledPlaylist() {
             if (this._compiled) return this._compiled;
 
@@ -122,35 +114,38 @@ function makeCustomPlaylistBook({ key, items = [], customTextLevels = [] }) {
                 const targetBook = CONFIG[item.book];
                 if (!targetBook) continue;
 
+                // Case 1: Whole Chapter
                 if (typeof item.chapter !== 'undefined' && typeof item.sub === 'undefined' && !item.pasuram) {
                     const ch = item.chapter;
                     if (targetBook.hasSub) {
                         const maxSub = targetBook.maxSub || 10;
                         for (let s = 1; s <= maxSub; s++) {
-                            const count = (typeof Navigation !== 'undefined')
-                                ? Navigation.getLimit(item.book, ch, s)
+                            const count = (typeof Navigation !== 'undefined') 
+                                ? Navigation.getLimit(item.book, ch, s) 
                                 : (targetBook.defPas || 10);
                             for (let p = 1; p <= count; p++) {
                                 compiled.push({ book: item.book, pasuram: `${ch}.${s}.${p}` });
                             }
                         }
                     } else {
-                        const count = (typeof Navigation !== 'undefined')
-                            ? Navigation.getLimit(item.book, ch, 0)
+                        const count = (typeof Navigation !== 'undefined') 
+                            ? Navigation.getLimit(item.book, ch, 0) 
                             : (targetBook.defPas || 10);
                         for (let p = 1; p <= count; p++) {
                             compiled.push({ book: item.book, pasuram: `${ch}.${p}` });
                         }
                     }
                 }
+                // Case 2: Whole Subchapter (Decad)
                 else if (typeof item.chapter !== 'undefined' && typeof item.sub !== 'undefined' && !item.pasuram) {
-                    const count = (typeof Navigation !== 'undefined')
-                        ? Navigation.getLimit(item.book, item.chapter, item.sub)
+                    const count = (typeof Navigation !== 'undefined') 
+                        ? Navigation.getLimit(item.book, item.chapter, item.sub) 
                         : (targetBook.defPas || 10);
                     for (let p = 1; p <= count; p++) {
                         compiled.push({ book: item.book, pasuram: `${item.chapter}.${item.sub}.${p}` });
                     }
                 }
+                // Case 3: Explicit Pasuram
                 else if (item.pasuram) {
                     compiled.push({ book: item.book, pasuram: String(item.pasuram) });
                 }
@@ -200,16 +195,6 @@ function makeCustomPlaylistBook({ key, items = [], customTextLevels = [] }) {
 const CONFIG = {
     'PTN': makeSimpleBook({ key: 'PTN', defPas: 5, ex: { '0': 1 }, maxCh: 2 }),
     'TPL': makeSimpleBook({ key: 'TPL', defPas: 12, ex: { '0': 3 } }),
-    
-    // --- VTN Example: Custom Text at Pasuram Level ---
-    'VTN': makeSimpleBook({ key: 'VTN', defPas: 1, customTextLevels: ['pasuram'] }),
-    
-    // --- Examples of custom text at other levels or combinations ---
-    // Custom Text at Chapter level:
-    // 'CUSTOM_CH': makeSimpleBook({ key: 'CUSTOM_CH', customTextLevels: ['chapter'] }),
-    // Custom Text at Subchapter & Pasuram level:
-    // 'CUSTOM_SUB_PAS': makeSubChapterBook({ key: 'CUSTOM_SUB_PAS', hasSub: true, customTextLevels: ['sub', 'pasuram'] }),
-
     'PAT': makeSubChapterBook({
         key: 'PAT', remotePrefix: 'PT',
         structure: 'chapter_sub_pasuram',
@@ -260,10 +245,8 @@ const CONFIG = {
         items: [
             { book: 'PTN', pasuram: '0.1' },          // Single pasuram
             { book: 'TPL', chapter: 1 },              // Entire Chapter 1 of TPL
-            { book: 'TPE', chapter: 1 },
-            { book: 'TPV', chapter: 1 },
-            { book: 'AAP', chapter: 1 },         // Single pasuram
-            { book: 'KCT', chapter: 1 }
+            { book: 'TVM', chapter: 1, sub: 2 },      // Entire Subchapter 1.2 of TVM
+            { book: 'AAP', pasuram: '1.1' }           // Single pasuram
         ]
     })
 };
