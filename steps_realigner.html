@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pasuram Marker & Text Segment Re-aligner (Manual Mode)</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --accent-s1: #38bdf8;
+            --accent-s2: #3b82f6;
+            --accent-s3: #10b981;
+            --accent-s4: #a855f7;
+            --text: #f8fafc;
+            --border: #334155;
+            --highlight: #f59e0b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .dropdown-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            margin-bottom: 15px;
+        }
+
+        .dropdown-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .dropdown-group label {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: bold;
+        }
+
+        select, button, textarea, input[type="number"] {
+            background: #0f172a;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button.action-btn {
+            background: var(--highlight);
+            color: #000;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 4px;
+        }
+
+        button.action-btn:hover { opacity: 0.9; }
+
+        .input-label {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+
+        .pasuram-text-box {
+            font-size: 14px;
+            line-height: 1.6;
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            margin-top: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            color: var(--text);
+            font-family: inherit;
+        }
+
+        .step-section {
+            margin-top: 20px;
+            border-left: 3px solid var(--border);
+            padding-left: 15px;
+        }
+
+        .step-section.s1 { border-color: var(--accent-s1); }
+        .step-section.s2 { border-color: var(--accent-s2); }
+        .step-section.s3 { border-color: var(--accent-s3); }
+        .step-section.s4 { border-color: var(--accent-s4); }
+
+        .step-header {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .badge-s1 { color: var(--accent-s1); }
+        .badge-s2 { color: var(--accent-s2); }
+        .badge-s3 { color: var(--accent-s3); }
+        .badge-s4 { color: var(--accent-s4); }
+
+        .segment-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .segment-card {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 340px;
+        }
+
+        .time-inputs {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .time-inputs input {
+            width: 65px;
+            font-size: 13px;
+            padding: 4px;
+            text-align: center;
+            border-radius: 3px;
+        }
+
+        .chunk-text-preview {
+            background: #1e293b;
+            border-left: 3px solid var(--highlight);
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #f8fafc;
+            white-space: pre-line;
+            min-height: 38px;
+        }
+
+        .line-selector {
+            background: #1e293b;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 8px;
+            max-height: 130px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .line-selector label {
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        textarea.segment-text {
+            width: 100%;
+            height: 45px;
+            font-size: 12px;
+            padding: 6px;
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-sizing: border-box;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .btn-sm {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 3px;
+        }
+
+        .btn-delete { background: #ef4444; color: white; border: none; }
+
+        textarea.json-preview {
+            width: 100%;
+            height: 80px;
+            font-family: monospace;
+            color: #10b981;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        #statusMessage {
+            font-size: 12px;
+            color: #ef4444;
+            margin-top: 8px;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Pasuram Marker & Text Segment Re-aligner (Manual Mode)</h2>
+
+    <!-- Manual Input Form -->
+    <div class="card">
+        <div class="dropdown-row">
+            <div class="dropdown-group">
+                <label for="bookSelect">Prabhandam Key</label>
+                <input type="text" id="bookSelect" value="PAT" style="text-transform: uppercase;">
+            </div>
+
+            <div class="dropdown-group">
+                <label for="chapterInput">Chapter</label>
+                <input type="number" id="chapterInput" value="4">
+            </div>
+
+            <div class="dropdown-group">
+                <label for="subChapterInput">Sub-Chapter (Optional)</label>
+                <input type="number" id="subChapterInput" value="2">
+            </div>
+
+            <div class="dropdown-group">
+                <label for="pasuramInput">Pasuram No.</label>
+                <input type="number" id="pasuramInput" value="8">
+            </div>
+        </div>
+
+        <label class="input-label">1. Paste Pasuram Full Text (Separated by *):</label>
+        <textarea id="textDisplay" class="pasuram-text-box" rows="3" placeholder="Paste Tamil text here separated with *"></textarea>
+
+        <label class="input-label">2. Paste Step Data (Single Pasuram Object or Full Array):</label>
+        <textarea id="stepsInput" class="pasuram-text-box" rows="4" placeholder='Paste JSON object or array, e.g.: {"p": 8, "step1": [...], "step2": [...], "step3": [...], "step4": [...]}'></textarea>
+
+        <button onclick="processManualData()" class="action-btn" style="margin-top: 15px; width: 100%;">Load & Parse Data</button>
+        <div id="statusMessage"></div>
+    </div>
+
+    <!-- Marker & Segment Editor -->
+    <div class="card" id="editorCard" style="display: none;">
+        <h3>Marker & Alignment Editor</h3>
+
+        <!-- Step 1 -->
+        <div class="step-section s1">
+            <div class="step-header badge-s1">
+                <span>Step 1 (Base Line-by-Line `*` Segments)</span>
+                <button onclick="addSegment('step1')" class="btn-sm">+ Add Line</button>
+            </div>
+            <div id="step1Grid" class="segment-grid"></div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-section s2">
+            <div class="step-header badge-s2">
+                <span>Step 2 (Grouped Chunks)</span>
+                <button onclick="addChunk('step2')" class="btn-sm">+ Add Step 2 Chunk</button>
+            </div>
+            <div id="step2Grid" class="segment-grid"></div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-section s3">
+            <div class="step-header badge-s3">
+                <span>Step 3 (Broader Groups)</span>
+                <button onclick="addChunk('step3')" class="btn-sm">+ Add Step 3 Chunk</button>
+            </div>
+            <div id="step3Grid" class="segment-grid"></div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step-section s4">
+            <div class="step-header badge-s4">
+                <span>Step 4 Full Duration</span>
+            </div>
+            <div id="step4Grid" class="segment-grid"></div>
+        </div>
+    </div>
+
+    <!-- Export Section -->
+    <div class="card" id="exportCard" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3>Updated Marker Object (Single-Line JS Output)</h3>
+            <button class="action-btn" onclick="exportFullDatabase()">Export Timeline File</button>
+        </div>
+        <textarea id="jsonOutput" class="json-preview" readonly></textarea>
+    </div>
+</div>
+
+<script>
+let currentPasuramRef = null;
+let step1TextSegments = [];
+let loadedDbKey = '';
+
+function processManualData() {
+    const statusMsg = document.getElementById('statusMessage');
+    statusMsg.textContent = '';
+
+    const bookKey = document.getElementById('bookSelect').value.trim().toUpperCase() || 'BOOK';
+    const ch = document.getElementById('chapterInput').value.trim();
+    const sub = document.getElementById('subChapterInput').value.trim();
+    const pasuramNum = parseInt(document.getElementById('pasuramInput').value.trim()) || 1;
+
+    if (sub !== '') {
+        loadedDbKey = `${bookKey}.${ch}.${sub}.steps`;
+    } else {
+        loadedDbKey = `${bookKey}.${ch}.steps`;
+    }
+
+    // Process Text
+    const rawText = document.getElementById('textDisplay').value;
+    step1TextSegments = rawText.split('*').map(s => s.trim()).filter(s => s.length > 0);
+
+    // Process Steps JSON
+    const stepsRaw = document.getElementById('stepsInput').value.trim();
+
+    if (!stepsRaw) {
+        statusMsg.textContent = 'Please paste the steps JSON object or array.';
+        return;
+    }
+
+    try {
+        let parsed = JSON.parse(stepsRaw);
+        
+        if (Array.isArray(parsed)) {
+            // Find target pasuram inside array
+            currentPasuramRef = parsed.find(item => item.p === pasuramNum) || parsed[0];
+        } else if (typeof parsed === 'object') {
+            currentPasuramRef = parsed;
+        }
+
+        if (!currentPasuramRef) {
+            throw new Error("Could not extract valid step data for pasuram " + pasuramNum);
+        }
+
+        renderAllSteps();
+        document.getElementById('editorCard').style.display = 'block';
+        document.getElementById('exportCard').style.display = 'block';
+
+    } catch (err) {
+        statusMsg.textContent = 'JSON Parsing Error: ' + err.message;
+    }
+}
+
+function renderAllSteps() {
+    if (!currentPasuramRef) return;
+
+    // Step 1
+    const s1Grid = document.getElementById('step1Grid');
+    s1Grid.innerHTML = '';
+    (currentPasuramRef.step1 || []).forEach((interval, idx) => {
+        s1Grid.appendChild(createStep1Card(idx, interval));
+    });
+
+    // Step 2 & 3
+    ['step2', 'step3'].forEach(stepKey => {
+        const grid = document.getElementById(`${stepKey}Grid`);
+        grid.innerHTML = '';
+        (currentPasuramRef[stepKey] || []).forEach((interval, chunkIdx) => {
+            grid.appendChild(createChunkCard(stepKey, chunkIdx, interval));
+        });
+    });
+
+    // Step 4
+    const s4Grid = document.getElementById('step4Grid');
+    s4Grid.innerHTML = '';
+    if (currentPasuramRef.step4) {
+        const bounds = Array.isArray(currentPasuramRef.step4[0]) ? currentPasuramRef.step4[0] : currentPasuramRef.step4;
+        s4Grid.appendChild(createStep4Card(bounds));
+    }
+
+    // Single-line preview output
+    document.getElementById('jsonOutput').value = JSON.stringify(currentPasuramRef);
+}
+
+function createStep1Card(index, interval) {
+    const card = document.createElement('div');
+    card.className = 'segment-card';
+
+    const title = document.createElement('div');
+    title.style.fontSize = '12px';
+    title.style.fontWeight = 'bold';
+    title.style.color = 'var(--accent-s1)';
+    title.textContent = `Line ${index + 1}`;
+
+    const timeRow = document.createElement('div');
+    timeRow.className = 'time-inputs';
+
+    const startInput = document.createElement('input');
+    startInput.type = 'number';
+    startInput.step = '0.1';
+    startInput.value = interval[0];
+    startInput.onchange = (e) => {
+        currentPasuramRef.step1[index][0] = parseFloat(e.target.value);
+        renderAllSteps();
+    };
+
+    const endInput = document.createElement('input');
+    endInput.type = 'number';
+    endInput.step = '0.1';
+    endInput.value = interval[1];
+    endInput.onchange = (e) => {
+        currentPasuramRef.step1[index][1] = parseFloat(e.target.value);
+        renderAllSteps();
+    };
+
+    timeRow.appendChild(startInput);
+    timeRow.appendChild(document.createTextNode('s to '));
+    timeRow.appendChild(endInput);
+    timeRow.appendChild(document.createTextNode('s'));
+
+    const textVal = step1TextSegments[index] ? step1TextSegments[index] + ' *' : '';
+    const txtArea = document.createElement('textarea');
+    txtArea.className = 'segment-text';
+    txtArea.value = textVal;
+    txtArea.onchange = (e) => { 
+        step1TextSegments[index] = e.target.value.replace('*', '').trim();
+        renderAllSteps();
+    };
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-sm btn-delete';
+    delBtn.textContent = 'Remove Line';
+    delBtn.onclick = () => {
+        currentPasuramRef.step1.splice(index, 1);
+        step1TextSegments.splice(index, 1);
+        renderAllSteps();
+    };
+
+    card.appendChild(title);
+    card.appendChild(timeRow);
+    card.appendChild(txtArea);
+    card.appendChild(delBtn);
+    return card;
+}
+
+function createChunkCard(stepKey, chunkIdx, interval) {
+    const card = document.createElement('div');
+    card.className = 'segment-card';
+
+    const title = document.createElement('div');
+    title.style.fontSize = '12px';
+    title.style.fontWeight = 'bold';
+    title.style.color = `var(--accent-${stepKey})`;
+    title.textContent = `${stepKey.toUpperCase()} Chunk #${chunkIdx + 1}`;
+
+    const textPreview = document.createElement('div');
+    textPreview.className = 'chunk-text-preview';
+
+    let matchingLines = [];
+    (currentPasuramRef.step1 || []).forEach((s1Interval, s1Idx) => {
+        if (s1Interval[0] >= interval[0] && s1Interval[1] <= interval[1]) {
+            matchingLines.push(step1TextSegments[s1Idx] ? step1TextSegments[s1Idx] + ' *' : `[Line ${s1Idx + 1}]`);
+        }
+    });
+
+    textPreview.textContent = matchingLines.length > 0 ? matchingLines.join('\n') : '(No lines selected for this chunk)';
+
+    const timeRow = document.createElement('div');
+    timeRow.className = 'time-inputs';
+
+    const startInput = document.createElement('input');
+    startInput.type = 'number';
+    startInput.step = '0.1';
+    startInput.value = interval[0];
+    startInput.onchange = (e) => {
+        currentPasuramRef[stepKey][chunkIdx][0] = parseFloat(e.target.value);
+        renderAllSteps();
+    };
+
+    const endInput = document.createElement('input');
+    endInput.type = 'number';
+    endInput.step = '0.1';
+    endInput.value = interval[1];
+    endInput.onchange = (e) => {
+        currentPasuramRef[stepKey][chunkIdx][1] = parseFloat(e.target.value);
+        renderAllSteps();
+    };
+
+    timeRow.appendChild(startInput);
+    timeRow.appendChild(document.createTextNode('s to '));
+    timeRow.appendChild(endInput);
+    timeRow.appendChild(document.createTextNode('s'));
+
+    const selectorBox = document.createElement('div');
+    selectorBox.className = 'line-selector';
+
+    (currentPasuramRef.step1 || []).forEach((s1Interval, s1Idx) => {
+        const lbl = document.createElement('label');
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        
+        const isIncluded = (s1Interval[0] >= interval[0] && s1Interval[1] <= interval[1]);
+        chk.checked = isIncluded;
+        chk.onchange = () => toggleLineInChunk(stepKey, chunkIdx);
+
+        const lineTxt = step1TextSegments[s1Idx] || `Line ${s1Idx + 1}`;
+        lbl.appendChild(chk);
+        lbl.appendChild(document.createTextNode(` L${s1Idx + 1}: ${lineTxt}`));
+        selectorBox.appendChild(lbl);
+    });
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-sm btn-delete';
+    delBtn.textContent = 'Delete Chunk';
+    delBtn.onclick = () => {
+        currentPasuramRef[stepKey].splice(chunkIdx, 1);
+        renderAllSteps();
+    };
+
+    card.appendChild(title);
+    card.appendChild(textPreview);
+    card.appendChild(timeRow);
+    card.appendChild(selectorBox);
+    card.appendChild(delBtn);
+    return card;
+}
+
+function createStep4Card(bounds) {
+    const card = document.createElement('div');
+    card.className = 'segment-card';
+
+    const title = document.createElement('div');
+    title.style.fontSize = '12px';
+    title.style.fontWeight = 'bold';
+    title.style.color = 'var(--accent-s4)';
+    title.textContent = 'Overall Pasuram Duration';
+
+    const timeRow = document.createElement('div');
+    timeRow.className = 'time-inputs';
+
+    const startInput = document.createElement('input');
+    startInput.type = 'number';
+    startInput.step = '0.1';
+    startInput.value = bounds[0];
+    startInput.onchange = (e) => {
+        if (Array.isArray(currentPasuramRef.step4[0])) {
+            currentPasuramRef.step4[0][0] = parseFloat(e.target.value);
+        } else {
+            currentPasuramRef.step4[0] = parseFloat(e.target.value);
+        }
+        renderAllSteps();
+    };
+
+    const endInput = document.createElement('input');
+    endInput.type = 'number';
+    endInput.step = '0.1';
+    endInput.value = bounds[1];
+    endInput.onchange = (e) => {
+        if (Array.isArray(currentPasuramRef.step4[0])) {
+            currentPasuramRef.step4[0][1] = parseFloat(e.target.value);
+        } else {
+            currentPasuramRef.step4[1] = parseFloat(e.target.value);
+        }
+        renderAllSteps();
+    };
+
+    timeRow.appendChild(startInput);
+    timeRow.appendChild(document.createTextNode('s to '));
+    timeRow.appendChild(endInput);
+    timeRow.appendChild(document.createTextNode('s'));
+
+    card.appendChild(title);
+    card.appendChild(timeRow);
+    return card;
+}
+
+function toggleLineInChunk(stepKey, chunkIdx) {
+    const chunkGrid = document.getElementById(`${stepKey}Grid`);
+    const card = chunkGrid.children[chunkIdx];
+    const checkboxes = card.querySelectorAll('input[type="checkbox"]');
+
+    let selectedS1Indices = [];
+    checkboxes.forEach((chk, idx) => {
+        if (chk.checked) selectedS1Indices.push(idx);
+    });
+
+    if (selectedS1Indices.length > 0) {
+        const firstS1 = currentPasuramRef.step1[selectedS1Indices[0]];
+        const lastS1 = currentPasuramRef.step1[selectedS1Indices[selectedS1Indices.length - 1]];
+        currentPasuramRef[stepKey][chunkIdx] = [firstS1[0], lastS1[1]];
+    }
+
+    renderAllSteps();
+}
+
+function addSegment(stepKey) {
+    if (!currentPasuramRef[stepKey]) currentPasuramRef[stepKey] = [];
+    currentPasuramRef[stepKey].push([0.0, 5.0]);
+    step1TextSegments.push("");
+    renderAllSteps();
+}
+
+function addChunk(stepKey) {
+    if (!currentPasuramRef[stepKey]) currentPasuramRef[stepKey] = [];
+    const step1List = currentPasuramRef.step1 || [];
+    
+    let startVal = 0;
+    let endVal = 10;
+
+    if (step1List.length > 0) {
+        startVal = step1List[0][0];
+        endVal = step1List[step1List.length - 1][1];
+    }
+
+    currentPasuramRef[stepKey].push([startVal, endVal]);
+    renderAllSteps();
+}
+
+// Single-line database JS exporter
+function exportFullDatabase() {
+    const fullDbStr = `window.MARKER_DATABASE = window.MARKER_DATABASE || {}; window.MARKER_DATABASE['${loadedDbKey}'] = [${JSON.stringify(currentPasuramRef)}];`;
+
+    const blob = new Blob([fullDbStr], { type: 'application/javascript' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `marker_${loadedDbKey}_updated.js`;
+    a.click();
+}
+</script>
+</body>
+</html>
