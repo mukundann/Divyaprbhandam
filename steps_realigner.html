@@ -240,8 +240,8 @@
     <!-- Input Form -->
     <div class="card">
         <div class="form-group">
-            <label>1. Verse Reference Notation (e.g. TPV 1.23, PAT 4.2.8, or RN 11):</label>
-            <input type="text" id="verseNotationInput" placeholder="e.g. TPV 1.23, PAT 4.2.8, RN 11, or RN_11_20" style="width: 100%; box-sizing: border-box;" oninput="autoFillCompanionPaths(this.value)">
+            <label>1. Verse Reference Notation (e.g. TPV 1.23, PAT 4.2.8, pat.4.2.8, or RN 11):</label>
+            <input type="text" id="verseNotationInput" placeholder="e.g. TPV 1.23, PAT 4.2.8, pat.4.2.8, RN 11, or RN_11_20" style="width: 100%; box-sizing: border-box;" oninput="autoFillCompanionPaths(this.value)">
         </div>
 
         <div class="form-group">
@@ -345,18 +345,18 @@ function detectLangFromFilename(filename) {
 }
 
 /**
- * Enhanced Notation Parser:
- *   - "PAT 4.2.8" -> { book: 'PAT', chapter: 4, subChapter: 2, pasuram: 8, type: 'subchapter' }
- *   - "TPV 1.23" or "TPV_1.23" -> { book: 'TPV', chapter: 1, subChapter: null, pasuram: 23, type: 'chapter_pasuram' }
- *   - "RN 11 20" or "RN_11_20" -> { book: 'RN', startRange: 11, endRange: 20, type: 'grouped' }
- *   - "AAP 1" or "AAP_1" -> { book: 'AAP', chapter: 1, pasuram: 1, type: 'simple' }
+ * Enhanced Notation Parser with dot, space, and underscore separator support:
+ *   - "PAT 4.2.8", "PAT_4.2.8", or "pat.4.2.8" -> { book: 'PAT', chapter: 4, subChapter: 2, pasuram: 8, type: 'subchapter' }
+ *   - "TPV 1.23", "TPV_1.23", or "tpv.1.23" -> { book: 'TPV', chapter: 1, subChapter: null, pasuram: 23, type: 'chapter_pasuram' }
+ *   - "RN 11 20", "RN_11_20", or "rn.11.20" -> { book: 'RN', startRange: 11, endRange: 20, type: 'grouped' }
+ *   - "AAP 1", "AAP_1", or "aap.1" -> { book: 'AAP', chapter: 1, pasuram: 1, type: 'simple' }
  */
 function parseVerseNotation(inputStr) {
     if (!inputStr) return null;
-    const clean = inputStr.trim().replace(/\.[^.]+$/, '');
+    const clean = inputStr.trim().replace(/\.(js|json|html|txt)$/i, '');
 
-    // 3-tier sub-chapter notation: PAT 4.2.8 or PAT_4.2.8
-    const subMatch = clean.match(/^([A-Za-z0-9]+)[\s_]+(\d+)\.(\d+)\.(\d+)$/);
+    // 3-tier sub-chapter notation: PAT 4.2.8, PAT_4.2.8, or pat.4.2.8
+    const subMatch = clean.match(/^([A-Za-z0-9]+)[\s_.]+(\d+)\.(\d+)\.(\d+)$/);
     if (subMatch) {
         return { 
             book: subMatch[1], 
@@ -367,8 +367,8 @@ function parseVerseNotation(inputStr) {
         };
     }
 
-    // 2-tier chapter + pasuram notation: TPV 1.23 or TPV_1.23
-    const chapPasuramMatch = clean.match(/^([A-Za-z0-9]+)[\s_]+(\d+)\.(\d+)$/);
+    // 2-tier chapter + pasuram notation: TPV 1.23, TPV_1.23, or tpv.1.23
+    const chapPasuramMatch = clean.match(/^([A-Za-z0-9]+)[\s_.]+(\d+)\.(\d+)$/);
     if (chapPasuramMatch) {
         return { 
             book: chapPasuramMatch[1], 
@@ -379,8 +379,8 @@ function parseVerseNotation(inputStr) {
         };
     }
 
-    // Grouped range: BOOK 11 20 or BOOK_11_20
-    const groupMatch = clean.match(/^([A-Za-z0-9]+)[\s_]+(\d+)[\s_]+(\d+)$/);
+    // Grouped range: BOOK 11 20, BOOK_11_20, or book.11.20
+    const groupMatch = clean.match(/^([A-Za-z0-9]+)[\s_.]+(\d+)[\s_.]+(\d+)$/);
     if (groupMatch) {
         return { 
             book: groupMatch[1], 
@@ -392,8 +392,8 @@ function parseVerseNotation(inputStr) {
         };
     }
 
-    // Simple single chapter or single index: BOOK 1 or BOOK_1
-    const simpleMatch = clean.match(/^([A-Za-z0-9]+)[\s_]+(\d+)$/);
+    // Simple single chapter or single index: BOOK 1, BOOK_1, or book.1
+    const simpleMatch = clean.match(/^([A-Za-z0-9]+)[\s_.]+(\d+)$/);
     if (simpleMatch) {
         return { 
             book: simpleMatch[1], 
