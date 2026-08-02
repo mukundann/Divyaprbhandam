@@ -17,8 +17,8 @@ window.mergeLanguageTexts = function () {
         },
         'PAT.4.2.steps': {
             1:"🙏 alambA veruTTA * konRu tiriyum arakkarai * kulam pAzh paDuttu * kula viLakkAy ninRakOn malai * silampArkka vandu * deyvamagaLirkaL ADumseer * silambARu pAyum * ten tirumAlirunchOlaiyE.",
-            2:" vallALan tOLum * vALarakkan muDiyum * taNGgai-pollAda mookkum * pOkkuvittAn porundum malai * ellAviDattilum eNGgum parandu * pallANDoli-sellA niRkum seer * ten tirumAlirunchOlaiyE.",
-            3:" takkAr mikkArhaLai * chanchalam seyyum salavarai * tekkA neRiyE pOkkuvikkum * selvan ponmalai * ekkAlamum senRu * sEvittirukkum aDiyarai * akkAneRiyai mARRum * taN mAlirunchOlaiyE.",
+            2:" vallALan tOLum * vALarakkan muDiyum * taNGgai-pollAda mookkum * pOkkuvittAn porundum malai * ellAviDattilum * eNGgum parandu * pallANDoli-sellA niRkum seer * ten tirumAlirunchOlaiyE.",
+            3:" takkAr mikkArhaLai * chanchalam seyyum salavarai * tekkA neRiyE pOkkuvikkum * selvan ponmalai * ekkAlamum senRu * sEvittirukkum aDiyarai * akkAneRiyai mARRum * taN tirumAlirunchOlaiyE.",
             4:" AnAyar kooDi * amaitta vizhavai * amarartam-kOnArkku ozhiya * gOvarttanattu seydAn malai * vAnATTil ninRu * mAmalar kaRpaga tottizhi * tEnARu pAyum * ten tirumAlirunchOlaiyE.",
             5:" oru vAraNam paNi koNDavan * poyhaiyil * kanchantan-oru vAraNam uyir uNDavan * senRuRaiyum malai * karu vAraNam * tan piDi tuRandODa * kaDal vaNNan-tiruvANai kooRattiriyum * taN mAlirunchOlaiyE.",
             6:" EviRRuch cheyvAn * EnRedirndu vanda mallarai * sAvattagartta * sAndaNitOL saduran malai * Avattanam enRu * amararhaLum nan munivarum * sEvittirukkum * ten tirumAlirunchOlaiyE.",
