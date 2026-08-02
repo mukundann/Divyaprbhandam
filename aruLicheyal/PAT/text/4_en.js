@@ -4,16 +4,16 @@ window.MARKER_DATABASE = window.MARKER_DATABASE || {};
 window.mergeLanguageTexts = function () {
     const text_bundle_en = {
         'PAT.4.1.steps': {
-            1:"🙏 kadirAyiramiravi * kalanderittAlotta neeLmuDiyan * ediril perumaiirAmanai * irukkumiDam nADudirEl * adirum kazhaRporutOL * iraNiyanagam piLandu * ariyAy-udiram aLainda kaiyODu irundAnai * uLLavA kaNDAruLar.",
-            2:" nAndakam shanku taNDu * nANoli shArngam tiruch chakkaram * Endu perumai irAmanai * irukkumiDam nADudirEl * kAndaL mugizh viral seedaikkagi * kaDunchilai senRiRukka * vEndartalaivan janakarAsantan * vELviyil kaNDAruLar.",
-            3:" kolaiyAnai kombu paRittuk * kooDalar sEnai porudazhiya * silaiyAl marAmaram eyda dEvanai * chikkena nADudirEl * talaiyAl kurakkinam tAngichchenRu * taDavarai koNDaDaippa * alaiyArkaDaRkarai veeRRirundAnai * anguttai kaNDAruLar.",
-            4:" tOyam paranda naDuvu soozhalil * tollai vaDivu koNDa * mAya kuzhaviyadanai nADuRil * vammin suvaDuraikkEn * Ayar maDamagaL pinnaikkAki * aDalviDai Ezhinaiyum * veeyapporudu viyarttu ninRAnai * meymmaiyE kaNDAruLar.",
-            5:" neerERu senchaDai neela kaNDanum * nAnmuganum muRaiyAl * seerERu vAsakam seyya ninRa * tirumAlai nADutirEl * vArERu kongai uruppiNiyai * valiyap piDittuk koNDu-tErERRi * sEnai naDuvu pOrseyya * chikkenak kaNDAruLar.",
-            6:" pollA vaDivuDaip pEychchi tuNYcha * puNar mulai vAymaDukka-vallAnai * mAmaNi vaNNanai * maruvumiDam nADudirEl * pallAyiram perundEvimAroDu * powvam ERituvarai * ellArum soozha singAsanattE * irundAnaik kaNDAruLar.",
-            7:" veLLai viLi shaNGku veNYchuDar tiruch chakkaram * Endu kaiyan * uLLa iDam vinavil * umakku iRai vammin suvaDuraikkEn * veLLaip puravik kurakku velkoDi * tErmisai munbu ninRu * kaLLappaDait tuNaiyagi * bAradam kai seyyak kaNDAruLar.",
-            8:" nAzhihai kooRiTTuk kAttu ninRa * arasarkaL tammugappE * nAzhikai pOhap paDai porudavan * dEvagi tan siRuvan * Azhi koNDu anRu iravi maRaippa * jayattiradan talaiyai * pAzhil uruLap paDai porudavan * pakkamE kaNDAruLar.",
-            9:" maNNum malaiyum maRi kaDalhaLum * maRRum yAvum ellAm * tiNNam vizhungi umizhnda dEvanai * chikkena nADudirEl * eNNaRkariyatOr Enamagi * irunilambuk kiDandu * vaNNak karuNGkuzhal mAdarODu * maNandAnaik kaNDAruLar.",
-            10:"🙏 kariya mugil purai mEni mAyanai * kaNDa suvaDuraittu * puravi mugam seydu sennelOngi * viLai kazhanip puduvai * tiruviR polimaRai vANan * paTTarpirAn sonna mAlai pattum * paravu manamuDaip pattaruLLAr * paraman aDi sErvargaLE.",
+            1:"🙏 kadirAyiramiravi * kalanderittAlotta neeLmuDiyan * ediril perumaiirAmanai * irukkumiDam nADudirEl *** adirum kazhaRporutOL * iraNiyanagam piLandu * ariyAy-udiram aLainda kaiyODu irundAnai * uLLavA kaNDAruLar.",
+            2:" nAndakam shanku taNDu * nANoli shArngam tiruch chakkaram * Endu perumai irAmanai * irukkumiDam nADudirEl *** kAndaL mugizh viral seedaikkagi * kaDunchilai senRiRukka * vEndartalaivan janakarAsantan * vELviyil kaNDAruLar.",
+            3:" kolaiyAnai kombu paRittuk * kooDalar sEnai porudazhiya * silaiyAl marAmaram eyda dEvanai * chikkena nADudirEl *** talaiyAl kurakkinam tAngichchenRu * taDavarai koNDaDaippa * alaiyArkaDaRkarai veeRRirundAnai * anguttai kaNDAruLar.",
+            4:" tOyam paranda naDuvu soozhalil * tollai vaDivu koNDa * mAya kuzhaviyadanai nADuRil * vammin suvaDuraikkEn *** Ayar maDamagaL pinnaikkAki * aDalviDai Ezhinaiyum * veeyapporudu viyarttu ninRAnai * meymmaiyE kaNDAruLar.",
+            5:" neerERu senchaDai neela kaNDanum * nAnmuganum muRaiyAl * seerERu vAsakam seyya ninRa * tirumAlai nADutirEl *** vArERu kongai uruppiNiyai * valiyap piDittuk koNDu-tErERRi * sEnai naDuvu pOrseyya * chikkenak kaNDAruLar.",
+            6:" pollA vaDivuDaip pEychchi tuNYcha * puNar mulai vAymaDukka-vallAnai * mAmaNi vaNNanai * maruvumiDam nADudirEl *** pallAyiram perundEvimAroDu * powvam ERituvarai * ellArum soozha singAsanattE * irundAnaik kaNDAruLar.",
+            7:" veLLai viLi shaNGku veNYchuDar tiruch chakkaram * Endu kaiyan * uLLa iDam vinavil * umakku iRai vammin suvaDuraikkEn *** veLLaip puravik kurakku velkoDi * tErmisai munbu ninRu * kaLLappaDait tuNaiyagi * bAradam kai seyyak kaNDAruLar.",
+            8:" nAzhihai kooRiTTuk kAttu ninRa * arasarkaL tammugappE * nAzhikai pOhap paDai porudavan * dEvagi tan siRuvan *** Azhi koNDu anRu iravi maRaippa * jayattiradan talaiyai * pAzhil uruLap paDai porudavan * pakkamE kaNDAruLar.",
+            9:" maNNum malaiyum maRi kaDalhaLum * maRRum yAvum ellAm * tiNNam vizhungi umizhnda dEvanai * chikkena nADudirEl *** eNNaRkariyatOr Enamagi * irunilambuk kiDandu * vaNNak karuNGkuzhal mAdarODu * maNandAnaik kaNDAruLar.",
+            10:"🙏 kariya mugil purai mEni mAyanai * kaNDa suvaDuraittu * puravi mugam seydu sennelOngi * viLai kazhanip puduvai *** tiruviR polimaRai vANan * paTTarpirAn sonna mAlai pattum * paravu manamuDaip pattaruLLAr * paraman aDi sErvargaLE.",
         },
         'PAT.4.2.steps': {
             1:"🙏 alambA veruTTA * konRu tiriyum arakkarai * kulam pAzh paDuttu * kula viLakkAy ninRakOn malai * silampArkka vandu * deyvamagaLirkaL ADumseer * silambARu pAyum * ten tirumAlirunchOlaiyE.",
