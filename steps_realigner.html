@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pasuram Marker & Text Segment Re-aligner (Manual Mode)</title>
+    <title>Pasuram Marker & Text Segment Re-aligner (`langcode = 'ta'`)</title>
     <style>
         :root {
             --bg: #0f172a;
@@ -40,29 +40,19 @@
             padding: 20px;
         }
 
-        .dropdown-row {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: flex-end;
-            margin-bottom: 15px;
+        .form-group {
+            margin-bottom: 14px;
         }
 
-        .dropdown-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            flex: 1;
-            min-width: 150px;
-        }
-
-        .dropdown-group label {
+        .form-group label {
             font-size: 12px;
             color: #94a3b8;
             font-weight: bold;
+            margin-bottom: 6px;
+            display: block;
         }
 
-        select, button, textarea, input[type="number"] {
+        select, button, textarea, input[type="number"], input[type="text"] {
             background: #0f172a;
             color: var(--text);
             border: 1px solid var(--border);
@@ -231,50 +221,55 @@
         }
 
         #statusMessage {
-            font-size: 12px;
-            color: #ef4444;
+            font-size: 13px;
             margin-top: 8px;
             white-space: pre-line;
         }
+        .status-error { color: #ef4444; }
+        .status-info { color: #38bdf8; }
+        .status-success { color: #10b981; }
     </style>
+    <!-- Config script -->
+    <script src="config.js" onerror="console.warn('config.js script not available at root path.')"></script>
 </head>
 <body>
 
 <div class="container">
-    <h2>Pasuram Marker & Text Segment Re-aligner (Manual Mode)</h2>
+    <h2>Pasuram Marker & Text Segment Re-aligner</h2>
 
-    <!-- Manual Input Form -->
+    <!-- Input Form -->
     <div class="card">
-        <div class="dropdown-row">
-            <div class="dropdown-group">
-                <label for="bookSelect">Prabhandam Key</label>
-                <input type="text" id="bookSelect" value="PAT" style="text-transform: uppercase;">
-            </div>
-
-            <div class="dropdown-group">
-                <label for="chapterInput">Chapter</label>
-                <input type="number" id="chapterInput" value="4">
-            </div>
-
-            <div class="dropdown-group">
-                <label for="subChapterInput">Sub-Chapter (Optional)</label>
-                <input type="number" id="subChapterInput" value="2">
-            </div>
-
-            <div class="dropdown-group">
-                <label for="pasuramInput">Pasuram No.</label>
-                <input type="number" id="pasuramInput" value="8">
-            </div>
+        <div class="form-group">
+            <label>1. Verse Reference Notation (e.g. TPV 1.23, PAT 4.2.8, or RN 11):</label>
+            <input type="text" id="verseNotationInput" placeholder="e.g. TPV 1.23, PAT 4.2.8, RN 11, or RN_11_20" style="width: 100%; box-sizing: border-box;" oninput="autoFillCompanionPaths(this.value)">
         </div>
 
-        <label class="input-label">1. Paste Pasuram Full Text (Separated by *):</label>
-        <textarea id="textDisplay" class="pasuram-text-box" rows="3" placeholder="Paste Tamil text here separated with *"></textarea>
+        <div class="form-group">
+            <label>2. Text Companion Script File <span style="font-weight:normal; color:#94a3b8;">(auto-filled)</span></label>
+            <input type="file" accept=".js" onchange="injectLocalScriptAsset(this)" style="margin-bottom:6px; display:block; font-size:12px;">
+            <input type="text" id="textUrlInput" placeholder="Auto-filled from verse reference or paste path..." style="width: 100%; box-sizing: border-box;">
+        </div>
 
-        <label class="input-label">2. Paste Step Data (Single Pasuram Object or Full Array):</label>
-        <textarea id="stepsInput" class="pasuram-text-box" rows="4" placeholder='Paste JSON object or array, e.g.: {"p": 8, "step1": [...], "step2": [...], "step3": [...], "step4": [...]}'></textarea>
+        <div class="form-group">
+            <label>3. Timeline File <span style="font-weight:normal; color:#94a3b8;">(auto-filled)</span></label>
+            <input type="file" accept=".js" onchange="injectLocalScriptAsset(this)" style="margin-bottom:6px; display:block; font-size:12px;">
+            <input type="text" id="stepsUrlInput" placeholder="Auto-filled from verse reference or paste path..." style="width: 100%; box-sizing: border-box;">
+        </div>
 
-        <button onclick="processManualData()" class="action-btn" style="margin-top: 15px; width: 100%;">Load & Parse Data</button>
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button class="action-btn" style="flex: 1;" onclick="triggerUnifiedNetworkPipelineFetch()">⚡ Fetch & Load Files</button>
+            <button onclick="processManualData()" style="flex: 1;">📄 Parse Manual Input</button>
+        </div>
+
+        <div id="pipelineKeySelectorContainer" style="display:none; margin-top: 15px; padding: 12px; background:#064e3b; border:1px solid #10b981; border-radius:6px;"></div>
+
         <div id="statusMessage"></div>
+
+        <label class="input-label">1. Tamil Text Content (Separated by *):</label>
+        <textarea id="textDisplay" class="pasuram-text-box" rows="3" placeholder="Tamil text will auto-load here..."></textarea>
+
+        <label class="input-label">2. Step Data JSON:</label>
+        <textarea id="stepsInput" class="pasuram-text-box" rows="4" placeholder="Marker step JSON will auto-load here..."></textarea>
     </div>
 
     <!-- Marker & Segment Editor -->
@@ -328,34 +323,304 @@
 </div>
 
 <script>
+window.MARKER_DATABASE = window.MARKER_DATABASE || {};
+
 let currentPasuramRef = null;
 let step1TextSegments = [];
 let loadedDbKey = '';
+let currentVerseNotation = "";
+let currentTextLang = "ta";
 
-function processManualData() {
-    const statusMsg = document.getElementById('statusMessage');
-    statusMsg.textContent = '';
+function setStatus(msg, classType = 'status-info') {
+    const el = document.getElementById('statusMessage');
+    el.className = classType;
+    el.textContent = msg;
+}
 
-    const bookKey = document.getElementById('bookSelect').value.trim().toUpperCase() || 'BOOK';
-    const ch = document.getElementById('chapterInput').value.trim();
-    const sub = document.getElementById('subChapterInput').value.trim();
-    const pasuramNum = parseInt(document.getElementById('pasuramInput').value.trim()) || 1;
+// Extract language code from a text companion filename
+function detectLangFromFilename(filename) {
+    const base = filename.replace(/\.[^.]+$/, '');
+    const m = base.match(/_([a-z]{2})$/i);
+    return m ? m[1].toLowerCase() : 'ta';
+}
 
-    if (sub !== '') {
-        loadedDbKey = `${bookKey}.${ch}.${sub}.steps`;
-    } else {
-        loadedDbKey = `${bookKey}.${ch}.steps`;
+/**
+ * Enhanced Notation Parser:
+ *   - "PAT 4.2.8" -> { book: 'PAT', chapter: 4, subChapter: 2, pasuram: 8, type: 'subchapter' }
+ *   - "TPV 1.23" or "TPV_1.23" -> { book: 'TPV', chapter: 1, subChapter: null, pasuram: 23, type: 'chapter_pasuram' }
+ *   - "RN 11 20" or "RN_11_20" -> { book: 'RN', startRange: 11, endRange: 20, type: 'grouped' }
+ *   - "AAP 1" or "AAP_1" -> { book: 'AAP', chapter: 1, pasuram: 1, type: 'simple' }
+ */
+function parseVerseNotation(inputStr) {
+    if (!inputStr) return null;
+    const clean = inputStr.trim().replace(/\.[^.]+$/, '');
+
+    // 3-tier sub-chapter notation: PAT 4.2.8 or PAT_4.2.8
+    const subMatch = clean.match(/^([A-Za-z0-9]+)[\s_]+(\d+)\.(\d+)\.(\d+)$/);
+    if (subMatch) {
+        return { 
+            book: subMatch[1], 
+            chapter: parseInt(subMatch[2], 10), 
+            subChapter: parseInt(subMatch[3], 10), 
+            pasuram: parseInt(subMatch[4], 10),
+            type: 'subchapter' 
+        };
     }
 
-    // Process Text
+    // 2-tier chapter + pasuram notation: TPV 1.23 or TPV_1.23
+    const chapPasuramMatch = clean.match(/^([A-Za-z0-9]+)[\s_]+(\d+)\.(\d+)$/);
+    if (chapPasuramMatch) {
+        return { 
+            book: chapPasuramMatch[1], 
+            chapter: parseInt(chapPasuramMatch[2], 10), 
+            subChapter: null, 
+            pasuram: parseInt(chapPasuramMatch[3], 10),
+            type: 'chapter_pasuram' 
+        };
+    }
+
+    // Grouped range: BOOK 11 20 or BOOK_11_20
+    const groupMatch = clean.match(/^([A-Za-z0-9]+)[\s_]+(\d+)[\s_]+(\d+)$/);
+    if (groupMatch) {
+        return { 
+            book: groupMatch[1], 
+            chapter: null, 
+            subChapter: null, 
+            startRange: parseInt(groupMatch[2], 10), 
+            endRange: parseInt(groupMatch[3], 10), 
+            type: 'grouped' 
+        };
+    }
+
+    // Simple single chapter or single index: BOOK 1 or BOOK_1
+    const simpleMatch = clean.match(/^([A-Za-z0-9]+)[\s_]+(\d+)$/);
+    if (simpleMatch) {
+        return { 
+            book: simpleMatch[1], 
+            chapter: parseInt(simpleMatch[2], 10), 
+            subChapter: null, 
+            pasuram: parseInt(simpleMatch[2], 10), 
+            type: 'simple' 
+        };
+    }
+
+    return null;
+}
+
+function autoFillCompanionPaths(notationStr) {
+    if (!notationStr) return;
+    currentVerseNotation = notationStr.trim();
+
+    const parsed = parseVerseNotation(currentVerseNotation);
+    if (!parsed) return;
+
+    const { book, chapter, type } = parsed;
+    const bLow = book.toLowerCase();
+    const root = 'aruLicheyal';
+
+    let textPath, timelinePath;
+
+    if (type === 'subchapter') {
+        textPath     = `${root}/${book}/text/${chapter}_ta.js`;
+        timelinePath = `${root}/${book}/markers/timelines_${chapter}.js`;
+    } else {
+        textPath     = `${root}/${book}/text/marker_${bLow}_ta.js`;
+        timelinePath = `${root}/${book}/markers/marker_${bLow}_timelines.js`;
+    }
+
+    const textEl  = document.getElementById('textUrlInput');
+    const stepsEl = document.getElementById('stepsUrlInput');
+
+    if (textEl)  textEl.value  = textPath;
+    if (stepsEl) stepsEl.value = timelinePath;
+}
+
+function pickBestMarkerKey(keys, notationStr) {
+    if (!notationStr) return keys.length === 1 ? keys[0] : null;
+
+    const parsed = parseVerseNotation(notationStr);
+    if (!parsed) return keys.length === 1 ? keys[0] : null;
+
+    const { book, chapter, subChapter, type } = parsed;
+    const bLow = book.toLowerCase();
+
+    if (type === 'subchapter' && chapter !== null) {
+        const fullPrefix = `${bLow}.${chapter}.${subChapter}`;
+        let matching = keys.filter(k => k.toLowerCase().includes(fullPrefix));
+        if (matching.length >= 1) return matching[0];
+    }
+
+    if ((type === 'chapter_pasuram' || type === 'simple') && chapter !== null) {
+        const prefix = `${bLow}.${chapter}.`;
+        let matching = keys.filter(k => k.toLowerCase().includes(prefix));
+        if (matching.length >= 1) return matching[0];
+
+        const directPrefix = `${bLow}.${chapter}`;
+        matching = keys.filter(k => k.toLowerCase().startsWith(directPrefix));
+        if (matching.length >= 1) return matching[0];
+    }
+
+    const matching = keys.filter(k => k.toLowerCase().includes(bLow));
+    if (matching.length === 1) return matching[0];
+    if (keys.length === 1) return keys[0];
+    return null;
+}
+
+function renderPipelineSelectorDropdownPanel(keys, selectedKey = null) {
+    const container = document.getElementById('pipelineKeySelectorContainer');
+    container.innerHTML = `
+        <label style="color:#10b981; font-size:13px; font-weight:bold; display:block; margin-bottom:5px;">
+            🎯 Select Marker Key
+        </label>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <select id="selectedPipelineTargetNamespace" style="flex:1; padding:6px; font-size:12px; height:32px;">
+                ${keys.map(k => `<option value="${k}" ${k === selectedKey ? 'selected' : ''}>${k}</option>`).join('')}
+            </select>
+            <button class="action-btn" style="padding:6px 14px;" onclick="buildActiveWorkspaceCanvasTimeline()">Load</button>
+        </div>
+    `;
+    container.style.display = 'block';
+}
+
+function injectLocalScriptAsset(input) {
+    if (!input || !input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    const lang = detectLangFromFilename(file.name);
+    if (lang) currentTextLang = lang;
+    const scriptUrl = URL.createObjectURL(file);
+    appendScriptNodeToDOM(scriptUrl, () => {
+        if (typeof window.mergeLanguageTexts === 'function') {
+            window.mergeLanguageTexts();
+        }
+        evaluateIncomingPipelineAssets();
+    });
+}
+
+function appendScriptNodeToDOM(srcUrl, callback) {
+    const script = document.createElement('script');
+    script.src = srcUrl;
+    script.async = false;
+    script.onload = () => { if (callback) callback(); };
+    script.onerror = () => setStatus("Error loading script resource: " + srcUrl, "status-error");
+    document.head.appendChild(script);
+}
+
+async function triggerUnifiedNetworkPipelineFetch() {
+    const notation = document.getElementById('verseNotationInput').value.trim();
+    const textUrl = document.getElementById('textUrlInput').value.trim();
+    const stepsUrl = document.getElementById('stepsUrlInput').value.trim();
+
+    if (notation) autoFillCompanionPaths(notation);
+
+    const parseCleanUrl = (u) => u.includes('github.com') && u.includes('/blob/') ? u.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/') : u;
+
+    let tracksLoaded = 0;
+    const targets = [textUrl, stepsUrl].filter(Boolean);
+
+    if (targets.length === 0) {
+        setStatus("Please specify file links or select local script files.", "status-error");
+        return;
+    }
+
+    const checkSyncStatus = () => {
+        tracksLoaded++;
+        if (tracksLoaded >= targets.length) {
+            if (typeof window.mergeLanguageTexts === 'function') window.mergeLanguageTexts();
+            evaluateIncomingPipelineAssets();
+        }
+    };
+
+    if (textUrl) {
+        currentTextLang = detectLangFromFilename(textUrl.split('/').pop());
+        appendScriptNodeToDOM(parseCleanUrl(textUrl), checkSyncStatus);
+    }
+    if (stepsUrl) {
+        appendScriptNodeToDOM(parseCleanUrl(stepsUrl), checkSyncStatus);
+    }
+}
+
+function evaluateIncomingPipelineAssets() {
+    const targetKeys = Object.keys(window.MARKER_DATABASE || {});
+    if (targetKeys.length === 0) {
+        setStatus("No valid MARKER_DATABASE structures loaded.", "status-error");
+        return;
+    }
+
+    const bestKey = pickBestMarkerKey(targetKeys, currentVerseNotation);
+
+    if (bestKey) {
+        renderPipelineSelectorDropdownPanel(targetKeys, bestKey);
+        buildActiveWorkspaceCanvasTimeline(bestKey);
+    } else {
+        renderPipelineSelectorDropdownPanel(targetKeys);
+        setStatus("Multiple marker targets found. Please choose from dropdown above.", "status-info");
+    }
+}
+
+function buildActiveWorkspaceCanvasTimeline(overrideKey = null) {
+    const sel = document.getElementById('selectedPipelineTargetNamespace');
+    const targetNamespaceKey = overrideKey || (sel ? sel.value : null);
+    if (!targetNamespaceKey) return;
+
+    loadedDbKey = targetNamespaceKey;
+
+    const parsedVerse = parseVerseNotation(currentVerseNotation);
+    const lang = currentTextLang || 'ta';
+    const bundleKey = `text_bundle_${lang}`;
+
+    let textSourceMap = {};
+    if (window[bundleKey] && window[bundleKey][targetNamespaceKey]) {
+        textSourceMap = window[bundleKey][targetNamespaceKey];
+    } else if (window.MARKER_DATABASE[targetNamespaceKey] && window.MARKER_DATABASE[targetNamespaceKey]._textSourceMap) {
+        textSourceMap = window.MARKER_DATABASE[targetNamespaceKey]._textSourceMap;
+    } else if (Array.isArray(window.MARKER_DATABASE[targetNamespaceKey])) {
+        window.MARKER_DATABASE[targetNamespaceKey].forEach(block => {
+            if (block && block.p && block.text) {
+                const txt = typeof block.text === 'string' ? block.text : (block.text[lang] || '');
+                if (txt) textSourceMap[block.p] = txt;
+            }
+        });
+    }
+
+    const allSteps = window.MARKER_DATABASE[targetNamespaceKey] || [];
+
+    // Exact Pasuram matching logic
+    let stepsSourceTimelineArray = allSteps;
+    if (parsedVerse) {
+        if (parsedVerse.pasuram !== null && parsedVerse.pasuram !== undefined) {
+            stepsSourceTimelineArray = allSteps.filter(b => b.p === parsedVerse.pasuram);
+        } else if (parsedVerse.type === 'grouped' && parsedVerse.startRange && parsedVerse.endRange) {
+            stepsSourceTimelineArray = allSteps.filter(b => b.p >= parsedVerse.startRange && b.p <= parsedVerse.endRange);
+        }
+    }
+
+    if (stepsSourceTimelineArray.length > 0) {
+        currentPasuramRef = stepsSourceTimelineArray[0];
+        document.getElementById('stepsInput').value = JSON.stringify(currentPasuramRef, null, 2);
+
+        const pIndex = currentPasuramRef.p;
+        const inlineText = currentPasuramRef.text
+            ? (typeof currentPasuramRef.text === 'string' ? currentPasuramRef.text : (currentPasuramRef.text[lang] || ''))
+            : '';
+
+        const matchingRawTextLineString = inlineText || textSourceMap[pIndex] || "";
+        document.getElementById('textDisplay').value = matchingRawTextLineString;
+
+        setStatus(`Loaded target namespace '${targetNamespaceKey}' (Pasuram ${pIndex})`, "status-success");
+        processManualData();
+    } else {
+        const targetP = parsedVerse && parsedVerse.pasuram ? parsedVerse.pasuram : 'N/A';
+        setStatus(`No timing record found for Pasuram ${targetP} in namespace '${targetNamespaceKey}'`, "status-error");
+    }
+}
+
+function processManualData() {
     const rawText = document.getElementById('textDisplay').value;
     step1TextSegments = rawText.split('*').map(s => s.trim()).filter(s => s.length > 0);
 
-    // Process Steps JSON
     const stepsRaw = document.getElementById('stepsInput').value.trim();
-
     if (!stepsRaw) {
-        statusMsg.textContent = 'Please paste the steps JSON object or array.';
+        setStatus('Please provide or load step JSON data.', 'status-error');
         return;
     }
 
@@ -363,14 +628,13 @@ function processManualData() {
         let parsed = JSON.parse(stepsRaw);
         
         if (Array.isArray(parsed)) {
-            // Find target pasuram inside array
-            currentPasuramRef = parsed.find(item => item.p === pasuramNum) || parsed[0];
+            currentPasuramRef = parsed[0];
         } else if (typeof parsed === 'object') {
             currentPasuramRef = parsed;
         }
 
         if (!currentPasuramRef) {
-            throw new Error("Could not extract valid step data for pasuram " + pasuramNum);
+            throw new Error("Could not extract valid step structure.");
         }
 
         renderAllSteps();
@@ -378,7 +642,7 @@ function processManualData() {
         document.getElementById('exportCard').style.display = 'block';
 
     } catch (err) {
-        statusMsg.textContent = 'JSON Parsing Error: ' + err.message;
+        setStatus('JSON Parsing Error: ' + err.message, 'status-error');
     }
 }
 
@@ -409,7 +673,6 @@ function renderAllSteps() {
         s4Grid.appendChild(createStep4Card(bounds));
     }
 
-    // Single-line preview output
     document.getElementById('jsonOutput').value = JSON.stringify(currentPasuramRef);
 }
 
@@ -647,7 +910,6 @@ function addChunk(stepKey) {
     renderAllSteps();
 }
 
-// Single-line database JS exporter
 function exportFullDatabase() {
     const fullDbStr = `window.MARKER_DATABASE = window.MARKER_DATABASE || {}; window.MARKER_DATABASE['${loadedDbKey}'] = [${JSON.stringify(currentPasuramRef)}];`;
 
