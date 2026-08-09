@@ -11,3 +11,6 @@ scripts/get_artifact_size.py
 __pycache__/
 *.py[cod]
 *$py.class
+content-status.json
+offline-manifest.json
+smoke-test-status.json
