@@ -2,6 +2,43 @@
     const TVM_KEY = 'TVM';
     let selectedPrabandhamForPlay = null;
 
+    // Helper Function 1: Check for Gibberish / Keyboard Mashing
+    function isGibberish(text) {
+        text = text.trim().toLowerCase();
+
+        // 1. Repeated single character (e.g., "aaaaa")
+        if (/(.)\1{3,}/.test(text)) return true;
+
+        // 2. Keyboard row patterns
+        const keyboardRows = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+        for (const row of keyboardRows) {
+            if (text.length >= 5 && row.includes(text)) return true;
+        }
+
+        // 3. Vowel-to-consonant ratio check (for Latin text)
+        const letters = (text.match(/[a-z]/g) || []).length;
+        const vowels = (text.match(/[aeiouy]/g) || []).length;
+        if (letters > 5) {
+            const vowelRatio = vowels / letters;
+            // Extremely low (<10%) or high (>90%) vowel ratios usually indicate gibberish
+            if (vowelRatio < 0.10 || vowelRatio > 0.90) return true;
+        }
+
+        return false;
+    }
+
+    // Helper Function 2: Validate Acharya Name Title
+    function isValidAcharyaName(input) {
+        const text = input.trim().toLowerCase();
+        
+        // Minimum length check
+        if (text.length < 5) return false;
+
+        // Must contain common Acharya honorifics/keywords
+        const requiredKeywords = ['sri', 'sree', 'shri', 'swami', 'swamy', 'acharya', 'acharyan'];
+        return requiredKeywords.some(keyword => text.includes(keyword));
+    }
+
     // Inject modal styles dynamically
     const style = document.createElement('style');
     style.textContent = `
@@ -98,7 +135,7 @@
             <p>Please enter your Thiruvadi Sambandam details to unlock recitation for Thiruvaaimozhi.</p>
             <form id="thiruvadiForm" onsubmit="return false;">
                 <label for="thiruvadiInput">Thiruvadi Sambandam Details</label>
-                <input type="text" id="thiruvadiInput" placeholder="Enter Acharyan / Details" required autocomplete="off" />
+                <input type="text" id="thiruvadiInput" placeholder="Enter Acharyan Thirunamam (e.g. Sri Ramanujar Swami)" required autocomplete="off" />
                 <div class="thiruvadi-actions">
                     <button type="button" class="thiruvadi-btn thiruvadi-btn-cancel" id="thiruvadiCancelBtn">Cancel</button>
                     <button type="submit" class="thiruvadi-btn thiruvadi-btn-submit" id="thiruvadiSubmitBtn">Submit & Play</button>
@@ -124,20 +161,35 @@
 
     cancelBtn.addEventListener('click', hideModal);
 
-    // Form submission action
+    // Form submission action with validation checks
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         const value = input.value.trim();
-        if (value.length > 0) {
-            if (selectedPrabandhamForPlay) {
-                sessionStorage.setItem('thiruvadi_verified_' + selectedPrabandhamForPlay, 'true');
-                sessionStorage.setItem('thiruvadi_info_' + selectedPrabandhamForPlay, value);
-            }
-            hideModal();
-            // Trigger playback on verification
-            if (typeof window.handlePlaybackToggle === 'function') {
-                window.handlePlaybackToggle();
-            }
+
+        // Check 1: Gibberish Validation
+        if (isGibberish(value)) {
+            alert('Please enter a valid Acharya Thirunamam.');
+            input.focus();
+            return;
+        }
+
+        // Check 2: Acharya Title Validation
+        if (!isValidAcharyaName(value)) {
+            alert('Please include "Sri" or "Swami" in the Acharya Thirunamam (e.g., "Sri Ramanujar Swami").');
+            input.focus();
+            return;
+        }
+
+        // Save & Proceed if valid
+        if (selectedPrabandhamForPlay) {
+            sessionStorage.setItem('thiruvadi_verified_' + selectedPrabandhamForPlay, 'true');
+            sessionStorage.setItem('thiruvadi_info_' + selectedPrabandhamForPlay, value);
+        }
+        hideModal();
+        
+        // Trigger playback on verification
+        if (typeof window.handlePlaybackToggle === 'function') {
+            window.handlePlaybackToggle();
         }
     });
 
