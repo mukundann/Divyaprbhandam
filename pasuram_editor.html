@@ -23,6 +23,11 @@
         .btn-primary:hover { background-color: #218838; }
         .btn-secondary { background-color: #007bff; color: white; }
         .btn-secondary:hover { background-color: #0069d9; }
+        .btn-nav { background-color: #6c757d; color: white; }
+        .btn-nav:hover { background-color: #5a6268; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .editor-header { display: flex; justify-content: space-between; align-items: center; }
         
         /* Tamil Keyboard Styling */
         .keyboard-container { background: #e9ecef; border: 1px solid #ccc; border-radius: 4px; padding: 10px; margin-top: 10px; }
@@ -53,7 +58,13 @@
     
     <div class="main-content">
         <div class="editor-container">
-            <label for="pasuramEditor"><strong id="currentEditingLabel">Select a Pasuram step to edit:</strong></label>
+            <div class="editor-header">
+                <label for="pasuramEditor"><strong id="currentEditingLabel">Select a Pasuram step to edit:</strong></label>
+                <div>
+                    <button class="btn btn-nav" id="prevBtn" onclick="navigate(-1)" disabled>Previous</button>
+                    <button class="btn btn-nav" id="nextBtn" onclick="navigate(1)" disabled>Next</button>
+                </div>
+            </div>
             <textarea id="pasuramEditor" placeholder="Loaded text will appear here..."></textarea>
             
             <!-- Tamil On-Screen Keyboard -->
@@ -79,6 +90,8 @@
     let parsedData = {};
     let selectedKey = null;
     let selectedStep = null;
+    let pasuramItemsList = [];
+    let currentIndex = -1;
 
     // Tamil Keyboard Characters
     const vowels = ['அ', 'ஆ', 'இ', 'ஈ', 'உ', 'ஊ', 'எ', 'ஏ', 'ஐ', 'ஒ', 'ஓ', 'ஔ', 'ஃ'];
@@ -158,27 +171,54 @@
     function renderSidebar() {
         const list = document.getElementById('pasuramList');
         list.innerHTML = '';
+        pasuramItemsList = [];
 
         for (const key in parsedData) {
             for (const step in parsedData[key]) {
+                const itemIndex = pasuramItemsList.length;
+                pasuramItemsList.push({ key, step });
+
                 const li = document.createElement('li');
                 li.className = 'list-group-item';
                 li.innerText = `${key} - Step ${step}`;
-                li.onclick = () => selectPasuram(key, step, li);
+                li.onclick = () => selectPasuramByIndex(itemIndex);
                 list.appendChild(li);
             }
         }
     }
 
-    function selectPasuram(key, step, element) {
-        document.querySelectorAll('.list-group-item').forEach(el => el.classList.remove('active'));
-        element.classList.add('active');
+    function selectPasuramByIndex(index) {
+        if (index < 0 || index >= pasuramItemsList.length) return;
+
+        currentIndex = index;
+        const { key, step } = pasuramItemsList[index];
+
+        const listItems = document.querySelectorAll('.list-group-item');
+        listItems.forEach(el => el.classList.remove('active'));
+        if (listItems[index]) {
+            listItems[index].classList.add('active');
+            listItems[index].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
 
         selectedKey = key;
         selectedStep = step;
         
         document.getElementById('currentEditingLabel').innerText = `Editing: ${key} (Step ${step})`;
         document.getElementById('pasuramEditor').value = parsedData[key][step];
+
+        updateNavButtons();
+    }
+
+    function navigate(direction) {
+        const newIndex = currentIndex + direction;
+        if (newIndex >= 0 && newIndex < pasuramItemsList.length) {
+            selectPasuramByIndex(newIndex);
+        }
+    }
+
+    function updateNavButtons() {
+        document.getElementById('prevBtn').disabled = currentIndex <= 0;
+        document.getElementById('nextBtn').disabled = currentIndex >= pasuramItemsList.length - 1;
     }
 
     document.getElementById('pasuramEditor').addEventListener('input', updateMemory);
