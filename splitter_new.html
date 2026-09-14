@@ -1337,15 +1337,31 @@
                 let curr = 0;
 
                 if (window.isTestingSegmentAudio && window.AudioWaveform) {
-                    if (typeof window.AudioWaveform.getSegmentPlayheadTime === 'function') {
+                    const stillPlaying = typeof window.AudioWaveform.isSegmentPlaying === 'function'
+                        ? window.AudioWaveform.isSegmentPlaying()
+                        : true;
+
+                    if (!stillPlaying) {
+                        // Web Audio segment playback auto-stops itself (no JS timer,
+                        // no pause() call) so nothing else resets this flag when a
+                        // clip finishes naturally — do it here.
+                        window.isTestingSegmentAudio = false;
+                        isWaveformInteracting = false;
+                        curr = player ? player.currentTime : 0;
+                    } else if (typeof window.AudioWaveform.getSegmentPlayheadTime === 'function') {
                         curr = window.AudioWaveform.getSegmentPlayheadTime();
-                    } else if (window.AudioWaveform.isPlayingSegment) {
-                        curr = window.AudioWaveform.currentPlaybackTime || (player ? player.currentTime : 0);
                     } else {
                         curr = player ? player.currentTime : 0;
                     }
                 } else {
                     curr = player ? player.currentTime : 0;
+                }
+
+                // Drive the waveform redline off whatever position we just computed.
+                // Previously nothing called setPlayhead() at all, in either playback
+                // mode, so the redline never moved regardless of what was playing.
+                if (window.AudioWaveform && typeof window.AudioWaveform.setPlayhead === 'function') {
+                    window.AudioWaveform.setPlayhead(curr);
                 }
 
                 let idx = window.rawMarkers.findIndex(m => curr >= m.start && curr < m.end);
