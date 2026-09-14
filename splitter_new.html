@@ -130,12 +130,27 @@
             margin-top: 10px;
         }
 
-        .wf-overview-wrap {
-            margin-top: 8px;
-            border: 1px solid #cfd8dc;
+        #waveformOverview {
+            width: 100%;
+            min-height: 60px;
+            height: 60px;
+            display: block;
+            position: relative;
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
             border-radius: 4px;
-            background: #fafafa;
-            padding: 6px 8px 8px;
+        }
+
+        .wf-overview-wrap {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .wf-overview-canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
         }
 
         .wf-label {
@@ -287,23 +302,24 @@
                 </div>
 
                 <div class="form-group">
-                    <label>2. Text Companion Script File <span style="font-weight:normal; color:#64748b;">(auto-filled from audio)</span></label>
+                    <label>2. Text Companion Script File <span style="font-weight:normal; color:#64748b;">(auto-filled
+                            from audio)</span></label>
                     <input type="file" accept=".js" onchange="injectLocalScriptAsset(this)"
                         style="margin-bottom:6px; display:block; font-size:12px;">
                     <input type="text" id="textUrlInput" placeholder="Auto-filled on audio select, or paste URL...">
                 </div>
 
                 <div class="form-group">
-                    <label>3. Timeline File <span style="font-weight:normal; color:#64748b;">(auto-filled from audio)</span></label>
+                    <label>3. Timeline File <span style="font-weight:normal; color:#64748b;">(auto-filled from
+                            audio)</span></label>
                     <input type="file" accept=".js" onchange="injectLocalScriptAsset(this)"
                         style="margin-bottom:6px; display:block; font-size:12px;">
                     <input type="text" id="stepsUrlInput" placeholder="Auto-filled on audio select, or paste URL...">
                 </div>
 
-
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button class="btn btn-primary" style="flex: 1;"
-                        onclick="triggerUnifiedNetworkPipelineFetch()">Load Files ⚡</button>
+                    <button class="btn btn-primary" style="flex: 1;" onclick="triggerUnifiedNetworkPipelineFetch()">Load
+                        Files ⚡</button>
                     <button class="btn btn-danger" onclick="clearWorkspaceState()">Reset Canvas</button>
                 </div>
 
@@ -368,14 +384,13 @@
     </div>
 
     <script>
-        // Initialize global structures if not loaded yet
         window.MARKER_DATABASE = window.MARKER_DATABASE || {};
         window.rawMarkers = [];
 
         let currentHighlightIndex = -1;
         let currentFileName = "audio_data";
-        let currentAudioFileName = ""; // tracks the audio file basename separately for range detection
-        let currentTextLang = "";      // language code extracted from the text companion filename
+        let currentAudioFileName = "";
+        let currentTextLang = "";
         let detectedDuration = 0;
 
         window.isUserEditingActiveCell = false;
@@ -395,7 +410,6 @@
             livePasuramView = document.getElementById('livePasuramView');
             setupGlobalSyncLoop();
 
-            // Try restoring from localStorage cache snapshot
             const cachedMarkers = localStorage.getItem('asm_saved_markers');
             const cachedFilename = localStorage.getItem('asm_current_filename');
 
@@ -462,33 +476,6 @@
             return canvas;
         }
 
-        function onWaveformBoundaryChange(index, field, time) {
-            if (!window.rawMarkers[index]) return;
-            isWaveformInteracting = true;
-            const t = roundMarkerTime(time);
-            const m = window.rawMarkers[index];
-            const minGap = 0.01;
-            if (field === 'start') {
-                const floor = index > 0 ? window.rawMarkers[index - 1].start + minGap : 0;
-                const ceil = m.end - minGap;
-                const clamped = Math.max(floor, Math.min(ceil, t));
-                m.start = clamped;
-                if (window.rawMarkers[index - 1]) window.rawMarkers[index - 1].end = clamped;
-            } else {
-                const floor = m.start + minGap;
-                const ceil = index < window.rawMarkers.length - 1
-                    ? window.rawMarkers[index + 1].end - minGap
-                    : (detectedDuration || m.end + 1);
-                const clamped = Math.max(floor, Math.min(ceil, t));
-                m.end = clamped;
-                if (window.rawMarkers[index + 1]) window.rawMarkers[index + 1].start = clamped;
-            }
-            renderTimelineGridCanvas(false);
-            if (!isSystemImportingData) serializeWorkspaceStateToJsCodeblock();
-            // Redraw only — do not remount the bar mid-drag
-            if (waveformReady && window.AudioWaveform) AudioWaveform.refreshAll();
-        }
-
         function mountActiveSegmentWaveform() {
             if (!waveformReady || !window.AudioWaveform) return;
             const idx = currentHighlightIndex;
@@ -496,7 +483,6 @@
 
             let canvas = document.getElementById('wf-seg-' + idx);
             if (!canvas || mountedActiveSegmentIndex !== idx) {
-                // Only tear down when the active phrase (or canvas) actually changes
                 AudioWaveform.clearSegmentBars();
                 canvas = placeActiveSegmentCanvas(idx);
             }
@@ -509,8 +495,12 @@
                     seekPlayback(t);
                 },
                 onBoundaryChange: onWaveformBoundaryChange,
-                onDragStart: () => { isWaveformInteracting = true; },
-                onDragEnd: () => { isWaveformInteracting = false; },
+                onDragStart: () => {
+                    isWaveformInteracting = true;
+                },
+                onDragEnd: () => {
+                    isWaveformInteracting = false;
+                },
                 onToggleExpand: () => {
                     activeSegmentWaveformExpanded = !activeSegmentWaveformExpanded;
                     canvas.classList.toggle('wf-expanded', activeSegmentWaveformExpanded);
@@ -522,13 +512,43 @@
         }
 
         function refreshWaveformViews() {
-            if (!waveformReady || !window.AudioWaveform) return;
-            // While dragging start/end, only redraw — never remount (that aborts the drag)
-            if (isWaveformInteracting) {
-                AudioWaveform.refreshAll();
-                return;
+            if (!window.AudioWaveform || !waveformReady) return;
+
+            const overviewContainer = document.getElementById('waveformOverview');
+            if (overviewContainer && (!overviewContainer.children.length || !overviewContainer.querySelector('canvas'))) {
+                AudioWaveform.mountOverview(overviewContainer, {
+                    getMarkers: () => window.rawMarkers,
+                    getIssues: () => [],
+                    onSeek: (t) => seekPlayback(t),
+                    onSegmentClick: (idx) => focusRowScrollHighlight(idx)
+                });
+            } else {
+                AudioWaveform.redrawOverview();
             }
-            mountActiveSegmentWaveform();
+
+            window.rawMarkers.forEach((marker, idx) => {
+                const canvas = document.getElementById(`wf-seg-${idx}`);
+                if (!canvas) return;
+
+                AudioWaveform.createSegmentBar(
+                    canvas,
+                    idx,
+                    {
+                        getMarkers: () => window.rawMarkers,
+                        onBoundaryChange: (i, handle, time) => {
+                            if (window.rawMarkers[i]) {
+                                modifySegmentTimeCoordinates(i, handle, time);
+                            }
+                        },
+                        onSeek: (t) => seekPlayback(t),
+                        onDragStart: (i) => AudioWaveform.setActiveSegment(i),
+                        onDragEnd: (i) => refreshWaveformViews()
+                    },
+                    idx === currentHighlightIndex && activeSegmentWaveformExpanded
+                );
+            });
+
+            AudioWaveform.refreshAll();
         }
 
         function clearWaveformOverview() {
@@ -550,19 +570,27 @@
             AudioWaveform.clearSegmentBars();
             AudioWaveform.destroyOverview();
             container.innerHTML = '<div class="wf-unavailable">Decoding waveform…</div>';
+
             AudioWaveform.decode(url).then((ok) => {
                 if (!ok) {
                     AudioWaveform.showUnavailable(container, 'Waveform unavailable (CORS or decode error). Ear-only marking still works.');
                     return;
                 }
                 waveformReady = true;
+
                 AudioWaveform.mountOverview(container, {
                     getMarkers: () => window.rawMarkers,
                     getIssues: () => [],
                     onSeek: (t) => seekPlayback(t),
                     onSegmentClick: (idx) => focusRowScrollHighlight(idx)
                 });
-                refreshWaveformViews();
+
+                requestAnimationFrame(() => {
+                    AudioWaveform.refreshAll();
+                    if (typeof refreshWaveformViews === 'function') {
+                        refreshWaveformViews();
+                    }
+                });
             });
         }
 
@@ -573,32 +601,31 @@
             autoFillCompanionPaths(file.name);
         }
 
-        /**
-         * Derives the book key from the audio filename and auto-fills the text
-         * and timeline URL fields with their standard relative paths.
-         * e.g. "RN_11_20.ogg" → book=RN → fills marker_rn_ta.js + marker_rn_timelines.js
-         */
-        /**
-         * Parse audio filename into components.
-         * Returns: { book, chapter, subChapter, type }
-         *   type: 'grouped'     e.g. RN_11_20    → chapter=null, range via parseRangeFromFilename
-         *         'simple'      e.g. AAP_1        → chapter=1, subChapter=null
-         *         'subchapter'  e.g. PAT_3.1      → chapter=3, subChapter=1
-         */
         function parseAudioFilename(audioFilename) {
-            const base = audioFilename.replace(/\.[^.]+$/, ''); // strip extension
-
-            // Sub-chapter: BOOK_CH.SUBCH  e.g. PAT_3.1
+            const base = audioFilename.replace(/\.[^.]+$/, '');
             const subMatch = base.match(/^([A-Za-z0-9]+)_(\d+)\.(\d+)$/);
-            if (subMatch) return { book: subMatch[1], chapter: parseInt(subMatch[2]), subChapter: parseInt(subMatch[3]), type: 'subchapter' };
+            if (subMatch) return {
+                book: subMatch[1],
+                chapter: parseInt(subMatch[2]),
+                subChapter: parseInt(subMatch[3]),
+                type: 'subchapter'
+            };
 
-            // Grouped: BOOK_START_END  e.g. RN_11_20
             const groupMatch = base.match(/^([A-Za-z0-9]+)_(\d+)_(\d+)$/);
-            if (groupMatch) return { book: groupMatch[1], chapter: null, subChapter: null, type: 'grouped' };
+            if (groupMatch) return {
+                book: groupMatch[1],
+                chapter: null,
+                subChapter: null,
+                type: 'grouped'
+            };
 
-            // Simple single chapter: BOOK_N  e.g. AAP_1, PMT_3
             const simpleMatch = base.match(/^([A-Za-z0-9]+)_(\d+)$/);
-            if (simpleMatch) return { book: simpleMatch[1], chapter: parseInt(simpleMatch[2]), subChapter: null, type: 'simple' };
+            if (simpleMatch) return {
+                book: simpleMatch[1],
+                chapter: parseInt(simpleMatch[2]),
+                subChapter: null,
+                type: 'simple'
+            };
 
             return null;
         }
@@ -607,34 +634,33 @@
             const parsed = parseAudioFilename(audioFilename);
             if (!parsed) return;
 
-            const { book, chapter, type } = parsed;
+            const {
+                book,
+                chapter,
+                type
+            } = parsed;
             const bLow = book.toLowerCase();
             const root = 'aruLicheyal';
 
             let textPath, timelinePath;
 
             if (type === 'subchapter') {
-                // PAT_3.1 → text/3_ta.js, markers/timelines_3.js
-                textPath     = `${root}/${book}/text/${chapter}_ta.js`;
+                textPath = `${root}/${book}/text/${chapter}_ta.js`;
                 timelinePath = `${root}/${book}/markers/timelines_${chapter}.js`;
             } else {
-                // grouped (RN_11_20) or simple (AAP_1) → flat marker files
-                textPath     = `${root}/${book}/text/marker_${bLow}_ta.js`;
+                textPath = `${root}/${book}/text/marker_${bLow}_ta.js`;
                 timelinePath = `${root}/${book}/markers/marker_${bLow}_timelines.js`;
             }
 
-            const textEl  = document.getElementById('textUrlInput');
+            const textEl = document.getElementById('textUrlInput');
             const stepsEl = document.getElementById('stepsUrlInput');
 
-            if (textEl)  textEl.value  = textPath;
+            if (textEl) textEl.value = textPath;
             if (stepsEl) stepsEl.value = timelinePath;
-
-            console.log(`[Splitter] Auto-filled [${type}] paths for book "${book}":`, textPath, timelinePath);
         }
 
         function initiateAudioStreamingNode(url, targetFilename = "") {
             const rawName = targetFilename || url.split('/').pop().split('?')[0] || "audio_track";
-            // Strip only the final extension (.ogg) — preserve dots in sub-chapter names like PAT_3.1
             currentAudioFileName = rawName.replace(/\.[^.]+$/, '');
             currentFileName = currentAudioFileName;
             player.src = url;
@@ -647,14 +673,12 @@
             };
         }
 
-        /** Extract language code from a text companion filename, e.g. "marker_rn_ta.js" → "ta" */
         function detectLangFromFilename(filename) {
-            const base = filename.replace(/\.[^.]+$/, ''); // strip extension
-            const m = base.match(/_([a-z]{2})$/i);         // last _xx segment
+            const base = filename.replace(/\.[^.]+$/, '');
+            const m = base.match(/_([a-z]{2})$/i);
             return m ? m[1].toLowerCase() : '';
         }
 
-        // Direct clean script dynamic injector method
         function injectLocalScriptAsset(input) {
             if (!input || !input.files || input.files.length === 0) return;
             const file = input.files[0];
@@ -662,7 +686,6 @@
             if (lang) currentTextLang = lang;
             const scriptUrl = URL.createObjectURL(file);
             appendScriptNodeToDOM(scriptUrl, () => {
-                // Check if text bundle engine merge function is present inside language definitions
                 if (typeof window.mergeLanguageTexts === 'function') {
                     window.mergeLanguageTexts();
                 }
@@ -711,60 +734,49 @@
             const targetKeys = Object.keys(window.MARKER_DATABASE || {});
             if (targetKeys.length === 0) return;
 
-            // Auto-detect best matching key from audio filename
             const bestKey = pickBestMarkerKey(targetKeys, currentAudioFileName);
 
             if (bestKey) {
-                // Auto-load without showing dropdown
                 autoLoadMarkerKey(bestKey, targetKeys);
             } else {
-                // Multiple ambiguous keys — show selector
                 renderPipelineSelectorDropdownPanel(targetKeys);
             }
         }
 
-        /**
-         * Picks the best MARKER_DATABASE key for the current audio file.
-         *
-         * RN_11_20    → keys like "RN.1.steps"    → match on book "RN"
-         * AAP_1       → keys like "AAP.1.steps"   → match on book + chapter "AAP.1"
-         * PAT_3.1     → keys like "PAT.3.10.steps"→ match on book + chapter "PAT.3"
-         */
         function pickBestMarkerKey(keys, audioFilename) {
             if (!audioFilename) return keys.length === 1 ? keys[0] : null;
 
             const parsed = parseAudioFilename(audioFilename);
             if (!parsed) return keys.length === 1 ? keys[0] : null;
 
-            const { book, chapter, type } = parsed;
+            const {
+                book,
+                chapter,
+                type
+            } = parsed;
             const bLow = book.toLowerCase();
 
             if (type === 'subchapter' && chapter !== null) {
-                // Match keys containing book + chapter: "PAT.3."
                 const prefix = `${bLow}.${chapter}.`;
                 const matching = keys.filter(k => k.toLowerCase().includes(prefix));
                 if (matching.length === 1) return matching[0];
-                if (matching.length > 1) return matching[0]; // pick first (most likely steps key)
+                if (matching.length > 1) return matching[0];
             }
 
             if (type === 'simple' && chapter !== null) {
-                // Match keys containing book + chapter: "AAP.1."
                 const prefix = `${bLow}.${chapter}.`;
                 const matching = keys.filter(k => k.toLowerCase().includes(prefix));
                 if (matching.length === 1) return matching[0];
             }
 
-            // grouped or fallback: match on book name only
             const matching = keys.filter(k => k.toLowerCase().includes(bLow));
             if (matching.length === 1) return matching[0];
             if (keys.length === 1) return keys[0];
-            return null; // ambiguous — show dropdown
+            return null;
         }
 
         function autoLoadMarkerKey(key, allKeys) {
-            // Pre-select in dropdown (in case user needs to change it)
             renderPipelineSelectorDropdownPanel(allKeys, key);
-            // Then immediately load
             buildActiveWorkspaceCanvasTimeline(key);
         }
 
@@ -784,27 +796,20 @@
             container.style.display = 'block';
         }
 
-        /**
-         * Parse the pasuram range from the audio filename.
-         * "RN_11_20"   → { start: 11, end: 20, type: 'grouped' }
-         * "AAP_1"      → { start: null, end: null, type: 'simple' }   load all
-         * "PAT_3.1"    → { start: null, end: null, type: 'subchapter' } load all for that chapter
-         * Returns null if unparseable (load all).
-         */
         function parseRangeFromFilename(filename) {
             const parsed = parseAudioFilename(filename);
             if (!parsed) return null;
 
             if (parsed.type === 'grouped') {
-                // Extract start/end from BOOK_START_END
                 const m = filename.match(/_(\d+)_(\d+)/);
-                if (m) return { start: parseInt(m[1], 10), end: parseInt(m[2], 10), type: 'grouped' };
+                if (m) return {
+                    start: parseInt(m[1], 10),
+                    end: parseInt(m[2], 10),
+                    type: 'grouped'
+                };
             }
 
-            // simple and subchapter: load all entries (no pasuram filtering needed)
             return null;
-
-            return null; // no range info — load all
         }
 
         function buildActiveWorkspaceCanvasTimeline(overrideKey = null) {
@@ -814,11 +819,8 @@
 
             currentFileName = targetNamespaceKey;
 
-            // Determine pasuram range from audio filename (not the namespace key)
             const audioRange = parseRangeFromFilename(currentAudioFileName);
-            console.log(`[Splitter] Audio file: "${currentAudioFileName}" → Range: ${audioRange ? `p${audioRange.start}–${audioRange.end}` : 'all'}`);
 
-            // 1. Extract text using the language detected from the text companion filename
             const lang = currentTextLang || 'ta';
             const bundleKey = `text_bundle_${lang}`;
             let textSourceMap = {};
@@ -827,12 +829,11 @@
             } else if (window.MARKER_DATABASE[targetNamespaceKey] && window.MARKER_DATABASE[targetNamespaceKey]._textSourceMap) {
                 textSourceMap = window.MARKER_DATABASE[targetNamespaceKey]._textSourceMap;
             } else if (Array.isArray(window.MARKER_DATABASE[targetNamespaceKey])) {
-                // Extract inline text from block.text using detected language
                 window.MARKER_DATABASE[targetNamespaceKey].forEach(block => {
                     if (block && block.p && block.text) {
-                        const txt = typeof block.text === 'string'
-                            ? block.text
-                            : (block.text[lang] || '');
+                        const txt = typeof block.text === 'string' ?
+                            block.text :
+                            (block.text[lang] || '');
                         if (txt) textSourceMap[block.p] = txt;
                     }
                 });
@@ -840,12 +841,10 @@
 
             const allSteps = window.MARKER_DATABASE[targetNamespaceKey] || [];
 
-            // Filter to only the pasurums covered by the loaded audio file
-            const stepsSourceTimelineArray = audioRange
-                ? allSteps.filter(b => b.p >= audioRange.start && b.p <= audioRange.end)
-                : allSteps;
+            const stepsSourceTimelineArray = audioRange ?
+                allSteps.filter(b => b.p >= audioRange.start && b.p <= audioRange.end) :
+                allSteps;
 
-            // Also filter textSourceMap to the same range
             if (audioRange) {
                 const filteredTextMap = {};
                 Object.keys(textSourceMap).forEach(k => {
@@ -857,21 +856,19 @@
 
             let unifiedCompiledMarkers = [];
 
-            // Check if we actually have valid step timing blocks
             let hasTimings = Array.isArray(stepsSourceTimelineArray) &&
                 stepsSourceTimelineArray.length > 0 &&
                 stepsSourceTimelineArray.some(b => b.step1 && b.step1.length > 0);
 
             if (hasTimings) {
-                // Path A: Parse standard existing timeline steps
                 stepsSourceTimelineArray.forEach((pasuramBlock, blockIdx) => {
                     if (!pasuramBlock || typeof pasuramBlock !== 'object') return;
 
                     const step1Timelines = pasuramBlock.step1 || [];
                     const pIndex = pasuramBlock.p || (blockIdx + 1);
-                    const inlineText = pasuramBlock.text
-                        ? (typeof pasuramBlock.text === 'string' ? pasuramBlock.text : (pasuramBlock.text[lang] || ''))
-                        : '';
+                    const inlineText = pasuramBlock.text ?
+                        (typeof pasuramBlock.text === 'string' ? pasuramBlock.text : (pasuramBlock.text[lang] || '')) :
+                        '';
                     const matchingRawTextLineString = inlineText || textSourceMap[pIndex] || "";
                     let splitPhrases = matchingRawTextLineString.split('*').map(t => t.trim()).filter(t => t.length > 0);
 
@@ -897,10 +894,8 @@
                     }
                 });
             } else {
-                // Path B: Timeline is missing/empty -> Extract text phrases and distribute evenly
                 let allPhrases = [];
 
-                // Collect phrases from the text map
                 Object.keys(textSourceMap).sort((a, b) => parseInt(a) - parseInt(b)).forEach(pKey => {
                     let rawText = textSourceMap[pKey] || "";
                     let splitPhrases = rawText.split('*').map(t => t.trim()).filter(t => t.length > 0);
@@ -915,7 +910,6 @@
                 });
 
                 if (allPhrases.length > 0) {
-                    // Use audio duration if loaded, default to a 5-minute workspace canvas if not
                     let totalDuration = detectedDuration || 300;
                     let incrementStep = totalDuration / allPhrases.length;
 
@@ -929,7 +923,9 @@
                             text: phraseObj.text,
                             pIndex: phraseObj.pIndex,
                             forceEndBlock: phraseObj.isLastInBlock,
-                            origStep2: null, origStep3: null, origStep4: null
+                            origStep2: null,
+                            origStep3: null,
+                            origStep4: null
                         });
                     });
                 }
@@ -938,6 +934,7 @@
             if (unifiedCompiledMarkers.length > 0) {
                 isSystemImportingData = true;
                 window.rawMarkers = unifiedCompiledMarkers;
+                window.rawMarkers.sort((a, b) => a.start - b.start);
                 renderTimelineGridCanvas(true);
                 serializeWorkspaceStateToJsCodeblock();
                 isSystemImportingData = false;
@@ -963,46 +960,49 @@
                         if (numericInputs[1] && document.activeElement !== numericInputs[1]) numericInputs[1].value = marker.end;
                         if (alphaTextInput && document.activeElement !== alphaTextInput) alphaTextInput.value = marker.text;
                         if (breakingCheckbox) breakingCheckbox.checked = marker.forceEndBlock;
+
+                        rowContainer.classList.toggle('active-highlight', idx === currentHighlightIndex);
                     }
                 });
+
                 document.getElementById('status').innerText = `Markers: ${window.rawMarkers.length}`;
+                renderRunningLiveHighlightViewer(currentHighlightIndex);
+
+                if (typeof refreshWaveformViews === 'function') {
+                    refreshWaveformViews();
+                }
                 return;
             }
 
             markerList.innerHTML = window.rawMarkers.map((marker, i) => {
-                const activeCanvas = (waveformReady && i === currentHighlightIndex)
-                    ? `<canvas class="wf-segment-canvas${activeSegmentWaveformExpanded ? ' wf-expanded' : ''}" id="wf-seg-${i}" title="Drag the green start/end pins to trim; click waveform to seek"></canvas>`
-                    : '';
+                const activeCanvas = waveformReady ?
+                    `<canvas class="wf-segment-canvas${(i === currentHighlightIndex && activeSegmentWaveformExpanded) ? ' wf-expanded' : ''}" id="wf-seg-${i}" title="Drag the green start/end pins to trim; click waveform to seek"></canvas>` :
+                    '';
+
                 return `
-            <div class="marker-item" id="item-${i}">
-                <span style="font-weight:bold; min-width:35px; font-size:11px; color:#64748b;">P.${marker.pIndex || 1} #${i + 1}</span>
-                <input type="number" step="0.1" value="${marker.start}" 
-                       onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
-                       onblur="window.isUserEditingActiveCell = false;" 
-                       oninput="modifySegmentTimeCoordinates(${i}, 'start', this.value)">
-                <input type="number" step="0.1" value="${marker.end}" 
-                       onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
-                       onblur="window.isUserEditingActiveCell = false;" 
-                       oninput="modifySegmentTimeCoordinates(${i}, 'end', this.value)">
-                <input type="text" placeholder="Verse fragment text" value="${marker.text.replace(/"/g, '&quot;')}" 
-                       onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
-                       onblur="window.isUserEditingActiveCell = false;" 
-                       oninput="modifySegmentTextString(${i}, this.value)">
-                <label class="checkbox-label">
-                    <input type="checkbox" ${marker.forceEndBlock ? 'checked' : ''} onchange="toggleSegmentBlockBoundary(${i}, this.checked)"> Break
-                </label>
-                <div style="display:flex; gap:3px; margin-left:auto;">
-                    <!-- <button class="btn btn-icon" style="background-color: #1a237e;" onclick="cutSegmentAtPlayback(${i})" title="Cut: set end to playhead">
-                        <img src="splitter-assets/cut.png" alt="Cut">
-                    </button> -->
-                    <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #28a745;" onclick="testSegmentAudioPlaybackInterval(${i})" title="Play segment">▶</button>
-                    <!--<button class="btn btn-icon" style="background-color: #1565c0;" onclick="pauseSegmentPlayback()" title="Pause playback">
-                        <img src="splitter-assets/pause.png" alt="Pause">
-                    </button>-->
-                    <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #dc3545;" onclick="deleteSegmentRow(${i})" title="Delete Segment">×</button>
-                </div>
-                ${activeCanvas}
-            </div>`;
+    <div class="marker-item ${i === currentHighlightIndex ? 'active-highlight' : ''}" id="item-${i}">
+        <span style="font-weight:bold; min-width:35px; font-size:11px; color:#64748b;">P.${marker.pIndex || 1} #${i + 1}</span>
+        <input type="number" step="0.1" value="${marker.start}" 
+               onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
+               onblur="window.isUserEditingActiveCell = false;" 
+               oninput="modifySegmentTimeCoordinates(${i}, 'start', this.value)">
+        <input type="number" step="0.1" value="${marker.end}" 
+               onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
+               onblur="window.isUserEditingActiveCell = false;" 
+               oninput="modifySegmentTimeCoordinates(${i}, 'end', this.value)">
+        <input type="text" placeholder="Verse fragment text" value="${marker.text.replace(/"/g, '&quot;')}" 
+               onfocus="window.isUserEditingActiveCell = true; window.isTestingSegmentAudio = false;" 
+               onblur="window.isUserEditingActiveCell = false;" 
+               oninput="modifySegmentTextString(${i}, this.value)">
+        <label class="checkbox-label">
+            <input type="checkbox" ${marker.forceEndBlock ? 'checked' : ''} onchange="toggleSegmentBlockBoundary(${i}, this.checked)"> Break
+        </label>
+        <div style="display:flex; gap:3px; margin-left:auto;">
+            <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #28a745;" onclick="testSegmentAudioPlaybackInterval(${i})" title="Play segment">▶</button>
+            <button class="btn" style="padding: 6px 8px; font-size: 11px; background-color: #dc3545;" onclick="deleteSegmentRow(${i})" title="Delete Segment">×</button>
+        </div>
+        ${activeCanvas}
+    </div>`;
             }).join('');
 
             if (waveformReady && currentHighlightIndex >= 0) {
@@ -1013,7 +1013,12 @@
 
             document.getElementById('status').innerText = `Markers: ${window.rawMarkers.length}`;
             renderRunningLiveHighlightViewer(currentHighlightIndex);
-            refreshWaveformViews();
+
+            requestAnimationFrame(() => {
+                if (typeof refreshWaveformViews === 'function') {
+                    refreshWaveformViews();
+                }
+            });
         }
 
         function modifySegmentTextString(index, val) {
@@ -1030,32 +1035,53 @@
             if (isNaN(parsedNum)) return;
 
             const originalVal = window.rawMarkers[index][field];
-            const deltaOffset = parsedNum - originalVal;
+            const deltaOffset = parseFloat((parsedNum - originalVal).toFixed(1));
 
-            window.rawMarkers[index][field] = parsedNum;
+            if (deltaOffset === 0) return;
 
-            // Maintain back-to-back continuity with immediate neighbors
-            if (field === 'start' && window.rawMarkers[index - 1]) {
-                window.rawMarkers[index - 1].end = parsedNum;
-            }
-            if (field === 'end' && window.rawMarkers[index + 1]) {
-                window.rawMarkers[index + 1].start = parsedNum;
-            }
+            window.rawMarkers[index][field] = parseFloat(parsedNum.toFixed(1));
 
-            // Only cascade the shift down the timeline if the ripple checkbox is enabled
-            const shouldRipple = document.getElementById('rippleTimeAdjustmentsToggle').checked;
+            const rippleToggle = document.getElementById('rippleTimeAdjustmentsToggle');
+            const shouldRipple = rippleToggle ? rippleToggle.checked : false;
 
-            if (deltaOffset !== 0 && shouldRipple && !isSystemImportingData && window.isUserEditingActiveCell) {
-                for (let i = index + 1; i < window.rawMarkers.length; i++) {
-                    let targetEnd = parseFloat((window.rawMarkers[i].end + deltaOffset).toFixed(1));
-                    window.rawMarkers[i].end = targetEnd;
-                    window.rawMarkers[i].start = window.rawMarkers[i - 1].end;
+            if (shouldRipple && !isSystemImportingData) {
+                if (field === 'end') {
+                    // Update immediate next start boundary
+                    if (window.rawMarkers[index + 1]) {
+                        window.rawMarkers[index + 1].start = window.rawMarkers[index].end;
+                    }
+                    // Cascade time shift downstream across subsequent markers
+                    for (let i = index + 1; i < window.rawMarkers.length; i++) {
+                        let duration = window.rawMarkers[i].end - window.rawMarkers[i].start;
+                        if (i > index + 1) {
+                            window.rawMarkers[i].start = window.rawMarkers[i - 1].end;
+                        }
+                        window.rawMarkers[i].end = parseFloat((window.rawMarkers[i].start + duration).toFixed(1));
+                    }
+                } else if (field === 'start') {
+                    // Update previous end boundary if available
+                    if (index > 0) {
+                        window.rawMarkers[index - 1].end = window.rawMarkers[index].start;
+                    }
+                    // Cascade time shift downstream across subsequent markers
+                    for (let i = index + 1; i < window.rawMarkers.length; i++) {
+                        window.rawMarkers[i].start = parseFloat((window.rawMarkers[i].start + deltaOffset).toFixed(1));
+                        window.rawMarkers[i].end = parseFloat((window.rawMarkers[i].end + deltaOffset).toFixed(1));
+                    }
+                }
+            } else {
+                // Non-ripple mode: bound adjacent boundaries directly without moving downstream segments
+                if (field === 'start' && window.rawMarkers[index - 1]) {
+                    window.rawMarkers[index - 1].end = window.rawMarkers[index].start;
+                }
+                if (field === 'end' && window.rawMarkers[index + 1]) {
+                    window.rawMarkers[index + 1].start = window.rawMarkers[index].end;
                 }
             }
 
-            // Enforce maximum track boundary safety ceiling safely
+            // Boundary clamping to safeguard detected audio duration limits
             const lastIdx = window.rawMarkers.length - 1;
-            if (window.rawMarkers[lastIdx].end > detectedDuration && detectedDuration > 0) {
+            if (window.rawMarkers[lastIdx] && window.rawMarkers[lastIdx].end > detectedDuration && detectedDuration > 0) {
                 window.rawMarkers[lastIdx].end = parseFloat(detectedDuration.toFixed(1));
             }
 
@@ -1066,6 +1092,27 @@
             refreshWaveformViews();
         }
 
+        function onWaveformBoundaryChange(index, field, time) {
+            if (!window.rawMarkers[index]) return;
+            isWaveformInteracting = true;
+            const t = roundMarkerTime(time);
+            const m = window.rawMarkers[index];
+            const minGap = 0.1;
+
+            let clamped = t;
+            if (field === 'start') {
+                const floor = index > 0 ? window.rawMarkers[index - 1].start + minGap : 0;
+                const ceil = m.end - minGap;
+                clamped = Math.max(floor, Math.min(ceil, t));
+            } else {
+                const floor = m.start + minGap;
+                const ceil = detectedDuration || (m.end + 100);
+                clamped = Math.max(floor, Math.min(ceil, t));
+            }
+
+            modifySegmentTimeCoordinates(index, field, clamped);
+        }
+
         function toggleSegmentBlockBoundary(index, isChecked) {
             if (window.rawMarkers[index]) {
                 window.rawMarkers[index].forceEndBlock = isChecked;
@@ -1073,22 +1120,30 @@
             }
         }
 
-        // function snapSegmentBoundaryToPlaybackTime(index) {
-        //     const time = player.currentTime;
-        //     window.rawMarkers[index].end = parseFloat(time.toFixed(1));
-        //     if (window.rawMarkers[index + 1]) window.rawMarkers[index + 1].start = parseFloat(time.toFixed(1));
-        //     renderTimelineGridCanvas(false);
-        //     serializeWorkspaceStateToJsCodeblock();
-        // }
-
         function pauseSegmentPlayback() {
-            if (window.segmentPlaybackIntervalHandle) {
-                clearInterval(window.segmentPlaybackIntervalHandle);
-                window.segmentPlaybackIntervalHandle = null;
+            if (window.AudioWaveform && typeof window.AudioWaveform.stopSegment === 'function') {
+                window.AudioWaveform.stopSegment();
             }
             if (player) player.pause();
             window.isTestingSegmentAudio = false;
             isWaveformInteracting = false;
+        }
+
+        function testSegmentAudioPlaybackInterval(id) {
+            const m = window.rawMarkers[id];
+            if (!m) return;
+
+            window.isTestingSegmentAudio = true;
+            isWaveformInteracting = false;
+
+            focusRowScrollHighlight(id);
+
+            if (window.AudioWaveform && typeof window.AudioWaveform.playSegment === 'function') {
+                window.AudioWaveform.playSegment(m.start, m.end);
+            } else if (player) {
+                player.currentTime = m.start;
+                player.play();
+            }
         }
 
         function cutSegmentAtPlayback(index) {
@@ -1101,15 +1156,65 @@
             refreshWaveformViews();
         }
 
+        function createNewMarkerAtTime(currentTime) {
+            if (!window.rawMarkers) window.rawMarkers = [];
+
+            window.rawMarkers.sort((a, b) => a.start - b.start);
+
+            let insertIdx = window.rawMarkers.findIndex(m => m.start > currentTime);
+            if (insertIdx === -1) insertIdx = window.rawMarkers.length;
+
+            const prevMarker = window.rawMarkers[insertIdx - 1];
+            const nextMarker = window.rawMarkers[insertIdx];
+
+            let newStart = parseFloat(currentTime.toFixed(1));
+
+            if (prevMarker) {
+                prevMarker.end = Math.min(prevMarker.end, newStart);
+            }
+
+            let newEnd = nextMarker ? nextMarker.start : parseFloat((newStart + 2.0).toFixed(1));
+
+            const newMarker = {
+                start: Number(newStart.toFixed(1)),
+                end: Number(newEnd.toFixed(1)),
+                text: "",
+                pIndex: prevMarker ? prevMarker.pIndex : 1,
+                forceEndBlock: false,
+                origStep2: null,
+                origStep3: null,
+                origStep4: null
+            };
+
+            window.rawMarkers.splice(insertIdx, 0, newMarker);
+
+            renderTimelineGridCanvas(true);
+            serializeWorkspaceStateToJsCodeblock();
+            refreshWaveformViews();
+        }
+
         function captureLiveTimestamp() {
+            if (!player) return;
             const time = parseFloat(player.currentTime.toFixed(1));
+            let matchedIdx = -1;
+
             for (let i = 0; i < window.rawMarkers.length; i++) {
                 if (time > window.rawMarkers[i].start && time < window.rawMarkers[i].end) {
-                    window.rawMarkers[i].end = time;
-                    if (window.rawMarkers[i + 1]) window.rawMarkers[i + 1].start = time;
+                    matchedIdx = i;
                     break;
                 }
             }
+
+            if (matchedIdx !== -1) {
+                window.rawMarkers[matchedIdx].end = time;
+                if (window.rawMarkers[matchedIdx + 1]) {
+                    window.rawMarkers[matchedIdx + 1].start = time;
+                }
+            } else {
+                createNewMarkerAtTime(time);
+                return;
+            }
+
             renderTimelineGridCanvas(true);
             serializeWorkspaceStateToJsCodeblock();
             refreshWaveformViews();
@@ -1130,11 +1235,15 @@
                 text: "",
                 pIndex: segment.pIndex,
                 forceEndBlock: segment.forceEndBlock,
-                origStep2: null, origStep3: null, origStep4: null
+                origStep2: null,
+                origStep3: null,
+                origStep4: null
             };
 
             segment.forceEndBlock = false;
             window.rawMarkers.splice(index + 1, 0, addedRecord);
+
+            window.rawMarkers.sort((a, b) => a.start - b.start);
 
             renderTimelineGridCanvas(true);
             serializeWorkspaceStateToJsCodeblock();
@@ -1144,16 +1253,16 @@
                 const targetRow = document.getElementById(`item-${index + 1}`);
                 if (targetRow) {
                     const txt = targetRow.querySelector('input[type="text"]');
-                    if (txt) txt.focus({ preventScroll: true });
+                    if (txt) txt.focus({
+                        preventScroll: true
+                    });
                     focusRowScrollHighlight(index + 1);
                 }
             }, 50);
         }
 
         function deleteSegmentRow(index) {
-            if (window.rawMarkers[index].text.length > 0)
-            {
-                // Prompt confirmation only for non-empty segments
+            if (window.rawMarkers[index].text.length > 0) {
                 if (!(confirm("Do you want to delete this segment?"))) return;
             }
 
@@ -1186,31 +1295,6 @@
             refreshWaveformViews();
         }
 
-        function testSegmentAudioPlaybackInterval(id) {
-            const m = window.rawMarkers[id];
-            if (!m) return;
-
-            window.isTestingSegmentAudio = true;
-            isWaveformInteracting = false;
-            focusRowScrollHighlight(id);
-
-            player.currentTime = m.start;
-            player.play();
-
-            if (window.segmentPlaybackIntervalHandle) clearInterval(window.segmentPlaybackIntervalHandle);
-
-            window.segmentPlaybackIntervalHandle = setInterval(() => {
-                if (player.currentTime >= m.end) {
-                    player.pause();
-                    clearInterval(window.segmentPlaybackIntervalHandle);
-                    window.segmentPlaybackIntervalHandle = null;
-                    window.isTestingSegmentAudio = false;
-                    // Stay on this phrase so waveform trim editing remains available
-                    focusRowScrollHighlight(id);
-                }
-            }, 20);
-        }
-
         function renderRunningLiveHighlightViewer(activeIndex) {
             if (!livePasuramView) return;
             if (window.rawMarkers.length === 0) {
@@ -1228,6 +1312,7 @@
         function focusRowScrollHighlight(index) {
             const highlightChanged = index !== currentHighlightIndex;
             currentHighlightIndex = index;
+
             document.querySelectorAll('.marker-item').forEach(el => el.style.background = '#ffffff');
             let row = document.getElementById(`item-${index}`);
             if (row) {
@@ -1235,10 +1320,11 @@
                 let midPointScroll = row.offsetTop - markerList.offsetTop - (markerList.clientHeight / 2) + (row.offsetHeight / 2);
                 markerList.scrollTo({ top: Math.max(0, midPointScroll), behavior: 'smooth' });
             }
+
             renderRunningLiveHighlightViewer(index);
+
             if (waveformReady && window.AudioWaveform) {
                 AudioWaveform.setActiveSegment(index);
-                // Do not remount the trim canvas mid-drag — that aborts boundary edits
                 if (!isWaveformInteracting && (highlightChanged || mountedActiveSegmentIndex !== index)) {
                     placeActiveSegmentCanvas(index);
                     mountActiveSegmentWaveform();
@@ -1248,11 +1334,22 @@
 
         function setupGlobalSyncLoop() {
             const monitor = () => {
-                let curr = player ? player.currentTime : 0;
+                let curr = 0;
+
+                if (window.isTestingSegmentAudio && window.AudioWaveform) {
+                    if (typeof window.AudioWaveform.getSegmentPlayheadTime === 'function') {
+                        curr = window.AudioWaveform.getSegmentPlayheadTime();
+                    } else if (window.AudioWaveform.isPlayingSegment) {
+                        curr = window.AudioWaveform.currentPlaybackTime || (player ? player.currentTime : 0);
+                    } else {
+                        curr = player ? player.currentTime : 0;
+                    }
+                } else {
+                    curr = player ? player.currentTime : 0;
+                }
+
                 let idx = window.rawMarkers.findIndex(m => curr >= m.start && curr < m.end);
 
-                // Keep highlight pinned while editing inputs, testing a clip, trimming,
-                // or when paused (so seeking on the active phrase waveform never jumps rows).
                 const allowAutoFollow = player
                     && !player.paused
                     && !window.isUserEditingActiveCell
@@ -1265,36 +1362,28 @@
 
                 const timerElement = document.getElementById('timeDisplay');
                 if (timerElement) timerElement.innerText = curr.toFixed(1) + 's';
-                if (waveformReady && window.AudioWaveform) {
-                    AudioWaveform.setPlayhead(curr);
-                }
+
                 requestAnimationFrame(monitor);
             };
             requestAnimationFrame(monitor);
         }
 
-        /**
-         * Distribute n items into 4 groups.
-         * Start from [2,2,2,2]=8. Subtract deficit from inner positions first (2,1,0), outer last (3).
-         * n=8→[2,2,2,2], n=7→[2,2,1,2], n=6→[2,1,1,2], n=5→[1,1,1,2], n=4→[1,1,0,2]...
-         * For n<4 collapses gracefully.
-         */
         function distributeInto4(n) {
-            // Start from [2,2,2,2]=8, subtract 1 at a time cycling through positions 2,1,0,3
-            // n=8→[2,2,2,2], n=7→[2,2,1,2], n=6→[2,1,1,2], n=5→[1,1,1,2]
             const g = [2, 2, 2, 2];
             const order = [2, 1, 0, 3];
             let deficit = 8 - n;
             while (deficit > 0) {
                 for (const pos of order) {
                     if (deficit <= 0) break;
-                    if (g[pos] > 0) { g[pos]--; deficit--; }
+                    if (g[pos] > 0) {
+                        g[pos]--;
+                        deficit--;
+                    }
                 }
             }
             return g;
         }
 
-        /** Build step2: merge step1 segments according to 4-group distribution */
         function buildStep2(step1) {
             const n = step1.length;
             if (n === 0) return [];
@@ -1310,7 +1399,6 @@
             return step2;
         }
 
-        /** Build step3: pair up step2 entries (groups of 2) */
         function buildStep3(step2) {
             const step3 = [];
             for (let i = 0; i < step2.length; i += 2) {
@@ -1324,7 +1412,6 @@
         function serializeWorkspaceStateToJsCodeblock() {
             if (!ioJson || window.rawMarkers.length === 0) return;
 
-            // Save active workspace memory array and metadata directly to local storage
             localStorage.setItem('asm_saved_markers', JSON.stringify(window.rawMarkers));
             localStorage.setItem('asm_current_filename', currentFileName);
 
@@ -1342,14 +1429,16 @@
                 let activeGroup = groupedByP[pKey];
                 let step1 = activeGroup.map(seg => [parseFloat(seg.start.toFixed(1)), parseFloat(seg.end.toFixed(1))]);
 
-                // Always recompute steps 2/3/4 from step1 so edits propagate correctly.
                 const step2 = buildStep2(step1);
                 const step3 = buildStep3(step2);
                 const step4 = [step1[0][0], step1[step1.length - 1][1]];
 
                 timelineBlocks.push({
                     p: parseInt(pKey),
-                    step1: step1, step2: step2, step3: step3, step4: step4
+                    step1: step1,
+                    step2: step2,
+                    step3: step3,
+                    step4: step4
                 });
 
                 let combinedPhrases = [];
@@ -1409,18 +1498,22 @@
 
                 isSystemImportingData = true;
                 window.rawMarkers = imported;
+                window.rawMarkers.sort((a, b) => a.start - b.start);
                 renderTimelineGridCanvas(true);
                 serializeWorkspaceStateToJsCodeblock();
                 isSystemImportingData = false;
                 alert(`Successfully mounted canvas timeline using ${window.rawMarkers.length} structural entries.`);
-            } catch (e) { alert("Import Fault: " + e.message); }
+            } catch (e) {
+                alert("Import Fault: " + e.message);
+            }
         }
 
-        function rewindPlayback() { player.currentTime = Math.max(0, player.currentTime - 2); }
+        function rewindPlayback() {
+            player.currentTime = Math.max(0, player.currentTime - 2);
+        }
 
         function clearWorkspaceState() {
             if (confirm("Clear active canvas context?")) {
-                // Wipe local storage backup registers completely
                 localStorage.removeItem('asm_saved_markers');
                 localStorage.removeItem('asm_current_filename');
 
