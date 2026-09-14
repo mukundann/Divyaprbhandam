@@ -29,6 +29,10 @@
     // Web Audio playback state
     let decodedAudioBuffer = null;
     let activeSourceNode = null;
+    let isPlayingSegmentFlag = false;
+    let segmentPlaybackStartCtxTime = 0;
+    let segmentPlaybackStartOffset = 0;
+    let segmentPlaybackEndOffset = 0;
 
     let overviewMount = null;
     const segmentBars = new Map();
@@ -120,6 +124,26 @@
         activeSourceNode = ctx.createBufferSource();
         activeSourceNode.buffer = decodedAudioBuffer;
         activeSourceNode.connect(ctx.destination);
+
+        // Track wall-clock (AudioContext clock) start so getSegmentPlayheadTime()
+        // can compute the current position — Web Audio playback has no
+        // equivalent of <audio>.currentTime to poll, so we derive it ourselves.
+        segmentPlaybackStartCtxTime = ctx.currentTime;
+        segmentPlaybackStartOffset = start;
+        segmentPlaybackEndOffset = start + segDuration;
+        isPlayingSegmentFlag = true;
+
+        const thisNode = activeSourceNode;
+        thisNode.onended = () => {
+            // Guard against a stale callback from a node that was already
+            // superseded by a newer playSegment() call (stopSegment() there
+            // nulls activeSourceNode before this fires for the old node).
+            if (activeSourceNode === thisNode) {
+                isPlayingSegmentFlag = false;
+                activeSourceNode = null;
+            }
+        };
+
         activeSourceNode.start(0, start, segDuration);
     }
 
@@ -129,6 +153,18 @@
             activeSourceNode.disconnect();
             activeSourceNode = null;
         }
+        isPlayingSegmentFlag = false;
+    }
+
+    function isSegmentPlaying() {
+        return isPlayingSegmentFlag;
+    }
+
+    function getSegmentPlayheadTime() {
+        if (!isPlayingSegmentFlag) return playheadTime;
+        const ctx = getAudioContext();
+        const elapsed = ctx.currentTime - segmentPlaybackStartCtxTime;
+        return Math.min(segmentPlaybackEndOffset, segmentPlaybackStartOffset + elapsed);
     }
 
     function resamplePeaksForWidth(width) {
@@ -696,6 +732,8 @@
         showUnavailable,
         redrawOverview,
         playSegment,
-        stopSegment
+        stopSegment,
+        isSegmentPlaying,
+        getSegmentPlayheadTime
     };
 })();
