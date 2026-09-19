@@ -151,7 +151,7 @@ const CONFIG = {
     'TVT': makeGroupedBook({ key: 'TVT', defPas: 100, ex: { '0': 1 } }),
     'TVS': makeSimpleBook({ key: 'TVS', defPas: 7, ex: { '0': 1 } }),
     'TVK': makeSimpleBook({ key: 'TVK', defPas: 8, ex: { '0': 1 } }),
-    'STM': makeGroupedBook({ key: 'STM', defPas: 40, ex: { '0': 1 } }),
+    'STM': makeSimpleBook({ key: 'STM', defPas: 40, ex: { '0': 1 } }),
     'PTMD': makeGroupedBook({ key: 'PTMD', defPas: 40, ex: { '0': 1 } }),
 
     // --- 4000 ---
