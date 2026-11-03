@@ -14,3 +14,5 @@ __pycache__/
 content-status.json
 offline-manifest.json
 smoke-test-status.json
+acharya_raw_text.txt
+final_processed_output.txt
