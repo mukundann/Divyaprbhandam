@@ -1,4 +1,4 @@
-window.MARKER_DATABASE = window.MARKER_DATABASE { };
+window.MARKER_DATABASE = window.MARKER_DATABASE || { };
 
 // Global function to trigger the merge on-demand
 window.mergeLanguageTexts = function () {
@@ -26,7 +26,7 @@ window.mergeLanguageTexts = function () {
             6: "en thAdhai thAdhai appAl  *  ezhuvar pazhavaDimaivandhAr  *  en nenjchin uLLE  *  vandhAyaip pOgal oTTEn  *** andhO! en AruyirE!  *  arasE! aruL enakku  * nandhAmal thandha endhAy!  *  naRaiyUr ninRa nambIyO! ",
             7: "man anjcha Ayiram thOL  *  mazhuvil thuNiththa maindhA!  * en nenjchaththuL irundhu  *  inggu inip pOyp piRar oruvar  *** vannenjcham pukkirukka oTTEn  *  vaLaiththu vaiththEn  * nannenjcha anna mannum  *  naRaiyUr ninRa nambIyO! ",
             8: "eppOdhum ponmalar iTTu  *  imaiyOr thozhudhu  *  thanggaLkaippOdhu koNDu iRainjchik  *  kazhal mEl vaNangga ninRAy  *** ippOdhu en nenjchin uLLE  *  pugundhAyaip pOgal oTTEn  * naRpOdhu vaNDu kiNDum  *  naRaiyUr ninRa nambIyO! ",
-            9: "Nalayira DivyaPrabandham Sri: periya thirumozhiUn Er Akkai thannai  *  uzhandhu Ombi vaiththamaiyAl  * yAnAy enthanakkAy  *  aDiyEn manam pugundhathEnE!  *** thIngkarumbin theLivE!  *  en sindhai thannAl  * nAnE eydhap peRREn  *  naRaiyUr ninRa nambIyO! ",
+            9: "Un Er Akkai thannai  *  uzhandhu Ombi vaiththamaiyAl  * yAnAy enthanakkAy  *  aDiyEn manam pugundhathEnE!  *** thIngkarumbin theLivE!  *  en sindhai thannAl  * nAnE eydhap peRREn  *  naRaiyUr ninRa nambIyO! ",
             10: "🙏 nannIr vayal puDai sUzh  *  naRaiyUr ninRa nambiyai  * kannIra mAl varaith thOL  *  kalikanRi manggaiyar kOn  *** sonnIra sol mAlai  *  solluvArgaL  *  sUzh visumbilnannIrmaiyAl magizhndhu  *  neDungkAlam vAzhvArE",
             11: "aDivaravu: puL ODA emmAnum siRiyAy nINDAy enthAdhai man eppOdhum UnEr nannIr sinavil"
         },
@@ -35,7 +35,7 @@ window.mergeLanguageTexts = function () {
             2: "thAy ninaindha kanRE okka  *  ennaiyumthannaiyE ninaikkach seydhu  *  thAn enakkAy ninaindhu aruL seyyum appanai  * anRu ivvaiyagam uNDu umizhndhiTTavAyanai  ***  magarak kuzhaik kAdhanaimaindhanai  *  madhiL kOval iDaikazhiAyanai  *  amararkku ari ERRai  *  enanbanai anRi AdhariyEnE ",
             3: "vandha nAL vandhu en nenjchiDam koNDAn  * maRROr nenjchu aRiyAn  *  aDiyEnuDaichsindhaiyAy vandhu thenpularkku ennaichsEr koDAn  *  idhu sikkenap peRREn  *** kondhulAm pozhil sUzh kuDandhaith thalaikkOvinaik  *  kuDam ADiya kUththanai  * endhaiyai endhai thandhai thammAnai  * empirAnai eththAl maRakkEnE? ",
             4: "urangkaLAl iyanRa mannar mALap  * pAradhaththu oru thEr aivarkkAych senRu  * iranggi Urndhu avarkku innaruL seyyumempirAnai  *  vambAr punal kAviri  *** aranggam ALi en ALi viN ALi  * Azhi sUzh ilanggai malanggach senRu  * saranggaL ANDa thaNthAmaraik kaNNanukku anRi  * en manam thAzhndhu nillAdhE ",
-            5: "Nalayira DivyaPrabandham Sri: periya thirumozhiSrimathe Ramanujaya Nama:Azhvar Emberumanar Jeeyar Thiruvadigale Sharanamhttp://acharya.orgAnggu vennaragaththu azhundhum pOdhu  * anjchEl enRu aDiyEnai anggE vandhuthAnggu  *  thAmarai anna ponnAr aDiempirAnai  *  umbarkku aNiyAy ninRa  *** vEngkaDaththu ariyaip pari kIRiyai  * veNNey uNDu uraliniDai AppuNDathIngkarumbinai  *  thEnai nanpAlinai anRi  * en manam sindhai seyyAdhE ",
+            5: "Anggu vennaragaththu azhundhum pOdhu  * anjchEl enRu aDiyEnai anggE vandhuthAnggu  *  thAmarai anna ponnAr aDiempirAnai  *  umbarkku aNiyAy ninRa  *** vEngkaDaththu ariyaip pari kIRiyai  * veNNey uNDu uraliniDai AppuNDathIngkarumbinai  *  thEnai nanpAlinai anRi  * en manam sindhai seyyAdhE ",
             6: "eTTanaip pozhudhu Agilum  *  enRumen manaththu agalAdhu irukkum pugazh  * thaTTalarththa ponnE alar kOnggin  * thAzh pozhil thirumAlirunjchOlai angkaTTiyai  ***  karumbu InRa insARRaik  * kAdhalAl maRai nAnkum mun OdhiyapaTTanai  *  paravaith thuyil ERRai  *  enpaNbanai anRip pADal seyyEnE ",
             7: "paNNin inmozhi yAzh narambil peRRa  * pAlai Agi inggE pugundhu  *  enkaNNum nenjchum vAyum iDangkoNDAn  * koNDa pin maRaiyOr manam thannuL  *** viNNuLAr perumAnai emmAnai  * vInggu nIr magaram thiLaikkum kaDalvaNNan  *  mAmaNi vaNNan em aNNal  * vaNNamE anRi vAy uraiyAdhE ",
             8: "ini eppAvam vandhu eydhum? sollIr  * emakku immaiyE aruL peRRamaiyAl  *  aDumthuniyaith thIrththu inbamE tharuginRadhOr  * thORRath thonneRiyai  ***  vaiyam thozhappaDummuniyai vAnavarAl vaNangkappaDummuththinaip  *  paththar thAm nugarginRadhOrkaniyai  *  kAdhal seydhu en uLLam koNDakaLvanai  *  inRu kaNDu koNDEnE ",
@@ -142,11 +142,11 @@ window.mergeLanguageTexts = function () {
     // Non-destructive runtime merging engine
 
     for (const key in text_bundle_en) {
-        window.MARKER_DATABASE[key] = window.MARKER_DATABASE[key][];
+        window.MARKER_DATABASE[key] = window.MARKER_DATABASE[key]|| [];
         for (const p in text_bundle_en[key]) {
             const idx = parseInt(p) - 1;
-            window.MARKER_DATABASE[key][idx] = window.MARKER_DATABASE[key][idx] { p: parseInt(p) };
-            window.MARKER_DATABASE[key][idx]['text'] = window.MARKER_DATABASE[key][idx]['text'] { };
+            window.MARKER_DATABASE[key][idx] = window.MARKER_DATABASE[key][idx] || { p: parseInt(p) };
+            window.MARKER_DATABASE[key][idx]['text'] = window.MARKER_DATABASE[key][idx]['text'] || { };
             window.MARKER_DATABASE[key][idx]['text']['en'] = text_bundle_en[key][p];
         }
     }
