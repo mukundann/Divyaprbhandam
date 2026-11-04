@@ -16,3 +16,7 @@ offline-manifest.json
 smoke-test-status.json
 acharya_raw_text.txt
 final_processed_output.txt
+scripts/extract_tamil_pasurams.py
+scripts/ptmdl.txt
+temp_downloaded.pdf
+.gitignore
