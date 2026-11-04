@@ -57,7 +57,7 @@ def process_acharya_text(raw_text):
     flat_text = flat_text[: adivaravu_match.start()].strip()
 
   # Step 3: Find numbers (1 or 2 digits) and split/insert newlines (chunks)
-  pattern = r"(.*?)(?:\s+([1-9]|10|11|12))\b"
+  pattern = r"(.*?)(?:\s+([1-9][0-9]?|100))\b"
   chunks = re.findall(pattern, flat_text)
 
   processed_output = []
