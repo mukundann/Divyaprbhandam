@@ -3,6 +3,7 @@ window.MARKER_DATABASE = window.MARKER_DATABASE || {};
 window.mergeLanguageTexts = function () {
     const text_bundle_en = {
         'TVM.7.1.steps': {
+            
         },
         'TVM.7.2.steps': {
         },
