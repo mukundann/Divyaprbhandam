@@ -12,8 +12,7 @@ window.mergeLanguageTexts = function () {
             5: "piLLai irAmAnusa thAsar aruLich seythathu : vAzhiyarO then kurugai vAzhiyarO then puthuvai * vAzhiyarO thenkuRaiyal mAnagaram * vAzhiyarO thakkOr paravum thadam sUzh perumbUthUr * mukkOl pidiththa muni",
             6: "thiruvarangkaththamuthanAr aruLich seythathu : mozhiyaik kadakkum perum pugazhAn * vanjcha mukkuRumbAm kuzhiyaik kadakkum nam kUraththAzhvAn charaN kUdiya pin ** pazhiyaik kadaththum irAmAnusan pugazh pAdi allA vazhiyaik kadaththal * enakkiniyAthum varuththamanRE",
             7: "piLLai azhagiya maNavALa thAsar aruLich seythathu : nenjchaththirunthu nirantharamAga nirayaththuykkum * vanjchak kuRumbin vagai aRuththEn * mAya vAthiyar thAm anjchap piRanthavan sImAthavan adikkanbu seyyum * thanjchaththoruvan saraNAm buyam en thalaikkaNinthE",
-            8: "pinbazhagarAm perumAL sIyar aruLich seythathu : Uzhi thoRum Uzhi thoRum ulagam uyya umbargaLum kEttuyya *",
-            9: "anbinAlE vAzhi enum bUtham pEy poygai mARan mazhisaiyar kOn pattar pirAn mangkai vEnthan * kOzhiyar kOn thoNdar thugaL pANan kOthai kula munivan kURiya nUlOthi * vIthi vAzhi ena varum thiraLai vAzhththuvAr tham malar adi en sennikku malarntha pUvE",
+            8: "pinbazhagarAm perumAL sIyar aruLich seythathu : Uzhi thoRum Uzhi thoRum ulagam uyya umbargaLum kEttuyya *anbinAlE vAzhi enum bUtham pEy poygai mARan mazhisaiyar kOn pattar pirAn mangkai vEnthan * kOzhiyar kOn thoNdar thugaL pANan kOthai kula munivan kURiya nUlOthi * vIthi vAzhi ena varum thiraLai vAzhththuvAr tham malar adi en sennikku malarntha pUvE",
         },
         'IYLS.1.steps': {
             1: "🙏 Aazhwaar Emperumaanaar Jeeyar ThiruvadigaLE sharanam 🙏"
