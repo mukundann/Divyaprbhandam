@@ -1,5 +1,7 @@
-window.MARKER_DATABASE = window.MARKER_DATABASE || {}; window.MARKER_DATABASE['YRV.0.steps'] = [
-    { "p": 1, "step1": [[0, 2.7]], "step2": [[0, 2.7]], "step3": [[0, 2.7]], "step4": [0, 2.7] },
+window.MARKER_DATABASE = window.MARKER_DATABASE || {};
+
+window.MARKER_DATABASE['YRV.0.steps'] = [
+    { "p": 1, "step1": [[0, 3.6], [3.6, 7.3], [7.3, 10.7], [10.7, 14.5]], "step2": [[0, 3.6], [3.6, 7.3], [7.3, 10.7], [10.7, 14.5]], "step3": [[0, 7.3], [7.3, 14.5]], "step4": [0, 14.5] }
 ];
 
 window.MARKER_DATABASE['YRV.1.steps'] = [
