@@ -2,13 +2,6 @@ import re
 import sys
 from pathlib import Path
 
-# Tamil Unicode ranges:
-# Vowels: U+0B85..U+0B94
-# Consonants: U+0B95..U+0BB9
-# Dependent vowel signs (matras): U+0BBE..U+0BCC
-# Pulli / Virama: U+0BCD
-# Aytham: U+0B83
-
 TAMIL_VOWELS = {
     "\u0B85": "ಅ",  # அ
     "\u0B86": "ಆ",  # ஆ
@@ -34,15 +27,15 @@ TAMIL_CONSONANTS = {
     "\u0BA3": "ಣ",  # ண
     "\u0BA4": "ತ",  # த
     "\u0BA8": "ನ",  # ந
-    "\u0BA9": "ನ",  # ன (change to "ಱ" if preferred)
+    "\u0BA9": "ನ",  # ன
     "\u0BAA": "ಪ",  # ப
     "\u0BAE": "ಮ",  # ம
     "\u0BAF": "ಯ",  # ய
     "\u0BB0": "ರ",  # ர
-    "\u0BB1": "ರ",  # ற (change to "ಱ" if preferred)
+    "\u0BB1": "ರ",  # ற
     "\u0BB2": "ಲ",  # ல
     "\u0BB3": "ಳ",  # ள
-    "\u0BB4": "ಳ",  # ழ (change to "ೞ" if preferred)
+    "\u0BB4": "ಳ",  # ழ
     "\u0BB5": "ವ",  # வ
     "\u0BB6": "ಶ",  # ஶ
     "\u0BB7": "ಷ",  # ஷ
@@ -64,11 +57,12 @@ TAMIL_MATRAS = {
     "\u0BCC": "\u0CCC",  # ௌ -> ೌ
 }
 
-TAMIL_PULLI = "\u0BCD"     # ்
-KANNADA_VIRAMA = "\u0CCD"  # ್
+TAMIL_PULLI = "\u0BCD"      # ்
+KANNADA_VIRAMA = "\u0CCD"   # ್
 
-# Matches sequences containing Tamil script characters (including modifiers/pulli)
-TAMIL_RUN_RE = re.compile(r"[\u0B82\u0B83\u0B85-\u0B95\u0B99-\u0B9A\u0B9C\u0B9E-\u0B9F\u0BA3-\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BBE-\u0BCD]+")
+TAMIL_RUN_RE = re.compile(
+    r"[\u0B82\u0B83\u0B85-\u0B95\u0B99-\u0B9A\u0B9C\u0B9E-\u0B9F\u0BA3-\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BBE-\u0BCD]+"
+)
 
 
 def transliterate_tamil_segment(segment: str) -> str:
@@ -115,16 +109,10 @@ def transliterate_tamil_segment(segment: str) -> str:
     return result
 
 
-def convert_tamil_in_text(text: str) -> str:
-    """Replace only Tamil character runs while leaving English, punctuation, spaces, and symbols untouched."""
-    return TAMIL_RUN_RE.sub(lambda m: transliterate_tamil_segment(m.group(0)), text)
-
-
 def transliterate_js_file(js_content: str) -> str:
     """
-    Walk JS content so variable names, English strings, numbers, syntax,
-    and comments remain untouched, while Tamil characters inside strings/values
-    are transliterated to Kannada.
+    Transliterate Tamil runs inside string literals to Kannada, keep English/code/comments intact,
+    rename text_bundle_ta -> text_bundle_ka, and change MARKER_DATABASE...['text']['ta'] -> ['text']['ka'].
     """
     result = []
     i = 0
@@ -136,11 +124,16 @@ def transliterate_js_file(js_content: str) -> str:
     in_line_comment = False
     in_block_comment = False
 
+    # Tracks whether we are inside a MARKER_DATABASE...['text'][<here>] expression
+    marker_db_active = False
+    saw_text_key = False
+    expecting_lang_key = False
+    recent_code = ""
+
     while i < n:
         ch = js_content[i]
         nxt = js_content[i + 1] if i + 1 < n else ""
 
-        # Handle end of line comment
         if in_line_comment:
             result.append(ch)
             if ch == "\n":
@@ -148,7 +141,6 @@ def transliterate_js_file(js_content: str) -> str:
             i += 1
             continue
 
-        # Handle end of block comment
         if in_block_comment:
             result.append(ch)
             if ch == "*" and nxt == "/":
@@ -159,7 +151,6 @@ def transliterate_js_file(js_content: str) -> str:
             i += 1
             continue
 
-        # Outside strings: check for comments
         if not (in_single_quote or in_double_quote or in_template_literal):
             if ch == "/" and nxt == "/":
                 result.append("//")
@@ -172,9 +163,9 @@ def transliterate_js_file(js_content: str) -> str:
                 i += 2
                 continue
 
-        # Handle string delimiters
+        # Handle quote transitions
+        quote_char = None
         if ch == "'" and not in_double_quote and not in_template_literal:
-            # Check escape
             backslashes = 0
             k = i - 1
             while k >= 0 and js_content[k] == "\\":
@@ -182,11 +173,8 @@ def transliterate_js_file(js_content: str) -> str:
                 k -= 1
             if backslashes % 2 == 0:
                 in_single_quote = not in_single_quote
-            result.append(ch)
-            i += 1
-            continue
-
-        if ch == '"' and not in_single_quote and not in_template_literal:
+                quote_char = "'"
+        elif ch == '"' and not in_single_quote and not in_template_literal:
             backslashes = 0
             k = i - 1
             while k >= 0 and js_content[k] == "\\":
@@ -194,11 +182,8 @@ def transliterate_js_file(js_content: str) -> str:
                 k -= 1
             if backslashes % 2 == 0:
                 in_double_quote = not in_double_quote
-            result.append(ch)
-            i += 1
-            continue
-
-        if ch == "`" and not in_single_quote and not in_double_quote:
+                quote_char = '"'
+        elif ch == "`" and not in_single_quote and not in_double_quote:
             backslashes = 0
             k = i - 1
             while k >= 0 and js_content[k] == "\\":
@@ -206,14 +191,46 @@ def transliterate_js_file(js_content: str) -> str:
                 k -= 1
             if backslashes % 2 == 0:
                 in_template_literal = not in_template_literal
+                quote_char = "`"
+
+        if quote_char is not None:
+            is_opening = (
+                (quote_char == "'" and in_single_quote)
+                or (quote_char == '"' and in_double_quote)
+                or (quote_char == "`" and in_template_literal)
+            )
+            if is_opening and marker_db_active and saw_text_key and expecting_lang_key:
+                # Check if the literal inside quotes is literally 'ta' or "ta"
+                end_quote_idx = js_content.find(quote_char, i + 1)
+                if end_quote_idx != -1 and js_content[i + 1 : end_quote_idx] == "ta":
+                    result.append(quote_char + "ka" + quote_char)
+                    # Close the string state since we consumed the closing quote
+                    if quote_char == "'":
+                        in_single_quote = False
+                    elif quote_char == '"':
+                        in_double_quote = False
+                    else:
+                        in_template_literal = False
+                    saw_text_key = False
+                    expecting_lang_key = False
+                    i = end_quote_idx + 1
+                    continue
             result.append(ch)
             i += 1
             continue
 
         # Inside string literals: transliterate Tamil runs, keep English/escapes/ASCII intact
         if in_single_quote or in_double_quote or in_template_literal:
+            if marker_db_active and not saw_text_key:
+                # Detect ['text'] or ["text"] while inside the quote
+                prev_two = "".join(result[-2:]) if len(result) >= 2 else ""
+                if prev_two == "['" or prev_two == '["':
+                    # Look ahead for text'<quote>
+                    close_q = js_content.find("'" if "'" in prev_two else '"', i)
+                    if close_q != -1 and js_content[i:close_q] == "text":
+                        saw_text_key = True
+
             if ch == "\\" and nxt:
-                # Keep escape sequences like \n, \t, \" intact; transliterate if \uXXXX isn't ASCII
                 result.append(ch + nxt)
                 i += 2
                 continue
@@ -228,7 +245,33 @@ def transliterate_js_file(js_content: str) -> str:
             i += 1
             continue
 
-        # Outside strings and comments: keep JS syntax/English identifiers intact
+        # Outside strings and comments: track identifiers & MARKER_DATABASE['text']['ta'] chain
+        if ch in ";\n{}":
+            if ch in ";\n":
+                marker_db_active = False
+                saw_text_key = False
+                expecting_lang_key = False
+
+        recent_code = (recent_code + ch)[-64:]
+        if re.search(r"\bMARKER_DATABASE\s*$", recent_code):
+            marker_db_active = True
+            saw_text_key = False
+            expecting_lang_key = False
+
+        if marker_db_active and saw_text_key and ch == "[":
+            expecting_lang_key = True
+
+        # Replace text_bundle_ta identifier at word boundary
+        if ch == "t" and js_content.startswith("text_bundle_ta", i):
+            before_ok = i == 0 or not (js_content[i - 1].isalnum() or js_content[i - 1] == "_")
+            after_idx = i + len("text_bundle_ta")
+            after_ok = after_idx >= n or not (js_content[after_idx].isalnum() or js_content[after_idx] == "_")
+            if before_ok and after_ok:
+                result.append("text_bundle_ka")
+                recent_code = (recent_code + "ext_bundle_ka")[-64:]
+                i = after_idx
+                continue
+
         result.append(ch)
         i += 1
 
@@ -250,7 +293,7 @@ def main():
     js_text = input_path.read_text(encoding="utf-8")
     converted_text = transliterate_js_file(js_text)
     output_path.write_text(converted_text, encoding="utf-8")
-    print(f"Done. Wrote Kannada-transliterated JS file to: {output_path}")
+    print(f"Done. Wrote Kannada JS file to: {output_path}")
 
 
 if __name__ == "__main__":
