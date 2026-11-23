@@ -136,7 +136,7 @@
             <p>Please enter your Pancha Samskaara Aachaaryan Thirunaamam (name) for Thiruvaaimozhi.</p>
             <form id="thiruvadiForm" onsubmit="return false;">
                 <label for="thiruvadiInput">Thiruvadi Sambandam Details</label>
-                <input type="text" id="thiruvadiInput" placeholder="Enter Acharyan Thirunaamam (e.g. Sri Ramanujar Swami)" required autocomplete="off" />
+                <input type="text" id="thiruvadiInput" placeholder="Enter Aachaaryan Thirunaamam (e.g. Sri Raamaanujar Swami)" required autocomplete="off" />
                 <div class="thiruvadi-actions">
                     <button type="button" class="thiruvadi-btn thiruvadi-btn-cancel" id="thiruvadiCancelBtn">Cancel</button>
                     <button type="submit" class="thiruvadi-btn thiruvadi-btn-submit" id="thiruvadiSubmitBtn">Submit & Play</button>
