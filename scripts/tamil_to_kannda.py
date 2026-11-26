@@ -1,300 +1,433 @@
+#!/usr/bin/env python3
+"""
+Tamil (+ optional English transliteration) -> Kannada for the Divya Prabandham marker files.
+
+Conventions follow the printed/online Kannada editions (e.g. prapatti.com):
+
+  * nasal + homorganic stop is written with anusvara:  ಪಲ್ಲಾಂಡು, ಮಂಗೈ, ವಂದು, ವರಂಬು
+  * word-final ம் is written ಂ:                         ನೂಱಾಯಿರಂ, ಮನಂ
+  * ழ -> ೞ, ற -> ಱ, and ற்ற -> ಟ್ರ (ಒಟ್ರುಂಡು, ಪೆಟ್ರು)
+  * Tamil stops are voiced by Tamil sound rules: between vowels and after nasals / ய் ர் ழ்
+    (ಇಡುವದನ್, ಎಂಗಳ್, ವಾೞ್ಗಿನ್ಱ); voiceless at word start, when doubled, after other stops
+    and when the letter carries no vowel (ಪಟ್ಟು, ತಿರುಕ್ಕಾಪ್ಪು, ವಾೞಾಟ್ಪಟ್ಟು)
+  * ச is ಶ at word start / between vowels (ಶೇವಡಿ, ಅಶುರರ್), ಚ when doubled or after ச್
+    (ತಿರುಚ್ಚಕ್ಕರ), ಜ after a nasal (ಶೆಂಜುಡರ್)
+
+The English file is only used for Sanskrit words (LITERAL_WORDS): there the English
+letters (g/k, dh/th, sh ...) and the overrides below are taken as written, because
+Tamil script cannot show aspirates or ś/ṣ/s.  Every disagreement between the Tamil and
+English texts is written to the report (it often reveals a typo in one of them).
+
+Usage:
+  python tamil_en_to_kannada.py ta.js en.js out_ka.js [--report report.txt]
+         [--nasal anusvara|conjunct] [--final-m anusvara|virama]
+         [--simple-letters]      # ಳ for ழ and ರ for ற instead of ೞ / ಱ
+         [--overrides extra.json] [--selftest]
+"""
+import argparse
+import difflib
+import json
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
-TAMIL_VOWELS = {
-    "\u0B85": "ಅ",  # அ
-    "\u0B86": "ಆ",  # ஆ
-    "\u0B87": "ಇ",  # இ
-    "\u0B88": "ಈ",  # ஈ
-    "\u0B89": "ಉ",  # உ
-    "\u0B8A": "ಊ",  # ஊ
-    "\u0B8E": "ಎ",  # எ
-    "\u0B8F": "ಏ",  # ஏ
-    "\u0B90": "ಐ",  # ஐ
-    "\u0B92": "ಒ",  # ஒ
-    "\u0B93": "ಓ",  # ஓ
-    "\u0B94": "ಔ",  # ஔ
+VIRAMA = "\u0CCD"
+
+# --------------------------------------------------------------------------
+# Tamil side: letter -> (canonical sound, default Kannada letter)
+# --------------------------------------------------------------------------
+T_CONS = {
+    "க": ("k", "ಕ"), "ங": ("G", "ಙ"), "ச": ("c", "ಚ"), "ஜ": ("c", "ಜ"),
+    "ஞ": ("Y", "ಞ"), "ட": ("T", "ಟ"), "ண": ("N", "ಣ"), "த": ("t", "ತ"),
+    "ந": ("n", "ನ"), "ன": ("n", "ನ"), "ப": ("p", "ಪ"), "ம": ("m", "ಮ"),
+    "ய": ("y", "ಯ"), "ர": ("r", "ರ"), "ற": ("R", "ಱ"), "ல": ("l", "ಲ"),
+    "ள": ("L", "ಳ"), "ழ": ("Z", "ೞ"), "வ": ("v", "ವ"), "ஶ": ("c", "ಶ"),
+    "ஷ": ("S", "ಷ"), "ஸ": ("c", "ಸ"), "ஹ": ("h", "ಹ"),
+}
+T_VOWELS = {
+    "அ": "a", "ஆ": "A", "இ": "i", "ஈ": "I", "உ": "u", "ஊ": "U",
+    "எ": "e", "ஏ": "E", "ஐ": "W", "ஒ": "o", "ஓ": "O", "ஔ": "X",
+}
+T_MATRAS = {
+    "ா": "A", "ி": "i", "ீ": "I", "ு": "u", "ூ": "U",
+    "ெ": "e", "ே": "E", "ை": "W", "ொ": "o", "ோ": "O", "ௌ": "X",
+}
+PULLI = "\u0BCD"
+AYTHAM, ANUSVARA = "\u0B83", "\u0B82"
+
+K_VOWEL_INDEP = {"a": "ಅ", "A": "ಆ", "i": "ಇ", "I": "ಈ", "u": "ಉ", "U": "ಊ",
+                 "e": "ಎ", "E": "ಏ", "W": "ಐ", "o": "ಒ", "O": "ಓ", "X": "ಔ"}
+K_MATRA = {"a": "", "A": "ಾ", "i": "ಿ", "I": "ೀ", "u": "ು", "U": "ೂ",
+           "e": "ೆ", "E": "ೇ", "W": "ೈ", "o": "ೊ", "O": "ೋ", "X": "ೌ"}
+
+# --------------------------------------------------------------------------
+# English side (the scheme used in marker_*_en.js)
+# --------------------------------------------------------------------------
+E_VOW = {"ai": "W", "au": "X", "a": "a", "A": "A", "i": "i", "I": "I",
+         "u": "u", "U": "U", "e": "e", "E": "E", "o": "o", "O": "O"}
+
+# token -> list of (canonical, Kannada letter)
+E_CONS = {
+    # extended tokens, only used in OVERRIDES for Sanskrit words
+    "~dh": [("t", "ಧ")], "~th": [("t", "ಥ")], "~kh": [("k", "ಖ")],
+    "~gh": [("k", "ಘ")], "~S": [("c", "ಶ")], "~ny": [("Y", "ಞ")],
+    # clusters written as one token in the English files
+    "ng": [("G", "ಙ"), ("k", "ಗ")],
+    "nj": [("Y", "ಞ"), ("c", "ಜ")],
+    "zh": [("Z", "ೞ")], "ch": [("c", "ಚ")], "sh": [("S", "ಷ")],
+    "th": [("t", "ತ")], "dh": [("t", "ದ")],
+    "kh": [("k", "ಖ")], "gh": [("k", "ಘ")], "bh": [("p", "ಭ")], "ph": [("p", "ಫ")],
+    "k": [("k", "ಕ")], "g": [("k", "ಗ")], "j": [("c", "ಜ")],
+    "T": [("T", "ಟ")], "t": [("T", "ಟ")], "D": [("T", "ಡ")], "d": [("T", "ಡ")],
+    "N": [("N", "ಣ")], "n": [("n", "ನ")],
+    "p": [("p", "ಪ")], "b": [("p", "ಬ")], "m": [("m", "ಮ")],
+    "y": [("y", "ಯ")], "r": [("r", "ರ")], "R": [("R", "ಱ")],
+    "l": [("l", "ಲ")], "L": [("L", "ಳ")], "v": [("v", "ವ")],
+    "s": [("c", "ಸ")], "h": [("h", "ಹ")],
+}
+E_TOKENS = sorted(list(E_VOW) + list(E_CONS), key=len, reverse=True)
+
+# Sanskrit words (aspirates, ś/ṣ/s) and English typos that the plain scheme cannot
+# resolve.  key = word exactly as in the English file, value = enhanced spelling
+# using  ~S (ಶ)  ~th (ಥ)  ~dh (ಧ)  ~kh (ಖ)  ~gh (ಘ).
+DEFAULT_OVERRIDES = {
+    "gurumukamanadhIthya": "gurumu~khamana~dhIthya",   # ಗುರುಮುಖಮ್ ಅನಧೀತ್ಯ
+    "asEshAn": "a~SEshAn",                             # ಅಶೇಷಾನ್
+    "sulkam": "~Sulkam",                               # ಶುಲ್ಕಮ್
+    "svasuram": "~Sva~Suram",                          # ಶ್ವಶುರಮ್
+    "nAthamunigaL": "nA~thamunigaL",                   # ನಾಥಮುನಿಗಳ್
+    "ranganAthasya": "ranganA~thasya",                 # ರಙ್ಗನಾಥಸ್ಯ
+    "baTTar": "bhaTTar",                               # ಭಟ್ಟರ್ (Bhattar)
+    "appAnjasanniyamum": "appA~nycha~Sanniyamum",          # ಪಾಂಚಶನ್ನಿಯಮುಂ (Pañcajanya)
+    "vEdhAN": "vEdhAn",                                # typo: N -> n
+    "arLich": "aruLich",                               # typo: missing u
 }
 
-TAMIL_CONSONANTS = {
-    "\u0B95": "ಕ",  # க
-    "\u0B99": "ಙ",  # ங
-    "\u0B9A": "ಚ",  # ச
-    "\u0B9C": "ಜ",  # ஜ
-    "\u0B9E": "ಞ",  # ஞ
-    "\u0B9F": "ಟ",  # ட
-    "\u0BA3": "ಣ",  # ண
-    "\u0BA4": "ತ",  # த
-    "\u0BA8": "ನ",  # ந
-    "\u0BA9": "ನ",  # ன
-    "\u0BAA": "ಪ",  # ப
-    "\u0BAE": "ಮ",  # ம
-    "\u0BAF": "ಯ",  # ய
-    "\u0BB0": "ರ",  # ர
-    "\u0BB1": "ರ",  # ற
-    "\u0BB2": "ಲ",  # ல
-    "\u0BB3": "ಳ",  # ள
-    "\u0BB4": "ಳ",  # ழ
-    "\u0BB5": "ವ",  # வ
-    "\u0BB6": "ಶ",  # ஶ
-    "\u0BB7": "ಷ",  # ஷ
-    "\u0BB8": "ಸ",  # ஸ
-    "\u0BB9": "ಹ",  # ஹ
+
+# English words taken literally (Sanskrit words / names); everything else follows the Tamil rules.
+LITERAL_WORDS = set(DEFAULT_OVERRIDES) | {
+    "prAha", "narapathiparikluptham", "AdhAthu", "kAma", "amaravandhyam",
+    "sAkshAth", "dhvijakulathilakam", "tham", "vishNuchiththam", "namAmi",
 }
 
-TAMIL_MATRAS = {
-    "\u0BBE": "\u0CBE",  # ா -> ಾ
-    "\u0BBF": "\u0CBF",  # ி -> ಿ
-    "\u0BC0": "\u0CC0",  # ீ -> ೀ
-    "\u0BC1": "\u0CC1",  # ு -> ು
-    "\u0BC2": "\u0CC2",  # ூ -> ೂ
-    "\u0BC6": "\u0CC6",  # ெ -> ೆ
-    "\u0BC7": "\u0CC7",  # ே -> ೇ
-    "\u0BC8": "\u0CC8",  # ை -> ೈ
-    "\u0BCA": "\u0CCA",  # ொ -> ೊ
-    "\u0BCB": "\u0CCB",  # ோ -> ோ
-    "\u0BCC": "\u0CCC",  # ௌ -> ೌ
+# Fixes applied to finished Kannada words (proper names that do not follow the voicing rules)
+KANNADA_FIXES = {
+    "ವಿಲ್ಲಿಬುತ್ತೂರ್": "ವಿಲ್ಲಿಪುತ್ತೂರ್",           # proper name
+    "ಪಟ್ಟರ್ಬಿರಾನ್": "ಭಟ್ಟರ್ಪಿರಾನ್",              # Bhattarpiran
+    # compounds that the Tamil file writes as one word but the Kannada edition splits
+    "ಪಲಗೋಡಿ": "ಪಲ ಕೋಡಿ",
+    "ಆಯಿರಂದೋಳುಂ": "ಆಯಿರನ್ ತೋಳುಂ",
+    "ಏೞ್ಬಡಿಗಾಲ್": "ಏೞ್ ಪಡಿ ಕಾಲ್",
+    "ಪಡೈಬೋರ್": "ಪಡೈ ಪೋರ್",
+    "ಪೊರುಬಡೈ": "ಪೊರುಪಡೈ",
+    "ವೀಡುಬೆಟ್ರು": "ವೀಡು ಪೆಟ್ರು",
+    "ಕೋಟ್ಟಿಯರ್ಗೋನ್": "ಕೋಟ್ಟಿಯರ್ ಕೋನ್",
+    "ಅಬಿಮಾನದುಂಗನ್": "ಅಬಿಮಾನ ತುಂಗನ್",
+    "ತುೞಾಯ್ಮಲರ್ಜೂಡಿಕ್": "ತುೞಾಯ್ಮಲರ್ ಶೂಡಿಕ್",
+    "ಕುಡಿಗುಡಿ": "ಕುಡಿಕುಡಿ",
 }
 
-TAMIL_PULLI = "\u0BCD"      # ்
-KANNADA_VIRAMA = "\u0CCD"   # ್
 
-TAMIL_RUN_RE = re.compile(
-    r"[\u0B82\u0B83\u0B85-\u0B95\u0B99-\u0B9A\u0B9C\u0B9E-\u0B9F\u0BA3-\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BBE-\u0BCD]+"
-)
+def nfc(s):
+    return unicodedata.normalize("NFC", s)
 
 
-def transliterate_tamil_segment(segment: str) -> str:
-    """Transliterate a Tamil script run into Kannada script."""
-    segment = segment.replace("\u200C", "").replace("\u200D", "")
-    out = []
-    i = 0
-    n = len(segment)
-
+# --------------------------------------------------------------------------
+# Tamil parsing
+# --------------------------------------------------------------------------
+def parse_tamil(text):
+    """-> list of tokens: ('C',canon,letter) ('V',canon,attached) ('X',text)"""
+    toks, i, n = [], 0, len(text)
     while i < n:
-        ch = segment[i]
-
-        if ch == "\u0B83":  # ஃ -> ಃ
-            out.append("\u0C83")
+        ch = text[i]
+        if ch in T_CONS:
+            canon, letter = T_CONS[ch]
+            toks.append(["C", canon, letter, ch, False])   # [kind, canon, letter, tamil char, literal]
             i += 1
-        elif ch == "\u0B82":  # Anusvara -> ಂ
-            out.append("\u0C82")
-            i += 1
-        elif ch in TAMIL_VOWELS:
-            out.append(TAMIL_VOWELS[ch])
-            i += 1
-        elif ch in TAMIL_CONSONANTS:
-            out.append(TAMIL_CONSONANTS[ch])
-            i += 1
-            if i < n and segment[i] == TAMIL_PULLI:
-                out.append(KANNADA_VIRAMA)
+            if i < n and text[i] == PULLI:
                 i += 1
-            elif i < n and segment[i] in TAMIL_MATRAS:
-                out.append(TAMIL_MATRAS[segment[i]])
+            elif i < n and text[i] in T_MATRAS:
+                toks.append(["V", T_MATRAS[text[i]], True])
                 i += 1
-        elif ch in TAMIL_MATRAS:
-            out.append(TAMIL_MATRAS[ch])
+            else:
+                toks.append(["V", "a", True])
+        elif ch in T_VOWELS:
+            toks.append(["V", T_VOWELS[ch], False])
             i += 1
-        elif ch == TAMIL_PULLI:
-            out.append(KANNADA_VIRAMA)
+        elif ch == AYTHAM:
+            toks.append(["X", "ಃ"]); i += 1
+        elif ch == ANUSVARA:
+            toks.append(["X", "ಂ"]); i += 1
+        elif ch in (PULLI, "\u200c", "\u200d"):
             i += 1
         else:
+            toks.append(["X", ch]); i += 1
+    return toks
+
+
+# --------------------------------------------------------------------------
+# English parsing
+# --------------------------------------------------------------------------
+def english_stream(text, overrides, unknown):
+    stream = []
+    for w in re.findall(r"[A-Za-z~]+", text):
+        lit = w in LITERAL_WORDS
+        w = overrides.get(w, w)
+        i = 0
+        while i < len(w):
+            for tok in E_TOKENS:
+                if w.startswith(tok, i):
+                    if tok in E_VOW:
+                        stream.append(("V", E_VOW[tok], None, lit))
+                    else:
+                        for canon, letter in E_CONS[tok]:
+                            stream.append(("C", canon, letter, lit))
+                    i += len(tok)
+                    break
+            else:
+                unknown.add(w[i])
+                i += 1
+    return stream
+
+
+
+STOPS = {"க": ("ಕ", "ಗ"), "ச": ("ಚ", "ಜ"), "ட": ("ಟ", "ಡ"), "த": ("ತ", "ದ"), "ப": ("ಪ", "ಬ")}
+NASALS = set("ஙஞணநனம")
+GLIDES = set("யரழ")
+
+
+def apply_tamil_rules(toks):
+    """Choose Kannada letters for Tamil consonants (voicing, ಶ for ச, ற்ற -> ಟ್ರ)."""
+    n = len(toks)
+    for i, t in enumerate(toks):
+        if t[0] != "C" or t[4]:
+            continue
+        ch = t[3]
+        has_vowel = i + 1 < n and toks[i + 1][0] == "V" and toks[i + 1][2]
+        prev = toks[i - 1] if i > 0 else None
+
+        if ch == "ற" and not has_vowel and i + 2 < n and toks[i + 1][0] == "C" and toks[i + 1][3] == "ற":
+            t[2] = "ಟ"                       # ற்ற -> ಟ್ರ
+            toks[i + 1][2] = "ರ"
+            toks[i + 1][4] = True
+            continue
+        if ch not in STOPS:
+            continue
+
+        unv, voi = STOPS[ch]
+        letter = unv
+        if prev is None or prev[0] == "X":                      # word start
+            if ch == "ச":
+                j = i - 1
+                while j >= 0 and toks[j][0] == "X" and toks[j][1].isspace():
+                    j -= 1
+                letter = "ಚ" if (j >= 0 and toks[j][0] == "C" and toks[j][3] == "ச") else "ಶ"
+        elif has_vowel:
+            if prev[0] == "V":                                   # between vowels
+                letter = "ಶ" if ch == "ச" else voi
+            elif prev[0] == "C":
+                pc = prev[3]
+                if pc == ch:
+                    letter = unv                                 # doubled
+                elif pc in NASALS or pc in GLIDES:
+                    letter = voi
+        t[2] = letter
+
+# --------------------------------------------------------------------------
+# One verse
+# --------------------------------------------------------------------------
+def convert_verse(ta, en, opts, overrides, report, ctx):
+    toks = parse_tamil(nfc(ta))
+    unknown = set()
+    est = english_stream(nfc(en), overrides, unknown)
+    if unknown:
+        report.append(f"{ctx}: unknown English characters {sorted(unknown)}")
+
+    t_idx = [k for k, t in enumerate(toks) if t[0] in "CV"]
+    tcan = [toks[k][1] for k in t_idx]
+    ecan = [e[1] for e in est]
+
+    sm = difflib.SequenceMatcher(None, tcan, ecan, autojunk=False)
+    for tag, i1, i2, j1, j2 in (sm.get_opcodes() if est else []):   # no English -> nothing to compare
+        if tag == "equal":
+            for d in range(i2 - i1):
+                tk = toks[t_idx[i1 + d]]
+                if tk[0] == "C" and est[j1 + d][3]:
+                    tk[2] = est[j1 + d][2]      # Sanskrit word: keep the English letter
+                    tk[4] = True
+        else:
+            tctx = "".join(tcan[max(0, i1 - 4):min(len(tcan), i2 + 4)])
+            ectx = "".join(ecan[max(0, j1 - 4):min(len(ecan), j2 + 4)])
+            kind = "sandhi/elision" if (tag == "delete" and all(c in "aAiIuUeEWoOX" for c in tcan[i1:i2])) else "MISMATCH"
+            report.append(f"{ctx}: {kind}  Tamil[{''.join(tcan[i1:i2])}] vs English[{''.join(ecan[j1:j2])}]"
+                          f"   (context T:{tctx}  E:{ectx})")
+
+    apply_tamil_rules(toks)
+
+    out, i = [], 0
+    while i < len(toks):
+        t = toks[i]
+        if t[0] == "C":
+            letter = t[2]
+            if opts.simple_letters:
+                letter = {"ೞ": "ಳ", "ಱ": "ರ"}.get(letter, letter)
+            nxt = toks[i + 1] if i + 1 < len(toks) else None
+            if nxt and nxt[0] == "V" and nxt[2]:
+                out.append(letter + K_MATRA[nxt[1]])
+                i += 2
+            else:
+                out.append(letter + VIRAMA)
+                i += 1
+        elif t[0] == "V":
+            out.append(K_VOWEL_INDEP[t[1]])
+            i += 1
+        else:
+            ch = t[1]
+            if ch == ":" and i > 0 and toks[i - 1][0] in "CV":
+                ch = "ಃ"                       # visarga attached to a word
             out.append(ch)
             i += 1
-
     result = "".join(out)
-    result = result.replace("\u0CCA\u0CC6", "\u0CCB")
-    result = result.replace("\u0CC6\u0CC6", "\u0CC7")
+
+    if opts.nasal == "anusvara":
+        for nas, rng in (("ಙ", "ಕಗ"), ("ಞ", "ಚಜ"), ("ಣ", "ಟಡ"), ("ನ", "ತದ"), ("ಮ", "ಪಬ")):
+            result = re.sub(f"(?<!{VIRAMA}){nas}{VIRAMA}(?=[{rng}])", "ಂ", result)
+            result = re.sub(f"(?<=ಯ{VIRAMA}){nas}{VIRAMA}(?=[{rng}])", "ಂ", result)
+    if opts.final_m == "anusvara":
+        result = re.sub(f"ಮ{VIRAMA}(?![\u0C80-\u0CFF])", "ಂ", result)
+    for bad, good in KANNADA_FIXES.items():
+        result = re.sub(f"(?<![\u0C80-\u0CFF]){re.escape(bad)}(?![\u0C80-\u0CFF])", good, result)
     return result
 
 
-def transliterate_js_file(js_content: str) -> str:
+
+# Words read from the prapatti.com Kannada edition of Tiruppallandu: (Tamil, expected Kannada)
+SELFTEST = [
+    ("பல்லாண்டு", "ಪಲ್ಲಾಂಡು"), ("பல்லாயிரத்தாண்டு", "ಪಲ್ಲಾಯಿರತ್ತಾಂಡು"),
+    ("நூறாயிரம்", "ನೂಱಾಯಿರಂ"), ("மல்லாண்ட", "ಮಲ್ಲಾಂಡ"), ("மணிவண்ணா", "ಮಣಿವಣ್ಣಾ"),
+    ("சேவடி", "ಶೇವಡಿ"), ("செவ்வி", "ಶೆವ್ವಿ"), ("திருக்காப்பு", "ತಿರುಕ್ಕಾಪ್ಪು"),
+    ("அடியோமோடும்", "ಅಡಿಯೋಮೋಡುಂ"), ("நின்னோடும்", "ನಿನ್ನೋಡುಂ"), ("வாழ்கின்ற", "ವಾೞ್ಗಿನ್ಱ"),
+    ("மங்கையும்", "ಮಂಗೈಯುಂ"), ("சுடராழியும்", "ಶುಡರಾೞಿಯುಂ"), ("முழங்கும்", "ಮುೞಂಗುಂ"),
+    ("வாழாட்பட்டு", "ವಾೞಾಟ್ಪಟ್ಟು"), ("நின்றீர்", "ನಿನ್ಱೀರ್"), ("உள்ளீரேல்", "ಉಳ್ಳೀರೇಲ್"),
+    ("வந்து", "ವಂದು"), ("மண்ணும்", "ಮಣ್ಣುಂ"), ("மணமும்", "ಮಣಮುಂ"), ("கொண்மின்", "ಕೊಣ್ಮಿನ್"),
+    ("எங்கள்", "ಎಂಗಳ್"), ("புகுதலொட்டோம்", "ಪುಗುದಲೊಟ್ಟೋಂ"), ("ஏழாட்காலும்", "ಏೞಾಟ್ಕಾಲುಂ"),
+    ("இராக்கதர்", "ಇರಾಕ್ಕದರ್"), ("இலங்கை", "ಇಲಂಗೈ"), ("கூறுதுமே", "ಕೂಱುದುಮೇ"),
+    ("இடுவதன்", "ಇಡುವದನ್"), ("வரம்பு", "ವರಂಬು"), ("அசுரர்", "ಅಶುರರ್"),
+    ("தவிர்ந்து", "ತವಿರ್ನ್ದು"), ("ஒற்றுண்டு", "ಒಟ್ರುಂಡು"), ("சுழற்றிய", "ಶುೞಟ್ರಿಯ"),
+    ("தோற்றி", "ತೋಟ್ರಿ"), ("பெற்று", "ಪೆಟ್ರು"), ("எந்தை", "ಎಂದೈ"), ("அந்தியம்", "ಅಂದಿಯಂ"),
+    ("பாய்ந்தவனே", "ಪಾಯ್ಂದವನೇ"), ("ஐந்தலைய", "ಐಂದಲೈಯ"), ("நன்கு", "ನನ್ಗು"),
+    ("வில்லிபுத்தூர்", "ವಿಲ್ಲಿಪುತ್ತೂರ್"), ("விட்டுசித்தன்", "ವಿಟ್ಟುಶಿತ್ತನ್"),
+    ("திருச்சக்கரத்தின்", "ತಿರುಚ್ಚಕ್ಕರತ್ತಿನ್"), ("செஞ்சுடர்", "ಶೆಂಜುಡರ್"),
+    ("கலத்தது", "ಕಲತ್ತದು"), ("பழிப்பு", "ಪೞಿಪ್ಪು"), ("தொழுது", "ತೊೞುದು"),
+    ("அணி", "ಅಣಿ"), ("கோட்டியர்", "ಕೋಟ್ಟಿಯರ್"), ("பரமேட்டியை", "ಪರಮೇಟ್ಟಿಯೈ"),
+    ("துங்கன்", "ತುಂಗನ್"), ("செல்வனை", "ಶೆಲ್ವನೈ"), ("அடைக்காயும்", "ಅಡೈಕ್ಕಾಯುಂ"),
+    ("பையுடை", "ಪೈಯುಡೈ"), ("நாகப்பகைக்", "ನಾಗಪ್ಪಗೈಕ್"), ("பைந்நாகணைப்", "ಪೈನ್ನಾಗಣೈಪ್"),
+    ("அருளிச்", "ಅರುಳಿಚ್"), ("இருடிகேசன்", "ಇರುಡಿಗೇಶನ್"),
+]
+
+
+def selftest(opts):
+    bad = 0
+    for ta, want in SELFTEST:
+        got = convert_verse(ta, "", opts, DEFAULT_OVERRIDES, [], "selftest")
+        if got != want:
+            bad += 1
+            print(f"FAIL {ta}: got {got}  expected {want}")
+    print(f"selftest: {len(SELFTEST) - bad}/{len(SELFTEST)} passed")
+    return bad
+
+# --------------------------------------------------------------------------
+# JS file handling
+# --------------------------------------------------------------------------
+KEY_RE = re.compile(r"^\s*'([^']+)'\s*:\s*\{")
+ENTRY_RE = re.compile(r'^(\s*)(\d+):\s*"((?:[^"\\]|\\.)*)"(,?)\s*$')
+
+
+def read_entries(text):
+    entries, key = {}, None
+    for line in text.splitlines():
+        m = KEY_RE.match(line)
+        if m:
+            key = m.group(1)
+            continue
+        m = ENTRY_RE.match(line)
+        if m and key:
+            entries[(key, int(m.group(2)))] = m.group(3)
+    return entries
+
+
+def convert_file(ta_path, en_path, out_path, opts, overrides=None):
+    """Convert one Tamil .js file (using the English .js if given) and write out_path.
+
+    Returns {"verses": int, "report": [...], "review": [...]}.  out_path=None -> dry run.
     """
-    Transliterate Tamil runs inside string literals to Kannada, keep English/code/comments intact,
-    rename text_bundle_ta -> text_bundle_ka, and change MARKER_DATABASE...['text']['ta'] -> ['text']['ka'].
-    """
-    result = []
-    i = 0
-    n = len(js_content)
+    overrides = dict(DEFAULT_OVERRIDES if overrides is None else overrides)
+    ta_text = Path(ta_path).read_text(encoding="utf-8")
+    en_entries = {}
+    if en_path and Path(en_path).exists():
+        en_entries = read_entries(Path(en_path).read_text(encoding="utf-8"))
 
-    in_single_quote = False
-    in_double_quote = False
-    in_template_literal = False
-    in_line_comment = False
-    in_block_comment = False
+    report, review, verses = [], [], 0
+    key, out_lines = None, []
+    for line in ta_text.splitlines():
+        m = KEY_RE.match(line)
+        if m:
+            key = m.group(1)
+        m = ENTRY_RE.match(line)
+        if m and key:
+            indent, num, ta, comma = m.group(1), int(m.group(2)), m.group(3), m.group(4)
+            en = en_entries.get((key, num))
+            ctx = f"{key}[{num}]"
+            if en is None:
+                report.append(f"{ctx}: no English text, used plain Tamil mapping")
+                en = ""
+            ka = convert_verse(ta, en, opts, overrides, report, ctx)
+            for w in re.findall(r"[A-Za-z~]+", en):
+                if "dh" in w or "sh" in w or w in overrides:
+                    review.append(f"{ctx}: {w}")
+            out_lines.append(f'{indent}{num}: "{ka}"{comma}')
+            verses += 1
+        else:
+            line = line.replace("text_bundle_ta", "text_bundle_ka").replace("['ta']", "['ka']")
+            out_lines.append(line)
 
-    # Tracks whether we are inside a MARKER_DATABASE...['text'][<here>] expression
-    marker_db_active = False
-    saw_text_key = False
-    expecting_lang_key = False
-    recent_code = ""
-
-    while i < n:
-        ch = js_content[i]
-        nxt = js_content[i + 1] if i + 1 < n else ""
-
-        if in_line_comment:
-            result.append(ch)
-            if ch == "\n":
-                in_line_comment = False
-            i += 1
-            continue
-
-        if in_block_comment:
-            result.append(ch)
-            if ch == "*" and nxt == "/":
-                result.append(nxt)
-                in_block_comment = False
-                i += 2
-                continue
-            i += 1
-            continue
-
-        if not (in_single_quote or in_double_quote or in_template_literal):
-            if ch == "/" and nxt == "/":
-                result.append("//")
-                in_line_comment = True
-                i += 2
-                continue
-            if ch == "/" and nxt == "*":
-                result.append("/*")
-                in_block_comment = True
-                i += 2
-                continue
-
-        # Handle quote transitions
-        quote_char = None
-        if ch == "'" and not in_double_quote and not in_template_literal:
-            backslashes = 0
-            k = i - 1
-            while k >= 0 and js_content[k] == "\\":
-                backslashes += 1
-                k -= 1
-            if backslashes % 2 == 0:
-                in_single_quote = not in_single_quote
-                quote_char = "'"
-        elif ch == '"' and not in_single_quote and not in_template_literal:
-            backslashes = 0
-            k = i - 1
-            while k >= 0 and js_content[k] == "\\":
-                backslashes += 1
-                k -= 1
-            if backslashes % 2 == 0:
-                in_double_quote = not in_double_quote
-                quote_char = '"'
-        elif ch == "`" and not in_single_quote and not in_double_quote:
-            backslashes = 0
-            k = i - 1
-            while k >= 0 and js_content[k] == "\\":
-                backslashes += 1
-                k -= 1
-            if backslashes % 2 == 0:
-                in_template_literal = not in_template_literal
-                quote_char = "`"
-
-        if quote_char is not None:
-            is_opening = (
-                (quote_char == "'" and in_single_quote)
-                or (quote_char == '"' and in_double_quote)
-                or (quote_char == "`" and in_template_literal)
-            )
-            if is_opening and marker_db_active and saw_text_key and expecting_lang_key:
-                # Check if the literal inside quotes is literally 'ta' or "ta"
-                end_quote_idx = js_content.find(quote_char, i + 1)
-                if end_quote_idx != -1 and js_content[i + 1 : end_quote_idx] == "ta":
-                    result.append(quote_char + "ka" + quote_char)
-                    # Close the string state since we consumed the closing quote
-                    if quote_char == "'":
-                        in_single_quote = False
-                    elif quote_char == '"':
-                        in_double_quote = False
-                    else:
-                        in_template_literal = False
-                    saw_text_key = False
-                    expecting_lang_key = False
-                    i = end_quote_idx + 1
-                    continue
-            result.append(ch)
-            i += 1
-            continue
-
-        # Inside string literals: transliterate Tamil runs, keep English/escapes/ASCII intact
-        if in_single_quote or in_double_quote or in_template_literal:
-            if marker_db_active and not saw_text_key:
-                # Detect ['text'] or ["text"] while inside the quote
-                prev_two = "".join(result[-2:]) if len(result) >= 2 else ""
-                if prev_two == "['" or prev_two == '["':
-                    # Look ahead for text'<quote>
-                    close_q = js_content.find("'" if "'" in prev_two else '"', i)
-                    if close_q != -1 and js_content[i:close_q] == "text":
-                        saw_text_key = True
-
-            if ch == "\\" and nxt:
-                result.append(ch + nxt)
-                i += 2
-                continue
-
-            match = TAMIL_RUN_RE.match(js_content, i)
-            if match:
-                result.append(transliterate_tamil_segment(match.group(0)))
-                i = match.end()
-                continue
-
-            result.append(ch)
-            i += 1
-            continue
-
-        # Outside strings and comments: track identifiers & MARKER_DATABASE['text']['ta'] chain
-        if ch in ";\n{}":
-            if ch in ";\n":
-                marker_db_active = False
-                saw_text_key = False
-                expecting_lang_key = False
-
-        recent_code = (recent_code + ch)[-64:]
-        if re.search(r"\bMARKER_DATABASE\s*$", recent_code):
-            marker_db_active = True
-            saw_text_key = False
-            expecting_lang_key = False
-
-        if marker_db_active and saw_text_key and ch == "[":
-            expecting_lang_key = True
-
-        # Replace text_bundle_ta identifier at word boundary
-        if ch == "t" and js_content.startswith("text_bundle_ta", i):
-            before_ok = i == 0 or not (js_content[i - 1].isalnum() or js_content[i - 1] == "_")
-            after_idx = i + len("text_bundle_ta")
-            after_ok = after_idx >= n or not (js_content[after_idx].isalnum() or js_content[after_idx] == "_")
-            if before_ok and after_ok:
-                result.append("text_bundle_ka")
-                recent_code = (recent_code + "ext_bundle_ka")[-64:]
-                i = after_idx
-                continue
-
-        result.append(ch)
-        i += 1
-
-    return "".join(result)
+    if out_path is not None:
+        Path(out_path).write_text("\n".join(out_lines) + "\n", encoding="utf-8")
+    return {"verses": verses, "report": report, "review": sorted(set(review))}
 
 
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: python js_tamil_to_kannada.py <input.js> <output.js>")
-        sys.exit(1)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("tamil", nargs="?")
+    ap.add_argument("english", nargs="?")
+    ap.add_argument("output", nargs="?")
+    ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--nasal", choices=["conjunct", "anusvara"], default="anusvara")
+    ap.add_argument("--final-m", choices=["virama", "anusvara"], default="anusvara")
+    ap.add_argument("--simple-letters", action="store_true")
+    ap.add_argument("--overrides")
+    ap.add_argument("--report", default=None)
+    opts = ap.parse_args()
 
-    input_path = Path(sys.argv[1])
-    output_path = Path(sys.argv[2])
+    if opts.selftest:
+        return 1 if selftest(opts) else 0
+    if not (opts.tamil and opts.english and opts.output):
+        ap.error("tamil, english and output files are required")
 
-    if not input_path.exists():
-        print(f"File not found: {input_path}")
-        sys.exit(1)
+    overrides = dict(DEFAULT_OVERRIDES)
+    if opts.overrides:
+        overrides.update(json.loads(Path(opts.overrides).read_text(encoding="utf-8")))
 
-    js_text = input_path.read_text(encoding="utf-8")
-    converted_text = transliterate_js_file(js_text)
-    output_path.write_text(converted_text, encoding="utf-8")
-    print(f"Done. Wrote Kannada JS file to: {output_path}")
+    res = convert_file(opts.tamil, opts.english, opts.output, opts, overrides)
+    rep = ["Differences between Tamil and English (Tamil letter was used):"] + (res["report"] or ["  none"])
+    rep += ["", "Sanskrit-looking words to review (aspirates / ś ṣ s):"] + res["review"]
+    text = "\n".join(rep)
+    if opts.report:
+        Path(opts.report).write_text(text + "\n", encoding="utf-8")
+    print(text)
+    print(f"\nWrote {opts.output}")
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
