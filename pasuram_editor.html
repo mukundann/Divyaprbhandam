@@ -19,7 +19,7 @@
         .list-group-item.active { background-color: #007bff; color: white; }
         .main-content { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; }
         .editor-container { display: flex; flex-direction: column; gap: 10px; flex: 1; }
-        textarea { width: 100%; height: 180px; font-size: 18px; padding: 12px; font-family: 'Latha', 'Tamil Sangam MN', 'Noto Sans Kannada', 'Segoe UI', sans-serif; border: 1px solid #ccc; border-radius: 4px; resize: vertical; line-height: 1.5; }
+        textarea { width: 100%; height: 180px; font-size: 18px; padding: 12px; font-family: 'Latha', 'Tamil Sangam MN', 'Noto Sans Kannada', 'Noto Sans Telugu', 'Noto Sans Devanagari', 'Segoe UI', sans-serif; border: 1px solid #ccc; border-radius: 4px; resize: vertical; line-height: 1.5; }
         .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
         .btn-primary { background-color: #28a745; color: white; }
         .btn-primary:hover { background-color: #218838; }
@@ -60,11 +60,7 @@
             <div class="editor-header">
                 <div>
                     <label for="langSelect"><strong>Language Bundle:</strong></label>
-                    <select id="langSelect" class="lang-select" onchange="switchLanguage()">
-                        <option value="ta">Tamil (ta)</option>
-                        <option value="ka">Kannada (ka)</option>
-                        <option value="en">English (en)</option>
-                    </select>
+                    <select id="langSelect" class="lang-select" onchange="switchLanguage()"></select>
                 </div>
                 <label for="pasuramEditor"><strong id="currentEditingLabel">Select a Pasuram step to edit:</strong></label>
                 <div>
@@ -91,6 +87,13 @@
 </div>
 
 <script>
+    window.PASURAM_LANG_PACKS = window.PASURAM_LANG_PACKS || {};
+    window.registerPasuramLanguagePack = function (pack) {
+        if (!pack || !pack.code) return;
+        window.PASURAM_LANG_PACKS[pack.code] = pack;
+        populateLanguageDropdown();
+    };
+
     let fileHandle = null;
     let originalFileContent = '';
     let allBundles = {};
@@ -101,42 +104,42 @@
     let pasuramItemsList = [];
     let currentIndex = -1;
 
-    const KEYBOARD_LAYOUTS = {
-        ta: {
-            title: 'Tamil Virtual Keyboard (click to insert text)',
-            vowels: ['அ', 'ஆ', 'இ', 'ஈ', 'உ', 'ஊ', 'எ', 'ஏ', 'ஐ', 'ஒ', 'ஓ', 'ஔ', 'ஃ'],
-            consonants: ['க', 'ங', 'ச', 'ஞ', 'ட', 'ண', 'த', 'ந', 'ப', 'ம', 'ய', 'ர', 'ல', 'வ', 'ழ', 'ள', 'ற', 'ன', 'ஶ', 'ஜ', 'ஷ', 'ஸ', 'ஹ'],
-            modifiers: ['்', 'ா', 'ி', 'ீ', 'ு', 'ூ', 'ெ', 'ே', 'ை', 'ொ', 'ோ', 'ௌ']
-        },
-        ka: {
-            title: 'Kannada Virtual Keyboard (click to insert text)',
-            vowels: ['ಅ', 'ಆ', 'ಇ', 'ಈ', 'ಉ', 'ಊ', 'ಋ', 'ೠ', 'ಎ', 'ಏ', 'ಐ', 'ಒ', 'ಓ', 'ಔ', 'ಅಂ', 'ಅಃ'],
-            consonants: [
-                'ಕ', 'ಖ', 'ಗ', 'ಘ', 'ಙ',
-                'ಚ', 'ಛ', 'ಜ', 'ಝ', 'ಞ',
-                'ಟ', 'ಠ', 'ಡ', 'ಢ', 'ಣ',
-                'ತ', 'ಥ', 'ದ', 'ಧ', 'ನ',
-                'ಪ', 'ಫ', 'ಬ', 'ಭ', 'ಮ',
-                'ಯ', 'ರ', 'ಱ', 'ಲ', 'ವ', 'ಶ', 'ಷ', 'ಸ', 'ಹ', 'ಳ', 'ೞ'
-            ],
-            modifiers: ['್', 'ಾ', 'ಿ', 'ೀ', 'ು', 'ೂ', 'ೃ', 'ೄ', 'ೆ', 'ೇ', 'ೈ', 'ೊ', 'ೋ', 'ೌ', 'ಂ', 'ಃ']
-        },
-        en: {
-            title: 'English Virtual Keyboard (click to insert text)',
-            vowels: ['A', 'E', 'I', 'O', 'U', 'a', 'e', 'i', 'o', 'u'],
-            consonants: ['B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z', 'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z'],
-            modifiers: ['.', ',', '?', '!', '-', "'", '"']
+    function getPack(lang) {
+        return window.PASURAM_LANG_PACKS[lang] || null;
+    }
+
+    function populateLanguageDropdown(preferredLang) {
+        const select = document.getElementById('langSelect');
+        if (!select) return;
+
+        const packs = Object.values(window.PASURAM_LANG_PACKS);
+        if (packs.length === 0) return;
+
+        const prevValue = preferredLang || currentLang || select.value;
+        select.innerHTML = '';
+
+        packs.forEach(pack => {
+            const opt = document.createElement('option');
+            opt.value = pack.code;
+            opt.textContent = pack.label || `${pack.code} (${pack.code})`;
+            select.appendChild(opt);
+        });
+
+        const nextLang = window.PASURAM_LANG_PACKS[prevValue]
+            ? prevValue
+            : (window.PASURAM_LANG_PACKS['ta'] ? 'ta' : packs[0].code);
+
+        currentLang = nextLang;
+        select.value = nextLang;
+    }
+
+    function normalizeForLang(lang, text) {
+        if (typeof text !== 'string') return text;
+        const pack = getPack(lang);
+        if (pack && typeof pack.normalize === 'function') {
+            return pack.normalize(text);
         }
-    };
-
-    function normalizeKannadaText(text) {
-        if (!text) return '';
-
-        return text
-            .normalize('NFC')
-            .replace(/\u0CCA\u0CC6/g, '\u0CCB')
-            .replace(/\u0CC6\u0CC6/g, '\u0CC7')
-            .replace(/([\u0C85-\u0CB9\u0CB1\u0CB3])([\u0CBE-\u0CCC])\u0CCD/g, '$1\u0CCD$2');
+        return text;
     }
 
     function initKeyboard(lang = currentLang) {
@@ -147,18 +150,20 @@
 
         if (!vRow || !cRow || !mRow) return;
 
-        const layout = KEYBOARD_LAYOUTS[lang] || KEYBOARD_LAYOUTS.ta;
-        if (titleEl && layout.title) {
-            titleEl.innerText = layout.title;
+        const pack = getPack(lang) || getPack('ta') || Object.values(window.PASURAM_LANG_PACKS)[0];
+        const keyboard = (pack && pack.keyboard) || { title: 'Virtual Keyboard (click to insert text)', vowels: [], consonants: [], modifiers: [] };
+
+        if (titleEl && keyboard.title) {
+            titleEl.innerText = keyboard.title;
         }
 
         vRow.innerHTML = '';
         cRow.innerHTML = '';
         mRow.innerHTML = '';
 
-        layout.vowels.forEach(char => vRow.appendChild(createKeyBtn(char)));
-        layout.consonants.forEach(char => cRow.appendChild(createKeyBtn(char)));
-        layout.modifiers.forEach(char => mRow.appendChild(createKeyBtn(char)));
+        (keyboard.vowels || []).forEach(char => vRow.appendChild(createKeyBtn(char)));
+        (keyboard.consonants || []).forEach(char => cRow.appendChild(createKeyBtn(char)));
+        (keyboard.modifiers || []).forEach(char => mRow.appendChild(createKeyBtn(char)));
     }
 
     function createKeyBtn(char) {
@@ -346,6 +351,7 @@
         if (editor) {
             editor.addEventListener('input', updateMemory);
         }
+        populateLanguageDropdown('ta');
         initKeyboard(currentLang);
     });
 
@@ -354,15 +360,13 @@
         if (!textarea || !selectedKey || !selectedStep) return;
 
         let val = textarea.value;
-        if (currentLang === 'ka') {
-            const cleaned = normalizeKannadaText(val);
-            if (cleaned !== val) {
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                val = cleaned;
-                textarea.value = val;
-                textarea.setSelectionRange(start, end);
-            }
+        const cleaned = normalizeForLang(currentLang, val);
+        if (cleaned !== val) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            val = cleaned;
+            textarea.value = val;
+            textarea.setSelectionRange(start, end);
         }
 
         if (!parsedData[selectedKey]) parsedData[selectedKey] = {};
@@ -377,7 +381,8 @@
             let updatedContent = originalFileContent;
 
             for (const [lang, data] of Object.entries(allBundles)) {
-                const bundleData = lang === 'ka'
+                const pack = getPack(lang);
+                const bundleData = (pack && typeof pack.normalize === 'function')
                     ? Object.fromEntries(
                         Object.entries(data).map(([k, steps]) => [
                             k,
@@ -385,7 +390,7 @@
                                 ? Object.fromEntries(
                                     Object.entries(steps).map(([s, txt]) => [
                                         s,
-                                        typeof txt === 'string' ? normalizeKannadaText(txt) : txt
+                                        pack.normalize(txt)
                                     ])
                                 )
                                 : steps
@@ -417,6 +422,7 @@
         }
     }
 </script>
+<script src="lang_registry.js"></script>
 
 </body>
 </html>
