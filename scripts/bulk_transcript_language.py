@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Bulk wrapper for tamil_en_to_kannada.py
+Bulk wrapper for tamil_to_kannada.py
 
 Walks a folder tree, finds every   marker_<code>_ta.js   and its sibling
 marker_<code>_en.js, and writes   marker_<code>_ka.js   next to them.
@@ -9,7 +9,7 @@ marker_<code>_en.js, and writes   marker_<code>_ka.js   next to them.
     <root>/aruLicheyal/TPL/text/marker_tpl_en.js   (input,  English)
     <root>/aruLicheyal/TPL/text/marker_tpl_ka.js   (output, Kannada)
 
-Put this file in the same folder as tamil_en_to_kannada.py.
+Put this file in the same folder as tamil_to_kannada.py.
 
 Examples
   python bulk_tamil_to_kannada.py --root ./Divyaprbhandam                # convert everything
@@ -31,9 +31,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 try:
-    import tamil_en_to_kannada as conv
+    import tamil_to_kannada as conv
 except ImportError:
-    sys.exit("tamil_en_to_kannada.py must be in the same folder as this script.")
+    sys.exit("tamil_to_kannada.py must be in the same folder as this script.")
 
 TA_RE = re.compile(r"^marker_(?P<code>.+)_ta\.js$", re.IGNORECASE)
 
@@ -74,7 +74,7 @@ def main():
                     help="combined report file (default: <root>/kannada_conversion_report.txt)")
     ap.add_argument("--fail-on-mismatch", action="store_true",
                     help="exit with code 1 if any Tamil/English MISMATCH is reported")
-    # pass-through options of tamil_en_to_kannada.py
+    # pass-through options of tamil_to_kannada.py
     ap.add_argument("--nasal", choices=["conjunct", "anusvara"], default="anusvara")
     ap.add_argument("--final-m", choices=["virama", "anusvara"], default="anusvara")
     ap.add_argument("--simple-letters", action="store_true", help="ಳ/ರ instead of ೞ/ಱ")

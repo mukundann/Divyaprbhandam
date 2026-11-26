@@ -20,3 +20,4 @@ scripts/extract_tamil_pasurams.py
 scripts/ptmdl.txt
 temp_downloaded.pdf
 .gitignore
+aruLicheyal/kannada_conversion_report.txt

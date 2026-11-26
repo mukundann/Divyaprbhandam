@@ -36,4 +36,3 @@ window.mergeLanguageTexts = function () {
         }
     }
 };
-
