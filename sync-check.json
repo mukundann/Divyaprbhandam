@@ -1,15 +1,8 @@
 {
-  "server_version": "flat_root_tree_8daa17ee",
-  "last_compiled_at": "2026-11-26T16:33:07.160Z",
+  "server_version": "flat_root_tree_55092783",
+  "last_compiled_at": "2026-11-27T01:24:18.006Z",
   "assets": {
-    "audioWaveform.js": "d09e1a418e118975334c7608ea902618",
     "config.js": "01994a4e162bc3b8469dbb5f82561144",
-    "lang_en.js": "7eb666cfdbb3aa9665bdb67fb350511e",
-    "lang_ka.js": "12685f7eb58272b2c5b4f9aa32993898",
-    "lang_registry.js": "bfdf9d436de461e48c84308c3e461ba4",
-    "lang_sa.js": "2fa7d1728d578872954bb90b4da7680e",
-    "lang_ta.js": "afc313da2dcafcbdacbf2c6e9b3af29f",
-    "lang_te.js": "f9784e76ad6c83a80ec13be2cfc9e2b5",
     "learningEngine.js": "cc5a82e013ef410ab7a434e7c0832633",
     "learningEngine_old.js": "1090065c0894459b2b8ab8656ed3e1f0",
     "markerProcessor.js": "bc420796d46fa77f25675877fefb8b01",
